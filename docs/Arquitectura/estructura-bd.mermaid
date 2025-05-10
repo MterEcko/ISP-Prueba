@@ -1,0 +1,232 @@
+erDiagram
+    USUARIOS {
+        int id PK
+        string nombre
+        string apellidos
+        string email
+        string password_hash
+        int rol_id FK
+        boolean activo
+        timestamp creado
+        timestamp actualizado
+    }
+    
+    ROLES {
+        int id PK
+        string nombre
+        string descripcion
+        int nivel
+        string categoria
+    }
+    
+    PERMISOS {
+        int id PK
+        string nombre
+        string descripcion
+        string modulo
+    }
+    
+    ROL_PERMISOS {
+        int rol_id FK
+        int permiso_id FK
+    }
+    
+    CLIENTES {
+        int id PK
+        string nombre
+        string apellidos
+        string correo
+        string telefono
+        string whatsapp
+        date fecha_nacimiento
+        date fecha_inicio
+        float latitud
+        float longitud
+        int sector_id FK
+        boolean activo
+        timestamp creado
+        timestamp actualizado
+    }
+    
+    DOCUMENTOS_CLIENTE {
+        int id PK
+        int cliente_id FK
+        string tipo
+        string nombre_archivo
+        string ruta_archivo
+        timestamp subido
+    }
+    
+    SECTORES {
+        int id PK
+        string nombre
+        int nodo_id FK
+        string descripcion
+    }
+    
+    NODOS {
+        int id PK
+        string nombre
+        string ubicacion
+        float latitud
+        float longitud
+    }
+    
+    SERVICIOS_CONTRATADOS {
+        int id PK
+        int cliente_id FK
+        int plan_id FK
+        date fecha_inicio
+        date fecha_fin
+        boolean activo
+    }
+    
+    PLANES_SERVICIO {
+        int id PK
+        string nombre
+        float precio
+        int velocidad_down
+        int velocidad_up
+        boolean acceso_jellyfin
+        string descripcion
+    }
+    
+    DISPOSITIVOS_RED {
+        int id PK
+        string tipo
+        string marca
+        string modelo
+        string ip
+        string mac
+        int nodo_id FK
+        int sector_id FK
+        int cliente_id FK
+        boolean activo
+    }
+    
+    CREDENCIALES_DISPOSITIVO {
+        int id PK
+        int dispositivo_id FK
+        string usuario
+        string password_encriptado
+        string tipo_conexion
+        timestamp actualizado
+    }
+    
+    TICKETS {
+        int id PK
+        int cliente_id FK
+        int usuario_id FK
+        string titulo
+        string descripcion
+        string estado
+        string prioridad
+        timestamp creado
+        timestamp actualizado
+        timestamp cerrado
+    }
+    
+    COMENTARIOS_TICKET {
+        int id PK
+        int ticket_id FK
+        int usuario_id FK
+        string contenido
+        timestamp creado
+    }
+    
+    INVENTARIO {
+        int id PK
+        string nombre
+        string marca
+        string modelo
+        string numero_serie
+        string estado
+        int ubicacion_id FK
+        int cliente_id FK
+        timestamp creado
+        timestamp actualizado
+    }
+    
+    UBICACIONES_INVENTARIO {
+        int id PK
+        string nombre
+        string tipo
+        int parent_id FK
+    }
+    
+    FACTURAS {
+        int id PK
+        int cliente_id FK
+        int servicio_id FK
+        float monto
+        string estado
+        date fecha_emision
+        date fecha_vencimiento
+        timestamp pagado
+    }
+    
+    PAGOS {
+        int id PK
+        int factura_id FK
+        float monto
+        string metodo
+        string referencia
+        timestamp fecha
+    }
+    
+    PLANTILLAS_MENSAJE {
+        int id PK
+        string nombre
+        string contenido
+        string tipo
+        string canal
+    }
+    
+    COMUNICACIONES {
+        int id PK
+        int cliente_id FK
+        int plantilla_id FK
+        string canal
+        string estado
+        string contenido_enviado
+        timestamp enviado
+    }
+    
+    METRICAS_RED {
+        int id PK
+        int dispositivo_id FK
+        float trafico_up
+        float trafico_down
+        float latencia
+        float packet_loss
+        timestamp registrado
+    }
+    
+    JELLYFIN_USUARIOS {
+        int id PK
+        int cliente_id FK
+        string jellyfin_id
+        string estado
+        timestamp creado
+        timestamp actualizado
+    }
+    
+    USUARIOS ||--o{ TICKETS : "asignado a"
+    ROLES ||--o{ USUARIOS : "tiene"
+    ROLES ||--o{ ROL_PERMISOS : "tiene"
+    PERMISOS ||--o{ ROL_PERMISOS : "asociado a"
+    CLIENTES ||--o{ DOCUMENTOS_CLIENTE : "tiene"
+    CLIENTES ||--o{ SERVICIOS_CONTRATADOS : "contrata"
+    CLIENTES ||--o{ TICKETS : "crea"
+    CLIENTES ||--o{ FACTURAS : "recibe"
+    CLIENTES ||--o{ COMUNICACIONES : "recibe"
+    CLIENTES ||--o{ JELLYFIN_USUARIOS : "posee"
+    SECTORES ||--o{ CLIENTES : "agrupa"
+    NODOS ||--o{ SECTORES : "contiene"
+    PLANES_SERVICIO ||--o{ SERVICIOS_CONTRATADOS : "define"
+    DISPOSITIVOS_RED ||--o{ CREDENCIALES_DISPOSITIVO : "tiene"
+    DISPOSITIVOS_RED ||--o{ METRICAS_RED : "genera"
+    TICKETS ||--o{ COMENTARIOS_TICKET : "tiene"
+    UBICACIONES_INVENTARIO ||--o{ INVENTARIO : "contiene"
+    FACTURAS ||--o{ PAGOS : "recibe"
+    PLANTILLAS_MENSAJE ||--o{ COMUNICACIONES : "utiliza"

@@ -1,0 +1,82 @@
+graph TD
+    subgraph "Cliente"
+        A[Navegador Web] --> B[UI Frontend Vue.js]
+        M[App Móvil] --> B
+    end
+
+    subgraph "Balanceador de Carga"
+        C[Nginx]
+    end
+
+    subgraph "API Gateway"
+        D[Express.js]
+    end
+
+    subgraph "Servicios de Autenticación"
+        E[Auth Service]
+    end
+
+    subgraph "Servicios Core"
+        F[Cliente Service]
+        G[Gestión de Red Service]
+        H[Ticket Service]
+        I[Inventario Service]
+        J[Facturación Service]
+    end
+
+    subgraph "Servicios de Integración"
+        K[Mikrotik API Service]
+        L[Ubiquiti API Service]
+        N[Jellyfin API Service]
+        O[JFA-GO Service]
+        P[Comunicaciones Service]
+    end
+
+    subgraph "Bases de Datos"
+        Q[(PostgreSQL)]
+        R[(InfluxDB)]
+        S[(Redis)]
+    end
+
+    subgraph "Sistemas Externos"
+        T[Routers Mikrotik]
+        U[Equipos Ubiquiti]
+        V[Jellyfin Server]
+        W[JFA-GO Server]
+        X[Email/SMS Gateways]
+        Y[Pasarelas de Pago]
+    end
+
+    B --> C
+    C --> D
+    D --> E
+    D --> F
+    D --> G
+    D --> H
+    D --> I
+    D --> J
+
+    F --> Q
+    G --> R
+    G --> K
+    G --> L
+    H --> Q
+    I --> Q
+    J --> Q
+    J --> Y
+
+    K --> T
+    L --> U
+    N --> V
+    O --> W
+    P --> X
+
+    E --> S
+    E --> Q
+    
+    F --> P
+    P --> N
+    P --> O
+    
+    G --> N
+    J --> P

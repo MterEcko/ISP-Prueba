@@ -1,0 +1,70 @@
+graph TD
+    subgraph "Frontend (Vue.js)"
+        A[Panel Administrativo] --> B[Dashboard Principal]
+        A --> C[Gestión de Clientes]
+        A --> D[Monitoreo de Red]
+        A --> E[Sistema de Tickets]
+        A --> F[Inventario]
+        A --> G[Facturación]
+        A --> H[Panel de Jellyfin]
+        A --> I[Comunicaciones]
+    end
+    
+    subgraph "Backend (Node.js/Express)"
+        J[API RESTful] --> K[Auth Service]
+        J --> L[Cliente Service]
+        J --> M[Red Service]
+        J --> N[Ticket Service]
+        J --> O[Inventario Service]
+        J --> P[Facturación Service]
+        J --> Q[Jellyfin Service]
+        J --> R[Comunicación Service]
+        J --> S[Búsqueda Service]
+    end
+    
+    subgraph "Base de Datos"
+        T[(PostgreSQL)] --> T1[Usuarios]
+        T --> T2[Clientes]
+        T --> T3[Equipos]
+        T --> T4[Tickets]
+        T --> T5[Inventario]
+        T --> T6[Facturas]
+        U[(InfluxDB)] --> U1[Métricas de Red]
+        V[(Redis)] --> V1[Caché y Sesiones]
+    end
+    
+    subgraph "Integraciones Externas"
+        W[Mikrotik API]
+        X[Ubiquiti API]
+        Y[Jellyfin API]
+        Z[WhatsApp/Telegram]
+        AA[Email Service]
+        AB[Pasarelas de Pago]
+    end
+    
+    B --> J
+    C --> J
+    D --> J
+    E --> J
+    F --> J
+    G --> J
+    H --> J
+    I --> J
+    
+    J --> W
+    J --> X
+    J --> Y
+    R --> Z
+    R --> AA
+    P --> AB
+    
+    subgraph "Infraestructura"
+        AC[Servidor Ubuntu]
+        AD[Docker Containers]
+        AE[Nginx]
+        AF[Certbot/SSL]
+    end
+    
+    AC --> AD
+    AD --> AE
+    AE --> AF

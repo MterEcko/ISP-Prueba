@@ -1,0 +1,47 @@
+# Crear docker-compose.yml
+echo "version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: isp_postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: \${DB_PASSWORD}
+      POSTGRES_USER: \${DB_USER}
+      POSTGRES_DB: \${DB_NAME}
+    ports:
+      - '5432:5432'
+
+  backend:
+    build: ./backend
+    container_name: isp_backend
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    ports:
+      - '3000:3000'
+    depends_on:
+      - postgres
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+      - DB_USER=\${DB_USER}
+      - DB_PASSWORD=\${DB_PASSWORD}
+      - DB_NAME=\${DB_NAME}
+      - JWT_SECRET=\${JWT_SECRET}
+
+  frontend:
+    build: ./frontend
+    container_name: isp_frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - '8080:8080'
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:" > docker-compose.yml
