@@ -1,160 +1,277 @@
 Sistema Integral para Proveedores de Internet (ISP)
+<div align="center">
+  <img src="frontend/src/assets/logo.png" alt="ISP Sistema Logo" width="200">
+  <br>
+  <br>
+  <p>
+    <strong>Sistema completo para la gestión integral de proveedores de servicios de internet</strong>
+  </p>
+  <p>
+    <a href="#características">Características</a> •
+    <a href="#tecnologías">Tecnologías</a> •
+    <a href="#instalación">Instalación</a> •
+    <a href="#uso">Uso</a> •
+    <a href="#capturas-de-pantalla">Capturas</a> •
+    <a href="#contribución">Contribución</a>
+  </p>
+</div>
 Descripción
-Sistema Integral para gestión completa de Proveedores de Servicios de Internet (ISP), que incluye administración de clientes, monitoreo de red, facturación, tickets de soporte y integración con servicios de streaming (Jellyfin). Esta plataforma está diseñada para unificar todas las operaciones de un ISP en una única aplicación web, optimizando procesos y mejorando la experiencia tanto de administradores como de clientes.
-Características
-
-Gestión de Clientes: Administración completa de clientes, con datos personales, coordenadas geográficas, documentos y servicios contratados.
-Monitoreo de Red: Visualización del estado de equipos Mikrotik y Ubiquiti, métricas de tráfico y alertas.
-Sistema de Tickets: Gestión de soporte técnico con asignación, seguimiento y resolución de incidencias.
-Facturación: Control de pagos, planes de servicio y estados de cuenta.
-Inventario: Gestión de equipos y materiales, con seguimiento de ubicación y estado.
-Integración con Jellyfin: Administración de usuarios de streaming vinculados a clientes.
-Comunicaciones Multicanal: Notificaciones vía email, Telegram y WhatsApp.
-Dashboard: Panel de control con métricas e indicadores clave.
-
-Tecnologías
-Frontend
-
-Vue.js 3: Framework progresivo de JavaScript
-Vue Router: Manejo de rutas y navegación
-Vuex: Gestión de estado global
-CSS personalizado: Diseño responsivo sin frameworks externos
-
-Backend
-
-Node.js: Entorno de ejecución para JavaScript
-Express: Framework web para API RESTful
-Sequelize: ORM para bases de datos
-JWT: Autenticación mediante tokens
-
-Base de Datos
-
-SQLite (desarrollo): Base de datos ligera para entorno local
-PostgreSQL (producción): Base de datos relacional para entorno productivo
-InfluxDB (opcional): Para almacenamiento de métricas temporales
-
-Infraestructura
-
-Docker: Contenerización de servicios
-Nginx: Servidor web y proxy inverso
-
+Sistema completo para gestión de proveedores de servicios de internet (ISP), con funcionalidades integradas para administración de clientes, monitoreo de red, gestión de tickets, facturación y servicios de streaming.
+<div id="características"></div>
+Funcionalidades Principales
+<details>
+<summary><strong>📊 Dashboard Centralizado</strong></summary>
+Panel de control con visualización en tiempo real de métricas clave, estado de red, tickets pendientes e información financiera.
+</details>
+<details>
+<summary><strong>👥 Gestión de Clientes</strong></summary>
+Administración completa de clientes con:
+<ul>
+  <li>Información personal y de contacto</li>
+  <li>Ubicación geográfica con mapas integrados</li>
+  <li>Gestión de documentos</li>
+  <li>Historial de servicios y pagos</li>
+  <li>Organización jerárquica por nodos/sectores</li>
+</ul>
+</details>
+<details>
+<summary><strong>📡 Monitoreo de Red</strong></summary>
+<ul>
+  <li>Visualización de estado de nodos, sectores y dispositivos</li>
+  <li>Métricas en tiempo real de tráfico y calidad de conexión</li>
+  <li>Alertas y notificaciones automáticas</li>
+  <li>Gestión de equipos Mikrotik y Ubiquiti</li>
+</ul>
+</details>
+<details>
+<summary><strong>🎫 Sistema de Tickets</strong></summary>
+<ul>
+  <li>Creación y seguimiento de solicitudes de soporte</li>
+  <li>Asignación a técnicos con niveles de prioridad</li>
+  <li>Historial de comunicaciones</li>
+  <li>Métricas de tiempo de resolución</li>
+</ul>
+</details>
+<details>
+<summary><strong>💰 Facturación</strong></summary>
+<ul>
+  <li>Control de pagos y facturas</li>
+  <li>Estados de cuenta por cliente</li>
+  <li>Recordatorios automáticos</li>
+  <li>Informes financieros</li>
+</ul>
+</details>
+<details>
+<summary><strong>📺 Integración con Jellyfin</strong></summary>
+<ul>
+  <li>Gestión de cuentas de streaming</li>
+  <li>Automatización con JFA-GO</li>
+  <li>Control de accesos según plan contratado</li>
+</ul>
+</details>
+<details>
+<summary><strong>🔐 Sistema Avanzado de Permisos</strong></summary>
+Control de acceso granular basado en roles y permisos específicos para cada módulo y función.
+</details>
+<div id="tecnologías"></div>
+Tecnologías Utilizadas
+<table>
+  <tr>
+    <th>Frontend</th>
+    <th>Backend</th>
+    <th>Infraestructura</th>
+  </tr>
+  <tr>
+    <td>
+      <ul>
+        <li>Vue.js 3</li>
+        <li>Vuex</li>
+        <li>Vue Router</li>
+        <li>CSS personalizado</li>
+        <li>Responsive Design</li>
+      </ul>
+    </td>
+    <td>
+      <ul>
+        <li>Node.js</li>
+        <li>Express</li>
+        <li>SQLite (desarrollo)</li>
+        <li>PostgreSQL (producción)</li>
+        <li>Sequelize ORM</li>
+        <li>JWT Authentication</li>
+      </ul>
+    </td>
+    <td>
+      <ul>
+        <li>Docker</li>
+        <li>Docker Compose</li>
+        <li>Nginx</li>
+        <li>Ubuntu Server</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+Integraciones
+<table>
+  <tr>
+    <td><strong>Mikrotik RouterOS API</strong></td>
+    <td>Control y monitoreo de routers</td>
+  </tr>
+  <tr>
+    <td><strong>Ubiquiti UNMS/UISP API</strong></td>
+    <td>Gestión de equipos Ubiquiti</td>
+  </tr>
+  <tr>
+    <td><strong>Jellyfin API</strong></td>
+    <td>Integración con servidor de streaming</td>
+  </tr>
+  <tr>
+    <td><strong>JFA-GO</strong></td>
+    <td>Automatización de invitaciones para Jellyfin</td>
+  </tr>
+</table>
+<div id="instalación"></div>
 Estructura del Proyecto
-ISP-Sistema-Integral/
-├── backend/
-│   ├── src/
-│   │   ├── controllers/     # Controladores de la API
-│   │   ├── models/          # Modelos de Sequelize
-│   │   ├── routes/          # Rutas de la API
-│   │   ├── services/        # Servicios para APIs externas
-│   │   ├── middleware/      # Middleware (auth, logs)
-│   │   ├── utils/           # Utilidades comunes
-│   │   ├── config/          # Configuraciones
-│   │   └── index.js         # Punto de entrada
-│   ├── .env                 # Variables de entorno
-│   ├── database.sqlite      # Base de datos SQLite para desarrollo
-│   └── package.json
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── assets/          # Recursos estáticos
-│   │   ├── components/      # Componentes Vue reutilizables
-│   │   ├── router/          # Configuración de rutas
-│   │   ├── services/        # Servicios API
-│   │   ├── store/           # Estado global (Vuex)
-│   │   ├── views/           # Componentes de página
-│   │   ├── App.vue          # Componente principal
-│   │   └── main.js          # Punto de entrada
-│   └── package.json
-├── docker-compose.yml       # Configuración de contenedores
-├── .gitignore
-└── README.md
-Requisitos
 
-Node.js v14+
-npm o yarn
-Docker y Docker Compose (opcional, para producción)
-Servidor Ubuntu (para despliegue)
+ISP-Sistema-Integral/
+├── backend/               # API y servicios del backend
+│   ├── src/
+│   │   ├── controllers/   # Controladores de lógica de negocio
+│   │   ├── models/        # Modelos de datos (Sequelize)
+│   │   ├── routes/        # Definición de rutas API
+│   │   ├── services/      # Servicios para integraciones externas
+│   │   ├── middleware/    # Middleware para autenticación y permisos
+│   │   └── utils/         # Utilidades comunes
+│   └── database.sqlite    # Base de datos SQLite para desarrollo
+├── frontend/              # Aplicación Vue.js
+│   ├── src/
+│   │   ├── assets/        # Recursos estáticos (imágenes, CSS)
+│   │   ├── components/    # Componentes Vue reutilizables
+│   │   ├── services/      # Servicios para comunicación con API
+│   │   ├── store/         # Estado global con Vuex
+│   │   ├── views/         # Componentes de página principales
+│   │   └── router/        # Configuración de rutas
+│   └── public/            # Archivos públicos estáticos
+└── docker/                # Configuración de Docker
+    ├── nginx/             # Configuración de Nginx
+    └── docker-compose.yml # Orquestación de servicios
+
+
+Instalación
+Requisitos Previos
+
+Desarrollo: Node.js 16+, SQLite
+Producción: Ubuntu Server 20.04+, Docker, Docker Compose
 
 Instalación para Desarrollo
+<details>
+<summary>Instrucciones detalladas para desarrollo</summary>
 
 Clonar el repositorio
-
 bashgit clone https://github.com/tu-usuario/ISP-Sistema-Integral.git
 cd ISP-Sistema-Integral
 
 Configurar el Backend
-
 bashcd backend
 npm install
-cp .env.example .env  # Y editar según corresponda
+cp .env.example .env
+# Editar .env con la configuración apropiada
 
 Configurar el Frontend
-
 bashcd ../frontend
 npm install
 
-Ejecutar en Desarrollo
-
-Backend:
-bashcd backend
+Iniciar en Modo Desarrollo
+bash# Terminal 1: Iniciar el backend
+cd backend
 npm run dev
-Frontend:
-bashcd frontend
+
+# Terminal 2: Iniciar el frontend
+cd frontend
 npm run serve
-El frontend estará disponible en http://localhost:8080 y la API en http://localhost:3000.
-Despliegue en Producción
-Usando Docker (Recomendado)
 
-Configurar variables de entorno
+Acceder a la aplicación
+La aplicación estará disponible en http://localhost:8080
 
-bashcp .env.example .env  # Y editar para producción
+</details>
+Instalación para Producción
+<details>
+<summary>Instrucciones detalladas para producción</summary>
 
-Construir y levantar contenedores
+Clonar el repositorio
+bashgit clone https://github.com/tu-usuario/ISP-Sistema-Integral.git
+cd ISP-Sistema-Integral
 
-bashdocker-compose build
-docker-compose up -d
+Configurar el Entorno
+bashcp .env.example .env
+# Editar .env con la configuración de producción
 
-Configurar Nginx como proxy inverso
+Iniciar con Docker Compose
+bashdocker-compose up -d
 
-Ver documentación en /docs/nginx-config.md
-Instalación Manual
-Ver instrucciones detalladas en /docs/manual-deploy.md
-Configuración de Integración con Jellyfin
+Configurar Nginx y SSL
+bashsudo certbot --nginx -d tudominio.com
 
-Asegúrese de tener instalado Jellyfin en su servidor
-Configure una API Key en el panel de administración de Jellyfin
-En el panel de configuración del ISP, vaya a la sección "Integraciones"
-Ingrese la URL y la API Key de Jellyfin
+Acceder a la aplicación
+La aplicación estará disponible en https://tudominio.com
 
-Mantenimiento
-Respaldos
-Los respaldos se configuran automáticamente con los scripts en /scripts/backup.sh. Por defecto, se realizan diariamente a las 2 AM.
-Actualizaciones
-bashgit pull
-docker-compose down
-docker-compose build
-docker-compose up -d
-Personalización
+</details>
+<div id="uso"></div>
+Uso
+Acceso Inicial
 
-Tema: El sistema incluye temas claro y oscuro, configurables por usuario
-Logo: Puede cambiarse desde el panel de configuración
-Plantillas de correo: Editables desde el apartado de comunicaciones
+Usuario predeterminado: admin
+Contraseña predeterminada: admin123
+Se recomienda cambiar la contraseña inmediatamente después del primer inicio de sesión
 
+Módulos Principales
+
+Dashboard: Visualización general del sistema
+Clientes: Gestión completa de usuarios y servicios
+Red: Monitoreo y configuración de equipos
+Tickets: Sistema de soporte técnico
+Facturación: Control de pagos y facturación
+Configuración: Ajustes generales del sistema
+
+<div id="capturas-de-pantalla"></div>
+Capturas de Pantalla
+<div align="center">
+  <img src="docs/images/dashboard.png" alt="Dashboard" width="45%">
+  <img src="docs/images/clients.png" alt="Gestión de Clientes" width="45%">
+  <br><br>
+  <img src="docs/images/network.png" alt="Monitoreo de Red" width="45%">
+  <img src="docs/images/tickets.png" alt="Sistema de Tickets" width="45%">
+</div>
+<div id="contribución"></div>
 Contribución
+Las contribuciones son bienvenidas. Por favor, sigue estos pasos:
 
-Haz un Fork del repositorio
-Crea una rama para tu característica (git checkout -b feature/nueva-caracteristica)
-Haz commit de tus cambios (git commit -am 'Agrega nueva característica')
-Haz push a la rama (git push origin feature/nueva-caracteristica)
-Crea un nuevo Pull Request
+Fork del repositorio
+Crea una rama para tu funcionalidad (git checkout -b feature/amazing-feature)
+Haz commit de tus cambios (git commit -m 'Añadir funcionalidad X')
+Push a la rama (git push origin feature/amazing-feature)
+Abre un Pull Request
+
+Directrices de Contribución
+
+Sigue el estilo de código establecido
+Escribe pruebas para nuevas funcionalidades
+Mantén las dependencias al mínimo
+Documenta el código nuevo
 
 Licencia
-Este proyecto está licenciado bajo MIT License.
+Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo LICENSE para más detalles.
 Contacto
-Para soporte o consultas:
-
-Email: soporte@tuisp.com
-Sitio web: https://tuisp.com
-
-
-Desarrollado por [Tu Nombre/Empresa]
+Tu Nombre - @tu_twitter - correo@ejemplo.com
+Link del Proyecto: https://github.com/tu-usuario/ISP-Sistema-Integral
+Agradecimientos
+<ul>
+  <li>Nombre de Contribuyente 1</li>
+  <li>Nombre de Contribuyente 2</li>
+  <li>Vue.js community</li>
+  <li>Node.js community</li>
+</ul>
+<hr>
+<p align="center">
+  Desarrollado con ❤️ para la gestión eficiente de proveedores de internet
+</p>
