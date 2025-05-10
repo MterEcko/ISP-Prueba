@@ -40,6 +40,8 @@ exports.findAllNodes = async (req, res) => {
     const condition = {};
     if (name) condition.name = { [Op.iLike]: `%${name}%` };
     if (active !== undefined) condition.active = active === 'true';
+	
+	console.log("Buscando nodos con condición:", condition);
 
     const nodes = await Node.findAll({
       where: condition,
@@ -51,9 +53,12 @@ exports.findAllNodes = async (req, res) => {
       ],
       order: [['name', 'ASC']]
     });
+	
+	console.log(`Se encontraron ${nodes.length} nodos`);
 
     return res.status(200).json(nodes);
   } catch (error) {
+	console.error("Error en findAllNodes:", error);
     return res.status(500).json({ message: error.message });
   }
 };

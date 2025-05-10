@@ -38,6 +38,7 @@ exports.create = async (req, res) => {
 };
 
 // Obtener todos los clientes con paginación y filtros
+// backend/src/controllers/client.controller.js - asegurar correcto funcionamiento
 exports.findAll = async (req, res) => {
   try {
     const { page = 1, size = 10, name, email, phone, active, sectorId } = req.query;
@@ -71,6 +72,9 @@ exports.findAll = async (req, res) => {
       order: [['createdAt', 'DESC']]
     });
 
+    // Log para verificar resultados (quitar en producción)
+    console.log(`Clientes encontrados: ${count}`);
+
     return res.status(200).json({
       totalItems: count,
       clients,
@@ -78,6 +82,7 @@ exports.findAll = async (req, res) => {
       totalPages: Math.ceil(count / limit)
     });
   } catch (error) {
+    console.error("Error en findAll de clientes:", error);
     return res.status(500).json({ message: error.message });
   }
 };

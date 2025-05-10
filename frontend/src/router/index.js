@@ -12,6 +12,11 @@ import DeviceList from '../views/DeviceList.vue';
 import DeviceDetail from '../views/DeviceDetail.vue';
 import DeviceForm from '../views/DeviceForm.vue';
 import SettingView from '../views/SettingView.vue';
+import NetworkView from '../views/NetworkView.vue';
+import NodeDetail from '../views/NodeDetail.vue';
+import NodeForm from '../views/NodeForm.vue';
+import SectorDetail from '../views/SectorDetail.vue';
+import SectorForm from '../views/SectorForm.vue';
 
 const routes = [
   {
@@ -109,6 +114,51 @@ const routes = [
     path: '/settings/',
     name: 'SettingView',
     component: SettingView,
+    meta: { requiresAuth: true }
+  },
+  // Dentro del array de rutas, añade:
+  {
+    path: '/network',
+    name: 'Network',
+    component: NetworkView,
+    meta: { requiresAuth: true }
+  },
+// Rutas para nodos
+  {
+    path: '/nodes/new',
+    name: 'CreateNode',
+    component: () => import('../views/NodeForm.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/nodes/:id',
+    name: 'NodeDetail',
+    component: () => import('../views/NodeDetail.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/nodes/:id/edit',
+    name: 'EditNode',
+    component: () => import('../views/NodeForm.vue'),
+    meta: { requiresAuth: true }
+  },
+// Rutas para sectores
+  {
+    path: '/sectors/new',
+    name: 'CreateSector',
+    component: () => import('../views/SectorForm.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/sectors/:id',
+    name: 'SectorDetail',
+    component: () => import('../views/SectorDetail.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/sectors/:id/edit',
+    name: 'EditSector',
+    component: () => import('../views/SectorForm.vue'),
     meta: { requiresAuth: true }
   }
 ];

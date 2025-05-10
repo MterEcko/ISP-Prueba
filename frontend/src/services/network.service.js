@@ -6,12 +6,21 @@ const API_URL = 'http://localhost:3000/api/';
 class NetworkService {
   // Nodos
   getAllNodes(params = {}) {
+    console.log('NetworkService: Solicitando nodos con params:', params);
     let queryParams = new URLSearchParams();
     
     if (params.name) queryParams.append('name', params.name);
     if (params.active !== undefined) queryParams.append('active', params.active);
 
-    return axios.get(API_URL + 'nodes?' + queryParams.toString(), { headers: authHeader() });
+    return axios.get(API_URL + 'nodes?' + queryParams.toString(), { headers: authHeader() })
+      .then(response => {
+        console.log('NetworkService: Nodos recibidos:', response);
+        return response;
+      })
+      .catch(error => {
+        console.error('NetworkService: Error al obtener nodos:', error);
+        throw error;
+      });
   }
 
   getNode(id) {
