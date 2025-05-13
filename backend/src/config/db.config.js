@@ -1,12 +1,9 @@
 const path = require('path');
 
-// Obtener configuración del entorno
-const env = process.env.NODE_ENV || 'development';
-
 // Configuración para desarrollo con SQLite
 const devConfig = {
   dialect: "sqlite",
-  storage: path.join(__dirname, '../database.sqlite'),
+  storage: path.join(__dirname, '../../database.sqlite'),
   pool: {
     max: 5,
     min: 0,
@@ -17,10 +14,11 @@ const devConfig = {
 
 // Configuración para producción con PostgreSQL
 const prodConfig = {
-  HOST: process.env.DB_HOST,
-  USER: process.env.DB_USER,
-  PASSWORD: process.env.DB_PASSWORD,
-  DB: process.env.DB_NAME,
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT || 5432,
   dialect: "postgres",
   pool: {
     max: 5,
@@ -30,4 +28,11 @@ const prodConfig = {
   }
 };
 
-module.exports = env === 'production' ? prodConfig : devConfig;
+const env = process.env.NODE_ENV || 'development';
+
+// Exportar en formato compatible con Sequelize CLI
+module.exports = {
+  development: devConfig,
+  test: devConfig, // Usar la misma configuración para test
+  production: prodConfig
+};

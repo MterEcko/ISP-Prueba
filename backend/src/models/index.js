@@ -1,23 +1,31 @@
 const { Sequelize } = require('sequelize');
-const config = require('../config/db.config');
+const path = require('path');
+
+// Obtener la configuración basada en el entorno
+const env = process.env.NODE_ENV || 'development';
+const config = require('../config/db.config')[env];
 
 // Crear instancia Sequelize con configuración
-const sequelize = new Sequelize(
-  config.storage ? 
-  {
+let sequelize;
+
+if (config.storage) {
+  // Configuración para SQLite (desarrollo)
+  sequelize = new Sequelize({
     dialect: config.dialect,
     storage: config.storage,
-    pool: config.pool
-  } : 
-  {
+    pool: config.pool,
+    logging: false // Deshabilitar logging en desarrollo, opcional
+  });
+} else {
+  // Configuración para PostgreSQL (producción)
+  sequelize = new Sequelize(config.database, config.username, config.password, {
+    host: config.host,
+    port: config.port,
     dialect: config.dialect,
-    host: config.HOST,
-    username: config.USER,
-    password: config.PASSWORD,
-    database: config.DB,
-    pool: config.pool
-  }
-);
+    pool: config.pool,
+    logging: false // Deshabilitar logging en producción, opcional
+  });
+}
 
 const db = {};
 
@@ -37,6 +45,9 @@ db.Subscription = require('./subscription.model.js')(sequelize, Sequelize);
 db.Ticket = require('./ticket.model.js')(sequelize, Sequelize);
 db.TicketComment = require('./ticketComment.model.js')(sequelize, Sequelize);
 db.Device = require('./device.model.js')(sequelize, Sequelize);
+
+// Importar el nuevo modelo
+db.ClientNetwork = require('./client.network.model.js')(sequelize, Sequelize);
 
 // Definir relaciones
 
@@ -166,6 +177,25 @@ db.User.hasMany(db.TicketComment, {
 
 db.TicketComment.belongsTo(db.User, {
   foreignKey: 'userId'
+});
+
+// Nuevas relaciones para ClientNetwork
+db.Client.hasMany(db.ClientNetwork, {
+  foreignKey: 'clientId'
+});
+
+db.ClientNetwork.belongsTo(db.Client, {
+  foreignKey: 'clientId',
+  as: 'client'
+});
+
+db.Device.hasMany(db.ClientNetwork, {
+  foreignKey: 'deviceId'
+});
+
+db.ClientNetwork.belongsTo(db.Device, {
+  foreignKey: 'deviceId',
+  as: 'device'
 });
 
 module.exports = db;

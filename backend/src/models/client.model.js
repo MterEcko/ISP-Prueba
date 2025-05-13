@@ -49,6 +49,46 @@ module.exports = (sequelize) => {
     },
     notes: {
       type: DataTypes.TEXT
+    },
+    // Campos para integración con Mikrotik
+    contractNumber: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: true
+    },
+    mikrotikUsername: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: true
+    },
+    mikrotikProfile: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    deviceId: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'Devices',
+        key: 'id'
+      },
+      allowNull: true
+    },
+    // Información del plan de servicio
+    serviceType: {
+      type: DataTypes.ENUM('residential', 'business', 'enterprise'),
+      defaultValue: 'residential'
+    },
+    downloadSpeed: {
+      type: DataTypes.INTEGER, // en Mbps
+      allowNull: true
+    },
+    uploadSpeed: {
+      type: DataTypes.INTEGER, // en Mbps
+      allowNull: true
+    },
+    dataLimit: {
+      type: DataTypes.INTEGER, // en GB, null para ilimitado
+      allowNull: true
     }
   });
 

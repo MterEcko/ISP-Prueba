@@ -1,353 +1,742 @@
 // Servicio para interactuar con dispositivos Mikrotik a través de RouterOS API
-// Para desarrollo local, simularemos las respuestas
+const { RouterOSAPI } = require('routeros');
+const logger = require('../utils/logger');
 
-// En producción, usarías una biblioteca como node-routeros-api
-// const RouterOSAPI = require('node-routeros-api').RouterOSAPI;
 
-// Simulador para desarrollo local
-class MikrotikSimulator {
-  constructor() {
-    this.devices = {
-      '192.168.1.1': {
-        name: 'Router Principal',
-        model: 'RB3011UiAS',
-        serial: 'ABC123456',
-        version: '6.48.6',
-        uptime: '2d3h15m',
-        cpuLoad: 12,
-        memoryUsage: 35,
-        interfaces: [
-          { name: 'ether1', type: 'ethernet', status: 'up', rxBytes: 1024000, txBytes: 512000 },
-          { name: 'ether2', type: 'ethernet', status: 'up', rxBytes: 512000, txBytes: 256000 },
-          { name: 'wlan1', type: 'wireless', status: 'up', rxBytes: 256000, txBytes: 128000 }
-        ],
-        clients: [
-          { mac: 'AA:BB:CC:11:22:33', ip: '192.168.1.100', name: 'PC-Cliente1', rxBytes: 2048000, txBytes: 1024000 },
-          { mac: 'DD:EE:FF:44:55:66', ip: '192.168.1.101', name: 'Laptop-Cliente2', rxBytes: 1024000, txBytes: 512000 }
-        ]
-      },
-      '192.168.1.2': {
-        name: 'Router Sector Norte',
-        model: 'hAP ac2',
-        serial: 'DEF789012',
-        version: '6.47.9',
-        uptime: '5d8h22m',
-        cpuLoad: 8,
-        memoryUsage: 25,
-        interfaces: [
-          { name: 'ether1', type: 'ethernet', status: 'up', rxBytes: 512000, txBytes: 256000 },
-          { name: 'wlan1', type: 'wireless', status: 'up', rxBytes: 128000, txBytes: 64000 }
-        ],
-        clients: [
-          { mac: 'GG:HH:II:77:88:99', ip: '192.168.1.150', name: 'PC-Cliente3', rxBytes: 1024000, txBytes: 512000 }
-        ]
-      }
-    };
-    
-    // Generar datos históricos simulados
-    this.generateHistoricalData();
-  }
-  
-  // Generar datos históricos para simulación
-  generateHistoricalData() {
-    // Períodos de tiempo
-    const periods = ['1h', '6h', '24h', '7d', '30d'];
-    
-    // Para cada dispositivo, generar datos históricos
-    Object.keys(this.devices).forEach(ip => {
-      const device = this.devices[ip];
-      device.historicalData = {};
-      
-      periods.forEach(period => {
-        // Determinar número de puntos de datos según el período
-        let points;
-        switch(period) {
-          case '1h': points = 60; break;    // 1 punto por minuto
-          case '6h': points = 72; break;    // 1 punto cada 5 minutos
-          case '24h': points = 96; break;   // 1 punto cada 15 minutos
-          case '7d': points = 168; break;   // 1 punto por hora
-          case '30d': points = 180; break;  // 1 punto cada 4 horas
-          default: points = 60;
-        }
-        
-        // Generar datos para CPU, memoria y tráfico
-        const cpuData = [];
-        const memoryData = [];
-        const trafficData = [];
-        
-        const now = new Date();
-        
-        for (let i = 0; i < points; i++) {
-          // Calcular timestamp según el período
-          let timestamp;
-          switch(period) {
-            case '1h': timestamp = new Date(now - (60 - i) * 60000); break;
-            case '6h': timestamp = new Date(now - (6 * 60 - i * 5) * 60000); break;
-            case '24h': timestamp = new Date(now - (24 * 60 - i * 15) * 60000); break;
-            case '7d': timestamp = new Date(now - (7 * 24 - i) * 3600000); break;
-            case '30d': timestamp = new Date(now - (30 * 24 - i * 4) * 3600000); break;
-            default: timestamp = new Date(now - (60 - i) * 60000);
-          }
-          
-          // Generar datos aleatorios
-          cpuData.push({
-            time: timestamp,
-            value: Math.floor(Math.random() * 25) + 5 // 5-30%
-          });
-          
-          memoryData.push({
-            time: timestamp,
-            value: Math.floor(Math.random() * 40) + 20 // 20-60%
-          });
-          
-          trafficData.push({
-            time: timestamp,
-            rx: Math.floor(Math.random() * 800000) + 200000, // 200K-1M bytes
-            tx: Math.floor(Math.random() * 400000) + 100000  // 100K-500K bytes
-          });
-        }
-        
-        device.historicalData[period] = {
-          cpu: cpuData,
-          memory: memoryData,
-          traffic: trafficData
-        };
-      });
-    });
-  }
-  
-  // Simular test de conexión
-  async testConnection(ipAddress, apiPort, username, password) {
-    // Simular una demora
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Verificar si el dispositivo existe en nuestra simulación
-    if (this.devices[ipAddress]) {
-      return true; // Conexión exitosa
-    }
-    
-    // 50% de probabilidad de éxito para IPs no conocidas
-    return Math.random() > 0.5;
-  }
-  
-  // Obtener información del dispositivo
-  async getDeviceInfo(ipAddress, apiPort, username, password) {
-    // Simular una demora
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Verificar si el dispositivo existe en nuestra simulación
-    if (this.devices[ipAddress]) {
-      const device = this.devices[ipAddress];
-      return {
-        connected: true,
-        info: {
-          name: device.name,
-          model: device.model,
-          serial: device.serial,
-          version: device.version,
-          uptime: device.uptime,
-          cpuLoad: device.cpuLoad,
-          memoryUsage: device.memoryUsage,
-          interfaces: device.interfaces.length,
-          clients: device.clients.length
-        }
-      };
-    }
-    
-    // Para IPs no conocidas, generamos datos aleatorios o devolvemos error
-    if (Math.random() > 0.3) {
-      return {
-        connected: true,
-        info: {
-          name: `Router-${ipAddress.split('.').pop()}`,
-          model: Math.random() > 0.5 ? 'RB3011UiAS' : 'hAP ac2',
-          serial: `SN${Math.floor(Math.random() * 1000000)}`,
-          version: '6.48.6',
-          uptime: `${Math.floor(Math.random() * 10)}d${Math.floor(Math.random() * 24)}h${Math.floor(Math.random() * 60)}m`,
-          cpuLoad: Math.floor(Math.random() * 30) + 5,
-          memoryUsage: Math.floor(Math.random() * 50) + 10,
-          interfaces: Math.floor(Math.random() * 5) + 2,
-          clients: Math.floor(Math.random() * 10)
-        }
-      };
-    } else {
-      throw new Error('No se pudo conectar al dispositivo');
-    }
-  }
-  
-  // Obtener métricas del dispositivo
-  async getMetrics(ipAddress, apiPort, username, password, period) {
-    // Simular una demora
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Verificar si el dispositivo existe en nuestra simulación
-    if (this.devices[ipAddress] && this.devices[ipAddress].historicalData[period]) {
-      return this.devices[ipAddress].historicalData[period];
-    }
-    
-    // Para IPs no conocidas o períodos no válidos, generamos datos aleatorios
-    const points = period === '1h' ? 60 : 
-                  period === '6h' ? 72 : 
-                  period === '24h' ? 96 : 
-                  period === '7d' ? 168 : 180;
-                  
-    const cpuData = [];
-    const memoryData = [];
-    const trafficData = [];
-    
-    const now = new Date();
-    
-    for (let i = 0; i < points; i++) {
-      // Calcular timestamp según el período
-      let timestamp;
-      switch(period) {
-        case '1h': timestamp = new Date(now - (60 - i) * 60000); break;
-        case '6h': timestamp = new Date(now - (6 * 60 - i * 5) * 60000); break;
-        case '24h': timestamp = new Date(now - (24 * 60 - i * 15) * 60000); break;
-        case '7d': timestamp = new Date(now - (7 * 24 - i) * 3600000); break;
-        case '30d': timestamp = new Date(now - (30 * 24 - i * 4) * 3600000); break;
-        default: timestamp = new Date(now - (60 - i) * 60000);
-      }
-      
-      // Generar datos aleatorios
-      cpuData.push({
-        time: timestamp,
-        value: Math.floor(Math.random() * 25) + 5 // 5-30%
-      });
-      
-      memoryData.push({
-        time: timestamp,
-        value: Math.floor(Math.random() * 40) + 20 // 20-60%
-      });
-      
-      trafficData.push({
-        time: timestamp,
-        rx: Math.floor(Math.random() * 800000) + 200000, // 200K-1M bytes
-        tx: Math.floor(Math.random() * 400000) + 100000  // 100K-500K bytes
-      });
-    }
-    
-    return {
-      cpu: cpuData,
-      memory: memoryData,
-      traffic: trafficData
-    };
-  }
-  
-  // Ejecutar acción en el dispositivo
-  async executeAction(ipAddress, apiPort, username, password, action) {
-    // Simular una demora
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Acciones soportadas
-    const supportedActions = ['reboot', 'backup', 'reset-configuration', 'check-update'];
-    
-    if (!supportedActions.includes(action)) {
-      throw new Error(`Acción no soportada: ${action}`);
-    }
-    
-    // 80% de probabilidad de éxito
-    if (Math.random() > 0.2) {
-      return {
-        success: true,
-        message: `Acción ${action} ejecutada exitosamente`,
-        details: action === 'backup' ? { 
-          fileName: `backup-${new Date().toISOString().split('T')[0]}.backup`,
-          size: `${Math.floor(Math.random() * 1000) + 500}KB`,
-          downloadUrl: '#' // En una implementación real, aquí iría la URL para descargar el backup
-        } : null
-      };
-    } else {
-      throw new Error(`Error al ejecutar la acción ${action}`);
-    }
-  }
-}
-
-// Instanciar el simulador
-const mikrotikSimulator = new MikrotikSimulator();
-
+console.log('Cargando mikrotik.service.js con routeros versión:', require('../../package.json').dependencies.routeros);
 // Servicio Mikrotik
 const MikrotikService = {
   // Test de conexión a dispositivo Mikrotik
   testConnection: async (ipAddress, apiPort = 8728, username, password) => {
+    let api = null;
     try {
-      // En producción, usarías la API de RouterOS
-      // const conn = new RouterOSAPI({
-      //   host: ipAddress,
-      //   port: apiPort,
-      //   user: username,
-      //   password: password
-      // });
-      // await conn.connect();
-      // conn.close();
-      // return true;
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 5000
+      });
       
-      // Para desarrollo, usamos el simulador
-      return await mikrotikSimulator.testConnection(ipAddress, apiPort, username, password);
+      // Intentar conectar
+      await api.connect();
+      logger.info(`Conexión exitosa a Mikrotik ${ipAddress}`);
+      return true;
     } catch (error) {
-      console.error(`Error conectando a Mikrotik ${ipAddress}:`, error);
+      logger.error(`Error conectando a Mikrotik ${ipAddress}: ${error.message}`);
       return false;
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
     }
   },
   
   // Obtener información del dispositivo
   getDeviceInfo: async (ipAddress, apiPort = 8728, username, password) => {
+    let api = null;
     try {
-      // En producción, usarías la API de RouterOS
-      // const conn = new RouterOSAPI({
-      //   host: ipAddress,
-      //   port: apiPort,
-      //   user: username,
-      //   password: password
-      // });
-      // await conn.connect();
-      // const identity = await conn.write('/system/identity/print');
-      // const resources = await conn.write('/system/resource/print');
-      // const interfaces = await conn.write('/interface/print');
-      // conn.close();
-      // return {
-      //   connected: true,
-      //   info: {
-      //     name: identity[0].name,
-      //     model: resources[0].board-name,
-      //     // ...y demás propiedades
-      //   }
-      // };
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 10000
+      });
       
-      // Para desarrollo, usamos el simulador
-      return await mikrotikSimulator.getDeviceInfo(ipAddress, apiPort, username, password);
+      // Conectar y obtener información
+      await api.connect();
+      
+      // Obtener identidad del sistema
+      const identity = await api.write('/system/identity/print');
+      
+      // Obtener recursos del sistema
+      const resources = await api.write('/system/resource/print');
+      
+      // Obtener interfaces
+      const interfaces = await api.write('/interface/print');
+      
+      // Obtener clientes conectados (puede variar según la configuración)
+      let clients = [];
+      try {
+        // Intentar obtener clientes PPPoE activos
+        const pppoeClients = await api.write('/ppp/active/print');
+        clients = pppoeClients;
+      } catch (clientError) {
+        logger.warn(`No se pudieron obtener clientes PPPoE de ${ipAddress}: ${clientError.message}`);
+      }
+      
+      // Obtener información de versión
+      const version = resources[0].version;
+      
+      // Formatear uptime
+      const uptimeSeconds = resources[0].uptime;
+      const uptime = formatUptime(uptimeSeconds);
+      
+      return {
+        connected: true,
+        info: {
+          name: identity[0].name,
+          model: resources[0]['board-name'],
+          serial: resources[0]['serial-number'],
+          version: version,
+          uptime: uptime,
+          cpuLoad: resources[0]['cpu-load'],
+          memoryUsage: calculateMemoryPercentage(resources[0]['free-memory'], resources[0]['total-memory']),
+          interfaces: interfaces.length,
+          clients: clients.length
+        }
+      };
     } catch (error) {
-      console.error(`Error obteniendo info de Mikrotik ${ipAddress}:`, error);
+      logger.error(`Error obteniendo info de Mikrotik ${ipAddress}: ${error.message}`);
       return {
         connected: false,
         info: null
       };
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
     }
   },
   
   // Obtener métricas del dispositivo
   getMetrics: async (ipAddress, apiPort = 8728, username, password, period = '1h') => {
+    let api = null;
     try {
-      // En producción, obtendrías datos reales de la API
-      // Para desarrollo, usamos el simulador
-      return await mikrotikSimulator.getMetrics(ipAddress, apiPort, username, password, period);
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 15000
+      });
+      
+      // Conectar
+      await api.connect();
+      
+      // Obtener recursos del sistema para CPU y memoria actuales
+      const resources = await api.write('/system/resource/print');
+      
+      // Obtener datos actuales (RouterOS no guarda historial)
+      const cpuData = [{
+        time: new Date(),
+        value: parseFloat(resources[0]['cpu-load'])
+      }];
+      
+      // Memoria actual
+      const memoryData = [{
+        time: new Date(),
+        value: calculateMemoryPercentage(resources[0]['free-memory'], resources[0]['total-memory'])
+      }];
+      
+      // Obtener estadísticas de tráfico de interfaces
+      const trafficData = [];
+      const interfaces = await api.write('/interface/print');
+      
+      // Para cada interfaz activa, obtener estadísticas
+      for (const iface of interfaces) {
+        if (iface.disabled !== 'true' && iface.running === 'true') {
+          try {
+            // Obtener estadísticas de la interfaz
+            const stats = await api.write('/interface/monitor-traffic', {
+              'interface': iface.name,
+              'once': ''
+            });
+            
+            if (stats && stats.length > 0) {
+              trafficData.push({
+                time: new Date(),
+                interface: iface.name,
+                rx: parseInt(stats[0]['rx-bits-per-second'] || 0),
+                tx: parseInt(stats[0]['tx-bits-per-second'] || 0)
+              });
+            }
+          } catch (error) {
+            logger.error(`Error obteniendo estadísticas de ${iface.name}: ${error.message}`);
+          }
+        }
+      }
+      
+      return {
+        cpu: cpuData,
+        memory: memoryData,
+        traffic: trafficData
+      };
     } catch (error) {
-      console.error(`Error obteniendo métricas de Mikrotik ${ipAddress}:`, error);
+      logger.error(`Error obteniendo métricas de Mikrotik ${ipAddress}: ${error.message}`);
       throw error;
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
+    }
+  },
+  
+  // Obtener todos los usuarios PPPoE
+  getPPPoEUsers: async (ipAddress, apiPort = 8728, username, password) => {
+    let api = null;
+    try {
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 10000
+      });
+      
+      // Conectar
+      await api.connect();
+      
+      // Obtener todos los secretos PPPoE
+      const secrets = await api.write('/ppp/secret/print');
+      
+      // Formatear datos
+      const users = secrets.map(secret => ({
+        id: secret['.id'],
+        name: secret.name,
+        service: secret.service,
+        profile: secret.profile,
+        comment: secret.comment,
+        remoteAddress: secret['remote-address'],
+        callerId: secret['caller-id'],
+        disabled: secret.disabled === 'true'
+      }));
+      
+      return users;
+    } catch (error) {
+      logger.error(`Error obteniendo usuarios PPPoE de Mikrotik ${ipAddress}: ${error.message}`);
+      throw error;
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
+    }
+  },
+  
+  // Obtener sesiones PPPoE activas
+  getActivePPPoESessions: async (ipAddress, apiPort = 8728, username, password) => {
+    let api = null;
+    try {
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 10000
+      });
+      
+      // Conectar
+      await api.connect();
+      
+      // Obtener sesiones activas
+      const sessions = await api.write('/ppp/active/print');
+      
+      // Formatear datos
+      const activeSessions = sessions.map(session => ({
+        id: session['.id'],
+        name: session.name,
+        service: session.service,
+        callerId: session['caller-id'],
+        address: session.address,
+        uptime: session.uptime,
+        encoding: session.encoding
+      }));
+      
+      return activeSessions;
+    } catch (error) {
+      logger.error(`Error obteniendo sesiones PPPoE activas de Mikrotik ${ipAddress}: ${error.message}`);
+      throw error;
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
+    }
+  },
+  
+  // Crear un nuevo usuario PPPoE
+  createPPPoEUser: async (ipAddress, apiPort = 8728, username, password, userData) => {
+    if (!userData.name || !userData.password || !userData.profile) {
+      throw new Error('Se requieren name, password y profile para crear un usuario PPPoE');
+    }
+
+    let api = null;
+    try {
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 10000
+      });
+      
+      // Conectar
+      await api.connect();
+      
+      // Preparar parámetros para la creación del usuario
+      const params = [
+        `=name=${userData.name}`,
+        `=password=${userData.password}`,
+        `=profile=${userData.profile}`,
+        `=service=pppoe`
+      ];
+      
+      // Agregar parámetros opcionales
+      if (userData.remoteAddress) params.push(`=remote-address=${userData.remoteAddress}`);
+      if (userData.callerId) params.push(`=caller-id=${userData.callerId}`);
+      if (userData.comment) params.push(`=comment=${userData.comment}`);
+      if (userData.disabled === true) params.push(`=disabled=yes`);
+
+      // Crear usuario
+      await api.write('/ppp/secret/add', params);
+      logger.info(`Usuario PPPoE ${userData.name} creado exitosamente en ${ipAddress}`);
+      
+      // Obtener el usuario recién creado
+      const users = await api.write('/ppp/secret/print', [`?name=${userData.name}`]);
+      
+      return users[0];
+    } catch (error) {
+      logger.error(`Error al crear usuario PPPoE en Mikrotik ${ipAddress}: ${error.message}`);
+      throw error;
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
+    }
+  },
+  
+  // Actualizar un usuario PPPoE existente
+  updatePPPoEUser: async (ipAddress, apiPort = 8728, username, password, id, userData) => {
+    if (!id) {
+      throw new Error('Se requiere el ID para actualizar un usuario PPPoE');
+    }
+
+    let api = null;
+    try {
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 10000
+      });
+      
+      // Conectar
+      await api.connect();
+      
+      // Construir parámetros de actualización
+      const params = [`=.id=${id}`];
+      
+      if (userData.name) params.push(`=name=${userData.name}`);
+      if (userData.password) params.push(`=password=${userData.password}`);
+      if (userData.profile) params.push(`=profile=${userData.profile}`);
+      if (userData.remoteAddress) params.push(`=remote-address=${userData.remoteAddress}`);
+      if (userData.callerId) params.push(`=caller-id=${userData.callerId}`);
+      if (userData.comment) params.push(`=comment=${userData.comment}`);
+      if (userData.disabled !== undefined) params.push(`=disabled=${userData.disabled ? 'yes' : 'no'}`);
+
+      // Actualizar usuario
+      await api.write('/ppp/secret/set', params);
+      logger.info(`Usuario PPPoE con ID ${id} actualizado correctamente en ${ipAddress}`);
+      
+      // Obtener el usuario actualizado
+      const users = await api.write('/ppp/secret/print', [`?.id=${id}`]);
+      
+      return users[0];
+    } catch (error) {
+      logger.error(`Error al actualizar usuario PPPoE en Mikrotik ${ipAddress}: ${error.message}`);
+      throw error;
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
+    }
+  },
+  
+  // Eliminar un usuario PPPoE
+  deletePPPoEUser: async (ipAddress, apiPort = 8728, username, password, id) => {
+    if (!id) {
+      throw new Error('Se requiere el ID para eliminar un usuario PPPoE');
+    }
+
+    let api = null;
+    try {
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 10000
+      });
+      
+      // Conectar
+      await api.connect();
+      
+      // Eliminar usuario
+      await api.write('/ppp/secret/remove', [`=.id=${id}`]);
+      
+      logger.info(`Usuario PPPoE con ID ${id} eliminado correctamente en ${ipAddress}`);
+      return true;
+    } catch (error) {
+      logger.error(`Error al eliminar usuario PPPoE en Mikrotik ${ipAddress}: ${error.message}`);
+      throw error;
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
+    }
+  },
+  
+  // Obtener estadísticas de tráfico para una interfaz
+  getTrafficStatistics: async (ipAddress, apiPort = 8728, username, password, interfaceName) => {
+    if (!interfaceName) {
+      throw new Error('Se requiere el nombre de la interfaz');
+    }
+
+    let api = null;
+    try {
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 10000
+      });
+      
+      // Conectar
+      await api.connect();
+      
+      // Obtener información de la interfaz
+      const interfaces = await api.write('/interface/print', [`?name=${interfaceName}`]);
+      
+      if (interfaces.length === 0) {
+        throw new Error(`Interfaz ${interfaceName} no encontrada`);
+      }
+      
+      // Obtener estadísticas detalladas
+      const statistics = await api.write('/interface/monitor-traffic', {
+        'interface': interfaceName,
+        'once': ''
+      });
+      
+      return {
+        interface: interfaces[0],
+        statistics: statistics[0]
+      };
+    } catch (error) {
+      logger.error(`Error al obtener estadísticas de tráfico en Mikrotik ${ipAddress}: ${error.message}`);
+      throw error;
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
+    }
+  },
+  
+  // Configurar una regla de QoS para un cliente
+  configureQoS: async (ipAddress, apiPort = 8728, username, password, qosData) => {
+    if (!qosData.target || !qosData.maxLimit) {
+      throw new Error('Se requiere target y maxLimit para la configuración de QoS');
+    }
+
+    let api = null;
+    try {
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 10000
+      });
+      
+      // Conectar
+      await api.connect();
+      
+      // Crear regla de queue simple
+      const params = [
+        `=name=${qosData.name}`,
+        `=target=${qosData.target}`,
+        `=max-limit=${qosData.maxLimit}`
+      ];
+      
+      // Parámetros opcionales
+      if (qosData.parentQueueId) params.push(`=parent=${qosData.parentQueueId}`);
+      if (qosData.priority) params.push(`=priority=${qosData.priority}`);
+      if (qosData.burst) params.push(`=burst-limit=${qosData.burst}`);
+      if (qosData.burstTime) params.push(`=burst-time=${qosData.burstTime}`);
+      if (qosData.burstThreshold) params.push(`=burst-threshold=${qosData.burstThreshold}`);
+      
+      // Crear regla QoS
+      await api.write('/queue/simple/add', params);
+      logger.info(`Regla QoS para ${qosData.name} configurada correctamente en ${ipAddress}`);
+      
+      // Obtener la regla creada
+      const rules = await api.write('/queue/simple/print', [`?name=${qosData.name}`]);
+      
+      return rules[0];
+    } catch (error) {
+      logger.error(`Error al configurar QoS en Mikrotik ${ipAddress}: ${error.message}`);
+      throw error;
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
+    }
+  },
+  
+  // Eliminar una regla de QoS (función auxiliar)
+  deleteQoSRule: async (ipAddress, apiPort = 8728, username, password, qosId) => {
+    if (!qosId) {
+      throw new Error('Se requiere el ID para eliminar una regla QoS');
+    }
+
+    let api = null;
+    try {
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 10000
+      });
+      
+      // Conectar
+      await api.connect();
+      
+      // Eliminar regla QoS
+      await api.write('/queue/simple/remove', [`=.id=${qosId}`]);
+      
+      logger.info(`Regla QoS con ID ${qosId} eliminada correctamente en ${ipAddress}`);
+      return true;
+    } catch (error) {
+      logger.error(`Error al eliminar regla QoS en Mikrotik ${ipAddress}: ${error.message}`);
+      throw error;
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
+    }
+  },
+  
+  // Obtener perfiles de PPPoE disponibles
+  getPPPoEProfiles: async (ipAddress, apiPort = 8728, username, password) => {
+    let api = null;
+    try {
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 10000
+      });
+      
+      // Conectar
+      await api.connect();
+      
+      // Obtener perfiles
+      const profiles = await api.write('/ppp/profile/print');
+      
+      // Formatear datos
+      const formattedProfiles = profiles.map(profile => ({
+        id: profile['.id'],
+        name: profile.name,
+        localAddress: profile['local-address'],
+        remoteAddress: profile['remote-address'],
+        rateLimit: profile['rate-limit'],
+        onlyOne: profile['only-one'] === 'yes'
+      }));
+      
+      return formattedProfiles;
+    } catch (error) {
+      logger.error(`Error al obtener perfiles PPPoE de Mikrotik ${ipAddress}: ${error.message}`);
+      throw error;
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
+    }
+  },
+  
+  // Reiniciar una sesión PPPoE activa
+  restartPPPoESession: async (ipAddress, apiPort = 8728, username, password, id) => {
+    if (!id) {
+      throw new Error('Se requiere el ID de la sesión PPPoE');
+    }
+
+    let api = null;
+    try {
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 10000
+      });
+      
+      // Conectar
+      await api.connect();
+      
+      // Eliminar sesión activa (esto forzará una reconexión)
+      await api.write('/ppp/active/remove', [`=.id=${id}`]);
+      
+      logger.info(`Sesión PPPoE con ID ${id} reiniciada correctamente en ${ipAddress}`);
+      return true;
+    } catch (error) {
+      logger.error(`Error al reiniciar sesión PPPoE en Mikrotik ${ipAddress}: ${error.message}`);
+      throw error;
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
     }
   },
   
   // Ejecutar acción en el dispositivo
   executeAction: async (ipAddress, apiPort = 8728, username, password, action) => {
+    let api = null;
     try {
-      // En producción, ejecutarías comandos reales
-      // Para desarrollo, usamos el simulador
-      return await mikrotikSimulator.executeAction(ipAddress, apiPort, username, password, action);
+      // Crear la conexión
+      api = new RouterOSAPI({
+        host: ipAddress,
+        port: apiPort,
+        user: username,
+        password: password,
+        timeout: 15000
+      });
+      
+      // Conectar
+      await api.connect();
+      
+      // Ejecutar acción según el tipo
+      switch (action) {
+        case 'reboot':
+          // Reiniciar el router
+          await api.write('/system/reboot');
+          return {
+            success: true,
+            message: 'Comando de reinicio enviado exitosamente',
+            details: null
+          };
+          
+        case 'backup':
+          // Crear backup
+          const backupName = `backup-${new Date().toISOString().split('T')[0].replace(/-/g, '')}`;
+          await api.write('/system/backup/save', [`=name=${backupName}`]);
+          
+          return {
+            success: true,
+            message: 'Backup creado exitosamente',
+            details: {
+              fileName: `${backupName}.backup`
+            }
+          };
+          
+        case 'reset-configuration':
+          // Resetear configuración (peligroso)
+          await api.write('/system/reset-configuration', [
+            '=no-defaults=no',
+            '=skip-backup=no',
+            '=run-after-reset='
+          ]);
+          
+          return {
+            success: true,
+            message: 'Comando de reset de configuración enviado exitosamente',
+            details: null
+          };
+          
+        case 'check-update':
+          // Verificar actualizaciones
+          await api.write('/system/package/update/check-for-updates');
+          const updates = await api.write('/system/package/update/print');
+          
+          return {
+            success: true,
+            message: 'Verificación de actualizaciones completada',
+            details: updates.length > 0 ? {
+              available: true,
+              channel: updates[0].channel,
+              version: updates[0]['latest-version']
+            } : {
+              available: false
+            }
+          };
+          
+        default:
+          throw new Error(`Acción no soportada: ${action}`);
+      }
     } catch (error) {
-      console.error(`Error ejecutando acción ${action} en Mikrotik ${ipAddress}:`, error);
+      logger.error(`Error ejecutando acción ${action} en Mikrotik ${ipAddress}: ${error.message}`);
       throw error;
+    } finally {
+      // Cerrar conexión si se estableció
+      if (api && api.connected) {
+        api.close();
+      }
     }
   }
 };
+
+// Funciones auxiliares
+function calculateMemoryPercentage(freeMemory, totalMemory) {
+  freeMemory = parseInt(freeMemory);
+  totalMemory = parseInt(totalMemory);
+  
+  if (isNaN(freeMemory) || isNaN(totalMemory) || totalMemory === 0) {
+    return 0;
+  }
+  
+  const usedMemory = totalMemory - freeMemory;
+  return Math.round((usedMemory / totalMemory) * 100);
+}
+
+function formatUptime(seconds) {
+  if (typeof seconds === 'string') {
+    // Si ya está en formato de texto, devolverlo
+    if (seconds.includes('d') || seconds.includes('h') || seconds.includes('m')) {
+      return seconds;
+    }
+    
+    // Intentar convertir a número
+    seconds = parseInt(seconds);
+    if (isNaN(seconds)) {
+      return '0d0h0m';
+    }
+  }
+  
+  const days = Math.floor(seconds / 86400);
+  seconds %= 86400;
+  const hours = Math.floor(seconds / 3600);
+  seconds %= 3600;
+  const minutes = Math.floor(seconds / 60);
+  
+  return `${days}d${hours}h${minutes}m`;
+}
 
 module.exports = MikrotikService;

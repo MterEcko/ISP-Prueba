@@ -25,65 +25,7 @@ const db = require('./models');
 // Sincronizar base de datos (solo una vez)
 db.sequelize.sync({ force: false }).then(async () => {
   console.log('Base de datos sincronizada');
-  
-  // Verificar si ya existen datos en la tabla de nodos
-  const nodeCount = await db.Node.count();
-  if (nodeCount === 0) {
-    // Solo crear datos si no hay nodos
-    try {
-      // Crear un par de nodos de ejemplo
-      const node1 = await db.Node.create({
-        name: "Nodo Principal",
-        location: "Centro",
-        latitude: 19.4326,
-        longitude: -99.1332,
-        active: true
-      });
-      
-      const node2 = await db.Node.create({
-        name: "Nodo Secundario",
-        location: "Norte",
-        latitude: 19.4526,
-        longitude: -99.1232,
-        active: true
-      });
-      
-      // Crear sectores para estos nodos
-      await db.Sector.create({
-        name: "Sector 1",
-        description: "Sector principal norte",
-        frequency: "5.8 GHz",
-        azimuth: 0,
-        polarization: "vertical",
-        active: true,
-        nodeId: node1.id
-      });
-      
-      await db.Sector.create({
-        name: "Sector 2",
-        description: "Sector principal este",
-        frequency: "5.8 GHz",
-        azimuth: 90,
-        polarization: "vertical",
-        active: true,
-        nodeId: node1.id
-      });
-      
-      await db.Sector.create({
-        name: "Sector Norte",
-        description: "Sector norte",
-        frequency: "5.8 GHz",
-        azimuth: 0,
-        polarization: "horizontal",
-        active: true,
-        nodeId: node2.id
-      });
-      
-      console.log("Datos iniciales de red creados");
-    } catch (error) {
-      console.error("Error al crear datos iniciales de red:", error);
-    }
-  }
+  initial(); // Cargar datos iniciales mínimos
 }).catch(err => {
   console.error('Error al sincronizar la base de datos:', err);
 });
@@ -99,8 +41,80 @@ require('./routes/client.routes')(app);
 require('./routes/network.routes')(app);
 require('./routes/device.routes')(app);
 require('./routes/ticket.routes')(app);
+// Nuevas rutas para Mikrotik
+require('./routes/mikrotik.routes')(app);
+require('./routes/client.mikrotik.routes')(app);
 
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en el puerto ${PORT}`);
 });
+
+// Función para crear datos iniciales mínimos si no existen
+async function initial() {
+  try {
+    // Importar modelos
+    const Role = db.Role;
+    const Permission = db.Permission;
+    const User = db.User;
+    
+    // Verificar si ya existen roles
+    const roleCount = await Role.count();
+    if (roleCount === 0) {
+      // Crear roles
+      await Role.bulkCreate([
+        { name: "cliente", description: "Usuario cliente", level: 1, category: "cliente" },
+        { name: "tecnico", description: "Técnico de campo", level: 2, category: "tecnico" },
+        { name: "admin", description: "Administrador", level: 5, category: "admin" }
+      ]);
+      console.log("Roles creados");
+    }
+
+    // Verificar si ya existen permisos
+    const permissionCount = await Permission.count();
+    if (permissionCount === 0) {
+      // Crear permisos básicos
+      await Permission.bulkCreate([
+        { name: "view_dashboard", description: "Ver dashboard", module: "dashboard" },
+        { name: "manage_clients", description: "Gestionar clientes", module: "clients" },
+        { name: "view_network", description: "Ver estado de red", module: "network" },
+        { name: "manage_network", description: "Gestionar red", module: "network" },
+        { name: "view_billing", description: "Ver facturación", module: "billing" },
+        { name: "manage_billing", description: "Gestionar facturación", module: "billing" },
+        { name: "view_tickets", description: "Ver tickets", module: "tickets" },
+        { name: "manage_tickets", description: "Gestionar tickets", module: "tickets" }
+      ]);
+      console.log("Permisos creados");
+    }
+
+    // Asignar permisos a roles si no se ha hecho
+    const adminRole = await Role.findOne({ where: { name: "admin" } });
+    if (adminRole) {
+      const permissions = await Permission.findAll();
+      
+      // Verificar si ya existen relaciones entre roles y permisos
+      const rolePermissions = await adminRole.getPermissions();
+      if (rolePermissions.length === 0) {
+        await adminRole.addPermissions(permissions);
+        console.log("Permisos asignados al rol de administrador");
+      }
+
+      // Verificar si ya existe el usuario administrador
+      const adminExists = await User.findOne({ where: { username: "admin" } });
+      if (!adminExists) {
+        // Crear usuario admin
+        await User.create({
+          username: "admin",
+          email: "admin@example.com",
+          password: "admin123", // En producción usar contraseña segura
+          fullName: "Administrador",
+          roleId: adminRole.id
+        });
+        console.log("Usuario administrador creado - username: admin, password: admin123");
+      }
+    }
+
+  } catch (error) {
+    console.error("Error al crear datos iniciales:", error);
+  }
+}
