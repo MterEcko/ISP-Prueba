@@ -124,6 +124,17 @@ module.exports = function(app) {
   );
   
   /**
+   * @route    GET /api/mikrotik/devices/:id/ip-pools
+   * @desc     Obtener IP Pools disponibles en un dispositivo
+   * @access   Privado (Admin, Técnico)
+   */
+  app.get(
+    "/api/mikrotik/devices/:id/ip-pools",
+    [authJwt.verifyToken, authJwt.checkRole('technician')],
+    MikrotikController.getIPPools
+  );
+  
+  /**
    * @route    POST /api/mikrotik/devices/:deviceId/qos
    * @desc     Configurar QoS para un cliente
    * @access   Privado (Admin)

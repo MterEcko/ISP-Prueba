@@ -183,6 +183,7 @@ const MikrotikService = {
   getPPPoEUsers: async (ipAddress, apiPort = 8728, username, password) => {
     let api = null;
     try {
+		logger.info(`Intentando obtener usuarios PPPoE de ${ipAddress}:${apiPort} con usuario ${username}`);
       // Crear la conexión
       api = new RouterOSAPI({
         host: ipAddress,
@@ -210,6 +211,7 @@ const MikrotikService = {
         disabled: secret.disabled === 'true'
       }));
       
+	
       return users;
     } catch (error) {
       logger.error(`Error obteniendo usuarios PPPoE de Mikrotik ${ipAddress}: ${error.message}`);
@@ -217,6 +219,7 @@ const MikrotikService = {
     } finally {
       // Cerrar conexión si se estableció
       if (api && api.connected) {
+		  
         api.close();
       }
     }
@@ -226,6 +229,7 @@ const MikrotikService = {
   getActivePPPoESessions: async (ipAddress, apiPort = 8728, username, password) => {
     let api = null;
     try {
+		logger.info(`Intentando obtener sesiones PPPoE con estadísticas de ${ipAddress}:${apiPort} con usuario ${username}`);
       // Crear la conexión
       api = new RouterOSAPI({
         host: ipAddress,
@@ -251,6 +255,7 @@ const MikrotikService = {
         uptime: session.uptime,
         encoding: session.encoding
       }));
+	  
       
       return activeSessions;
     } catch (error) {
@@ -264,14 +269,12 @@ const MikrotikService = {
     }
   },
   
-  // Crear un nuevo usuario PPPoE
-  createPPPoEUser: async (ipAddress, apiPort = 8728, username, password, userData) => {
-    if (!userData.name || !userData.password || !userData.profile) {
-      throw new Error('Se requieren name, password y profile para crear un usuario PPPoE');
-    }
-
+  // Obtener IP Pools disponibles con sus comentarios
+  getIPPools: async (ipAddress, apiPort = 8728, username, password) => {
     let api = null;
     try {
+      logger.info(`Intentando obtener IP pools de ${ipAddress}:${apiPort}`);
+      
       // Crear la conexión
       api = new RouterOSAPI({
         host: ipAddress,
@@ -284,88 +287,202 @@ const MikrotikService = {
       // Conectar
       await api.connect();
       
-      // Preparar parámetros para la creación del usuario
-      const params = [
-        `=name=${userData.name}`,
-        `=password=${userData.password}`,
-        `=profile=${userData.profile}`,
-        `=service=pppoe`
-      ];
+      // Obtener todos los IP pools
+      const pools = await api.write('/ip/pool/print');
       
-      // Agregar parámetros opcionales
-      if (userData.remoteAddress) params.push(`=remote-address=${userData.remoteAddress}`);
-      if (userData.callerId) params.push(`=caller-id=${userData.callerId}`);
-      if (userData.comment) params.push(`=comment=${userData.comment}`);
-      if (userData.disabled === true) params.push(`=disabled=yes`);
-
-      // Crear usuario
-      await api.write('/ppp/secret/add', params);
-      logger.info(`Usuario PPPoE ${userData.name} creado exitosamente en ${ipAddress}`);
+      // Formatear datos
+      const formattedPools = pools.map(pool => ({
+        id: pool['.id'],
+        name: pool.name,
+        ranges: pool.ranges,
+        comment: pool.comment || '',
+        nextPool: pool['next-pool'] || null,
+        // Información adicional útil
+        usedIPs: pool['used-count'] || 0,
+        totalIPs: pool['total-count'] || 0
+      }));
       
-      // Obtener el usuario recién creado
-      const users = await api.write('/ppp/secret/print', [`?name=${userData.name}`]);
-      
-      return users[0];
+      logger.info(`Encontrados ${formattedPools.length} IP pools`);
+      return formattedPools;
     } catch (error) {
-      logger.error(`Error al crear usuario PPPoE en Mikrotik ${ipAddress}: ${error.message}`);
+      logger.error(`Error obteniendo IP pools de Mikrotik ${ipAddress}: ${error.message}`);
       throw error;
     } finally {
-      // Cerrar conexión si se estableció
       if (api && api.connected) {
         api.close();
       }
     }
   },
   
-  // Actualizar un usuario PPPoE existente
-  updatePPPoEUser: async (ipAddress, apiPort = 8728, username, password, id, userData) => {
-    if (!id) {
-      throw new Error('Se requiere el ID para actualizar un usuario PPPoE');
+  // Crear un nuevo usuario PPPoE
+  // ALTERNATIVA: Crear usuarios con pool específico usando perfiles dinámicos
+  createPPPoEUser: async (ipAddress, apiPort = 8728, username, password, userData) => {
+    if (!userData.name || !userData.password || !userData.profile) {
+    throw new Error('Se requieren name, password y profile para crear un usuario PPPoE');
     }
 
     let api = null;
     try {
-      // Crear la conexión
-      api = new RouterOSAPI({
-        host: ipAddress,
-        port: apiPort,
-        user: username,
-        password: password,
-        timeout: 10000
-      });
+    // Crear la conexión
+    api = new RouterOSAPI({
+      host: ipAddress,
+      port: apiPort,
+      user: username,
+      password: password,
+      timeout: 10000
+    });
+    
+    // Conectar
+    await api.connect();
+    
+    let finalProfile = userData.profile;
+    
+    // Si el usuario especificó un pool diferente, crear un perfil personalizado
+    if (userData.remoteAddress && !userData.remoteAddress.includes('.')) {
+      // Es un pool específico
+      const customProfileName = `${userData.profile}_${userData.remoteAddress}`;
       
-      // Conectar
-      await api.connect();
+      // Verificar si el perfil personalizado ya existe
+      const existingProfiles = await api.write('/ppp/profile/print', [`?name=${customProfileName}`]);
       
-      // Construir parámetros de actualización
-      const params = [`=.id=${id}`];
+      if (existingProfiles.length === 0) {
+      // El perfil personalizado no existe, crearlo basado en el perfil base
+      const baseProfile = await api.write('/ppp/profile/print', [`?name=${userData.profile}`]);
       
-      if (userData.name) params.push(`=name=${userData.name}`);
-      if (userData.password) params.push(`=password=${userData.password}`);
-      if (userData.profile) params.push(`=profile=${userData.profile}`);
-      if (userData.remoteAddress) params.push(`=remote-address=${userData.remoteAddress}`);
-      if (userData.callerId) params.push(`=caller-id=${userData.callerId}`);
-      if (userData.comment) params.push(`=comment=${userData.comment}`);
-      if (userData.disabled !== undefined) params.push(`=disabled=${userData.disabled ? 'yes' : 'no'}`);
-
-      // Actualizar usuario
-      await api.write('/ppp/secret/set', params);
-      logger.info(`Usuario PPPoE con ID ${id} actualizado correctamente en ${ipAddress}`);
-      
-      // Obtener el usuario actualizado
-      const users = await api.write('/ppp/secret/print', [`?.id=${id}`]);
-      
-      return users[0];
-    } catch (error) {
-      logger.error(`Error al actualizar usuario PPPoE en Mikrotik ${ipAddress}: ${error.message}`);
-      throw error;
-    } finally {
-      // Cerrar conexión si se estableció
-      if (api && api.connected) {
-        api.close();
+      if (baseProfile.length > 0) {
+        const profile = baseProfile[0];
+        
+        // Crear el perfil personalizado
+        const profileParams = [
+        `=name=${customProfileName}`,
+        `=address-list=${profile['address-list'] || ''}`
+        ];
+        
+        // Copiar todas las configuraciones del perfil base
+        if (profile['local-address']) profileParams.push(`=local-address=${profile['local-address']}`);
+        if (profile['rate-limit']) profileParams.push(`=rate-limit=${profile['rate-limit']}`);
+        if (profile['only-one']) profileParams.push(`=only-one=${profile['only-one']}`);
+        if (profile['interface-list']) profileParams.push(`=interface-list=${profile['interface-list']}`);
+        if (profile['address-list']) profileParams.push(`=address-list=${profile['address-list']}`);
+        if (profile['dns-server']) profileParams.push(`=dns-server=${profile['dns-server']}`);
+        
+        // IMPORTANTE: Asignar el pool específico
+        profileParams.push(`=remote-address=${userData.remoteAddress}`);
+        
+        logger.info(`Creando perfil personalizado: ${customProfileName} con pool: ${userData.remoteAddress}`);
+        await api.write('/ppp/profile/add', profileParams);
       }
+      }
+      
+      finalProfile = customProfileName;
+    }
+    
+    // Crear el usuario con el perfil (puede ser el original o el personalizado)
+    const params = [
+      `=name=${userData.name}`,
+      `=password=${userData.password}`,
+      `=profile=${finalProfile}`,
+      `=service=pppoe`
+    ];
+    
+    // Si es una IP específica (no un pool), agregarla
+    if (userData.remoteAddress && userData.remoteAddress.includes('.')) {
+      params.push(`=remote-address=${userData.remoteAddress}`);
+    }
+    
+    // Agregar otros parámetros opcionales
+    if (userData.callerId) params.push(`=caller-id=${userData.callerId}`);
+    if (userData.comment) params.push(`=comment=${userData.comment}`);
+    if (userData.disabled === true) params.push(`=disabled=yes`);
+    
+    logger.info(`Creando usuario con perfil: ${finalProfile}`);
+    logger.info(`Parámetros finales: ${JSON.stringify(params)}`);
+
+    // Crear usuario
+    await api.write('/ppp/secret/add', params);
+    logger.info(`Usuario PPPoE ${userData.name} creado exitosamente en ${ipAddress}`);
+    
+    // Obtener el usuario recién creado
+    const users = await api.write('/ppp/secret/print', [`?name=${userData.name}`]);
+    
+    return users[0];
+    } catch (error) {
+    logger.error(`Error al crear usuario PPPoE en Mikrotik ${ipAddress}: ${error.message}`);
+    throw error;
+    } finally {
+    // Cerrar conexión si se estableció
+    if (api && api.connected) {
+      api.close();
+    }
     }
   },
+
+
+  // Actualizar un usuario PPPoE existente
+  // Actualizar un usuario PPPoE existente - VERSIÓN CORREGIDA
+  updatePPPoEUser: async (ipAddress, apiPort = 8728, username, password, id, userData) => {
+    if (!id) {
+    throw new Error('Se requiere el ID para actualizar un usuario PPPoE');
+    }
+
+    let api = null;
+    try {
+    // Crear la conexión
+    api = new RouterOSAPI({
+      host: ipAddress,
+      port: apiPort,
+      user: username,
+      password: password,
+      timeout: 10000
+    });
+    
+    // Conectar
+    await api.connect();
+    
+    // Construir parámetros de actualización
+    const params = [`=.id=${id}`];
+    
+    if (userData.name) params.push(`=name=${userData.name}`);
+    if (userData.password) params.push(`=password=${userData.password}`);
+    if (userData.profile) params.push(`=profile=${userData.profile}`);
+    
+    // MANEJAR remoteAddress (que puede ser IP específica o pool)
+    if (userData.remoteAddress) {
+      // Si remoteAddress no contiene puntos, asumimos que es un pool
+      if (!userData.remoteAddress.includes('.')) {
+      // Es un pool, usarlo directamente
+      params.push(`=remote-address=${userData.remoteAddress}`);
+      logger.info(`Usuario con ID ${id} será actualizado con pool: ${userData.remoteAddress}`);
+      } else {
+      // Es una IP específica
+      params.push(`=remote-address=${userData.remoteAddress}`);
+      logger.info(`Usuario con ID ${id} será actualizado con IP específica: ${userData.remoteAddress}`);
+      }
+    }
+    
+    if (userData.callerId) params.push(`=caller-id=${userData.callerId}`);
+    if (userData.comment) params.push(`=comment=${userData.comment}`);
+    if (userData.disabled !== undefined) params.push(`=disabled=${userData.disabled ? 'yes' : 'no'}`);
+
+    // Actualizar usuario
+    await api.write('/ppp/secret/set', params);
+    logger.info(`Usuario PPPoE con ID ${id} actualizado correctamente en ${ipAddress}`);
+    
+    // Obtener el usuario actualizado
+    const users = await api.write('/ppp/secret/print', [`?.id=${id}`]);
+    
+    return users[0];
+    } catch (error) {
+    logger.error(`Error al actualizar usuario PPPoE en Mikrotik ${ipAddress}: ${error.message}`);
+    throw error;
+    } finally {
+    // Cerrar conexión si se estableció
+    if (api && api.connected) {
+      api.close();
+    }
+    }
+  },
+  
   
   // Eliminar un usuario PPPoE
   deletePPPoEUser: async (ipAddress, apiPort = 8728, username, password, id) => {
