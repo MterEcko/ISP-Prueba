@@ -19,11 +19,12 @@
 
 ## Descripción
 
-Sistema completo para gestión de proveedores de servicios de internet (ISP), con funcionalidades integradas para administración de clientes, monitoreo de red, gestión de tickets, facturación y servicios de streaming.
+Sistema completo para gestión de proveedores de servicios de internet (ISP), con funcionalidades integradas para administración de clientes, monitoreo de red, gestión de tickets, facturación, servicios de streaming y comunicaciones multicanal.
 
 <div id="características"></div>
 
 ## Funcionalidades Principales
+
 <details>
 <summary><strong>📊 Dashboard Centralizado</strong></summary>
 Panel de control con visualización en tiempo real de métricas clave, estado de red, tickets pendientes e información financiera.
@@ -47,7 +48,8 @@ Administración completa de clientes con:
   <li>Visualización de estado de nodos, sectores y dispositivos</li>
   <li>Métricas en tiempo real de tráfico y calidad de conexión</li>
   <li>Alertas y notificaciones automáticas</li>
-  <li>Gestión de equipos Mikrotik y Ubiquiti</li>
+  <li>Gestión de equipos Mikrotik, Ubiquiti y TP-Link Pharos</li>
+  <li>Monitoreo vía SNMP</li>
 </ul>
 </details>
 
@@ -58,6 +60,7 @@ Administración completa de clientes con:
   <li>Asignación a técnicos con niveles de prioridad</li>
   <li>Historial de comunicaciones</li>
   <li>Métricas de tiempo de resolución</li>
+  <li>Base de conocimiento integrada</li>
 </ul>
 </details>
 
@@ -68,6 +71,7 @@ Administración completa de clientes con:
   <li>Estados de cuenta por cliente</li>
   <li>Recordatorios automáticos</li>
   <li>Informes financieros</li>
+  <li>Integración con Mercado Pago</li>
 </ul>
 </details>
 
@@ -77,12 +81,54 @@ Administración completa de clientes con:
   <li>Gestión de cuentas de streaming</li>
   <li>Automatización con JFA-GO</li>
   <li>Control de accesos según plan contratado</li>
+  <li>Invitaciones automáticas por correo</li>
+</ul>
+</details>
+
+<details>
+<summary><strong>💬 Comunicaciones Multicanal</strong></summary>
+<ul>
+  <li>Notificaciones por correo electrónico</li>
+  <li>Integración con WhatsApp</li>
+  <li>Bot de Telegram para alertas técnicas</li>
+  <li>Plantillas personalizables</li>
+  <li>Envíos masivos y programados</li>
+</ul>
+</details>
+
+<details>
+<summary><strong>📊 Inventario</strong></summary>
+<ul>
+  <li>Gestión de equipos y materiales</li>
+  <li>Códigos QR para seguimiento</li>
+  <li>Control de stock y alertas</li>
+  <li>Historial de movimientos</li>
+</ul>
+</details>
+
+<details>
+<summary><strong>🗺️ Integración con Mapas</strong></summary>
+<ul>
+  <li>OpenStreetMap con Leaflet.js</li>
+  <li>Visualización de clientes y antenas</li>
+  <li>Geolocalización automática</li>
+  <li>Datos de ubicación por IP</li>
 </ul>
 </details>
 
 <details>
 <summary><strong>🔐 Sistema Avanzado de Permisos</strong></summary>
 Control de acceso granular basado en roles y permisos específicos para cada módulo y función.
+</details>
+
+<details>
+<summary><strong>🔍 Búsqueda Global</strong></summary>
+<ul>
+  <li>Búsqueda unificada en todos los módulos</li>
+  <li>Resultados categorizados</li>
+  <li>Filtros avanzados</li>
+  <li>Autocompletado inteligente</li>
+</ul>
 </details>
 
 <div id="tecnologías"></div>
@@ -103,6 +149,8 @@ Control de acceso granular basado en roles y permisos específicos para cada mó
         <li>Vue Router</li>
         <li>CSS personalizado</li>
         <li>Responsive Design</li>
+        <li>Leaflet.js (mapas)</li>
+        <li>Chart.js (gráficos)</li>
       </ul>
     </td>
     <td>
@@ -113,6 +161,7 @@ Control de acceso granular basado en roles y permisos específicos para cada mó
         <li>PostgreSQL (producción)</li>
         <li>Sequelize ORM</li>
         <li>JWT Authentication</li>
+        <li>Passport.js</li>
       </ul>
     </td>
     <td>
@@ -121,6 +170,7 @@ Control de acceso granular basado en roles y permisos específicos para cada mó
         <li>Docker Compose</li>
         <li>Nginx</li>
         <li>Ubuntu Server</li>
+        <li>Let's Encrypt</li>
       </ul>
     </td>
   </tr>
@@ -138,6 +188,10 @@ Control de acceso granular basado en roles y permisos específicos para cada mó
     <td>Gestión de equipos Ubiquiti</td>
   </tr>
   <tr>
+    <td><strong>TP-Link Pharos</strong></td>
+    <td>Monitoreo de CPEs vía SNMP</td>
+  </tr>
+  <tr>
     <td><strong>Jellyfin API</strong></td>
     <td>Integración con servidor de streaming</td>
   </tr>
@@ -145,7 +199,71 @@ Control de acceso granular basado en roles y permisos específicos para cada mó
     <td><strong>JFA-GO</strong></td>
     <td>Automatización de invitaciones para Jellyfin</td>
   </tr>
+  <tr>
+    <td><strong>WhatsApp Web.js</strong></td>
+    <td>Comunicación por WhatsApp</td>
+  </tr>
+  <tr>
+    <td><strong>Telegram Bot API</strong></td>
+    <td>Notificaciones técnicas</td>
+  </tr>
+  <tr>
+    <td><strong>SendGrid</strong></td>
+    <td>Envío de correos electrónicos</td>
+  </tr>
+  <tr>
+    <td><strong>Mercado Pago API</strong></td>
+    <td>Procesamiento de pagos en Latinoamérica</td>
+  </tr>
+  <tr>
+    <td><strong>PayPal API</strong></td>
+    <td>Procesamiento de pagos internacionales</td>
+  </tr>
+  <tr>
+    <td><strong>CFDI Generator</strong></td>
+    <td>Facturación electrónica para México (SAT)</td>
+  </tr>
 </table>
+
+### Bibliotecas y Dependencias
+
+<details>
+<summary>Bibliotecas Backend Instaladas</summary>
+
+**Comunicaciones:**
+- `nodemailer` - Envío de emails
+- `whatsapp-web.js` - WhatsApp integration
+- `telegraf` - Telegram Bot API
+
+**APIs de Red:**
+- `routeros` - Mikrotik RouterOS API
+- `axios` - Cliente HTTP para APIs REST
+- `snmp-native` - Monitoreo SNMP
+
+**Utilidades:**
+- `pdfkit` - Generación de PDFs
+- `qrcode` - Generación de códigos QR
+- `speakeasy` - Two-Factor Authentication
+- `moment` - Manejo de fechas
+- `lodash` - Utilidades de JavaScript
+
+**Google APIs:**
+- `googleapis` - Google Calendar, Drive APIs
+- `firebase-admin` - Firebase Cloud Messaging
+- `@google-cloud/storage` - Google Cloud Storage
+
+**Monitoreo:**
+- `winston` - Sistema de logging
+- `morgan` - HTTP request logging
+- `node-cron` - Tareas programadas
+- `express-rate-limit` - Limitación de requests
+
+**Pagos y Facturación:**
+- `mercadopago` - MercadoPago SDK
+- `@paypal/checkout-server-sdk` - PayPal SDK
+- `cfdi-generator` - Facturación electrónica México (SAT)
+
+</details>
 
 <div id="estado-del-proyecto"></div>
 
@@ -159,19 +277,26 @@ El proyecto se encuentra en desarrollo activo. A continuación, se detalla el es
 - ✅ Gestión de nodos y sectores (Módulo de Red)
 - ✅ Estructura base para gestión de tickets
 - ✅ Base para gestión de clientes
+- ✅ Instalación de todas las librerías necesarias
+- ✅ APIs de pago (MercadoPago, PayPal) y facturación (CFDI)
 
 ### En Desarrollo:
-- 🔄 Gestión completa de dispositivos de red (Mikrotik, Ubiquiti)
+- 🔄 Gestión completa de dispositivos de red (Mikrotik, Ubiquiti, TP-Link)
 - 🔄 Visualización de métricas y estado de dispositivos
-- 🔄 Administración completa de clientes con datos detallados (IP, usuario PPPoE, consumo, etc.)
-- 🔄 Mapa interactivo de nodos, sectores y clientes basado en geolocalización
+- 🔄 Administración completa de clientes con datos detallados
+- 🔄 Mapa interactivo de nodos, sectores y clientes
+- 🔄 Integración real con APIs de comunicación
+- 🔄 Sistema de inventario con códigos QR
+- 🔄 Implementación de pagos con MercadoPago y PayPal
+- 🔄 Sistema de facturación electrónica (CFDI)
 
 ### Pendientes:
-- ⭕ Módulo de facturación y pagos
+- ⭕ Módulo de facturación y pagos (interfaces de usuario)
 - ⭕ Gestión avanzada de usuarios y permisos del sistema
 - ⭕ Integración con Jellyfin para servicios de streaming
 - ⭕ Dashboard con indicadores clave
 - ⭕ Sistema de notificaciones
+- ⭕ Búsqueda global avanzada
 
 <div id="instalación"></div>
 
@@ -196,7 +321,7 @@ cd ISP-Prueba
 2. **Configurar el Backend**
 ```bash
 cd backend
-npm install
+yarn install
 cp .env.example .env
 # Editar .env con la configuración apropiada
 ```
@@ -204,22 +329,37 @@ cp .env.example .env
 3. **Configurar el Frontend**
 ```bash
 cd ../frontend
-npm install
+yarn install
 ```
 
 4. **Iniciar en Modo Desarrollo**
 ```bash
 # Terminal 1: Iniciar el backend
 cd backend
-npm run dev
+yarn dev
 
 # Terminal 2: Iniciar el frontend
 cd frontend
-npm run serve
+yarn serve
 ```
 
 5. **Acceder a la aplicación**
 La aplicación estará disponible en http://localhost:8080
+
+### Cambio desde npm a yarn
+
+Si tienes problemas con npm en Windows, puedes cambiar a yarn:
+```bash
+# Instalar yarn globalmente
+npm install -g yarn
+
+# Eliminar node_modules y package-lock.json
+rm -rf node_modules package-lock.json
+
+# Instalar dependencias con yarn
+yarn install
+```
+
 </details>
 
 ### Instalación para Producción
@@ -270,7 +410,10 @@ La aplicación estará disponible en https://tudominio.com
 - **Clientes**: Gestión completa de usuarios y servicios
 - **Red**: Monitoreo y configuración de equipos
 - **Tickets**: Sistema de soporte técnico
+- **Inventario**: Control de equipos y materiales
 - **Facturación**: Control de pagos y facturación
+- **Jellyfin**: Gestión de streaming
+- **Comunicaciones**: Mensajería multicanal
 - **Configuración**: Ajustes generales del sistema
 
 <div id="estructura"></div>
@@ -278,7 +421,6 @@ La aplicación estará disponible en https://tudominio.com
 ## Estructura del Proyecto
 
 ```
-
 ISP-Sistema-Integral/
 ├── backend/                # API y servicios
 │   ├── src/
@@ -287,6 +429,9 @@ ISP-Sistema-Integral/
 │   │   ├── routes/         # Rutas API
 │   │   ├── services/       # Integraciones externas
 │   │   ├── middleware/     # Autenticación y permisos
+│   │   ├── apis/           # Clientes API personalizados
+│   │   │   ├── uisp/       # Cliente UISP personalizado
+│   │   │   └── mikrotik/   # Cliente RouterOS
 │   │   └── utils/          # Utilidades
 │   └── database.sqlite     # SQLite para desarrollo
 ├── frontend/               # App Vue.js
@@ -298,9 +443,12 @@ ISP-Sistema-Integral/
 │   │   ├── views/          # Páginas principales
 │   │   └── router/         # Rutas
 │   └── public/             # Archivos estáticos
-└── docker/                 # Configuración Docker
-    ├── nginx/              # Configuración Nginx
-    └── docker-compose.yml  # Orquestación
+├── docker/                 # Configuración Docker
+│   ├── nginx/              # Configuración Nginx
+│   └── docker-compose.yml  # Orquestación
+└── docs/                   # Documentación
+    ├── mermaid/            # Diagramas de arquitectura
+    └── mockups/            # Mockups de interfaces
 ```
 
 ### Estructura de Rutas API
@@ -362,6 +510,25 @@ ISP-Sistema-Integral/
 - `POST /api/tickets/:ticketId/comments` - Agregar comentario a un ticket
 - `PUT /api/comments/:commentId` - Actualizar comentario
 - `DELETE /api/comments/:commentId` - Eliminar comentario
+
+#### Comunicaciones
+- `POST /api/communications/email` - Enviar email
+- `POST /api/communications/whatsapp` - Enviar WhatsApp
+- `POST /api/communications/telegram` - Enviar Telegram
+- `GET /api/communications/templates` - Obtener plantillas
+
+#### Inventario
+- `GET /api/inventory` - Obtener inventario
+- `POST /api/inventory` - Agregar elemento
+- `PUT /api/inventory/:id` - Actualizar elemento
+- `DELETE /api/inventory/:id` - Eliminar elemento
+- `POST /api/inventory/:id/qr` - Generar código QR
+
+#### Pagos y Facturación
+- `GET /api/billing/invoices` - Obtener facturas
+- `POST /api/billing/invoices` - Crear factura
+- `POST /api/billing/payments` - Registrar pago
+- `GET /api/billing/payments/:id` - Estado de pago
 </details>
 
 <div id="contribución"></div>
@@ -382,31 +549,47 @@ Las contribuciones son bienvenidas. Por favor, sigue estos pasos:
 - Escribe pruebas para nuevas funcionalidades
 - Mantén las dependencias al mínimo
 - Documenta el código nuevo
+- Usa `yarn` en lugar de `npm` para gestión de dependencias
 
 ## Próximos Pasos
 
 Los objetivos inmediatos para el desarrollo incluyen:
 
 1. **Integración completa con dispositivos de red**:
-   - Implementar monitoreo en tiempo real
-   - Mostrar métricas de rendimiento de dispositivos
-   - Control remoto de equipos Mikrotik y Ubiquiti
+   - Implementar clientes personalizados para Ubiquiti UISP
+   - Desarrollar sistema de monitoreo SNMP para TP-Link
+   - Mostrar métricas de rendimiento en tiempo real
+   - Control remoto de equipos Mikrotik
 
-2. **Mejoras en la gestión de clientes**:
-   - Agregar información detallada de conectividad (IP, usuario PPPoE, contraseña)
-   - Mostrar consumo actual de datos
-   - Visualizar dispositivos conectados a las antenas de clientes
-   - Información de subredes y MACs
+2. **Funcionalidades de comunicación**:
+   - Implementar sistema de plantillas avanzado
+   - Configurar bot de Telegram con comandos personalizados
+   - Desarrollar sistema de notificaciones inteligentes
+   - Integrar WhatsApp Business API oficial
 
-3. **Visualización geográfica**:
-   - Implementar mapa interactivo para visualizar nodos, sectores y clientes
+3. **Mejoras en la gestión de clientes**:
+   - Agregar información detallada de conectividad (IP, usuario PPPoE)
+   - Mostrar consumo actual de datos y estadísticas
+   - Implementar herramientas de diagnóstico remoto
+   - Desarrollar sistema de facturación automática
+
+4. **Visualización geográfica avanzada**:
+   - Implementar mapa interactivo completo con Leaflet.js
    - Mostrar coberturas aproximadas de sectores
-   - Identificar visualmente problemas de conexión
+   - Integrar datos de clima para análisis de interferencias
+   - Herramientas de planificación para nuevas instalaciones
 
-4. **Sistema de administración de usuarios**:
-   - Interfaz para creación de cuentas administrativas
-   - Gestión avanzada de permisos
-   - Registros de actividad
+5. **Sistema avanzado de inventario**:
+   - Implementar códigos QR para seguimiento de equipos
+   - Sistema de alertas por stock bajo
+   - Integración con órdenes de trabajo
+   - Control de garantías y mantenimientos
+
+6. **Análisis y reportes**:
+   - Dashboard con KPIs personalizables
+   - Reportes automáticos por email
+   - Análisis predictivo de fallas
+   - Métricas de calidad de servicio
 
 ## Licencia
 
