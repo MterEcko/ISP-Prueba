@@ -92,6 +92,7 @@
               <tr>
                 <th>Usuario</th>
                 <th>Perfil</th>
+                <th>IP Asignada</th>
                 <th>Estado</th>
                 <th>Comentario</th>
                 <th>Acciones</th>
@@ -101,6 +102,7 @@
               <tr v-for="user in filteredUsers" :key="user.id">
                 <td>{{ user.name }}</td>
                 <td>{{ user.profile || '-' }}</td>
+                <td>{{ user.remoteAddress || 'Sin asignar' }}</td>
                 <td>
                   <span class="status-badge" :class="user.disabled ? 'status-disabled' : 'status-enabled'">
                     {{ user.disabled ? 'Deshabilitado' : 'Habilitado' }}
@@ -167,11 +169,11 @@
               <tr v-for="session in activeSessions" :key="session.id">
                 <td>{{ session.name }}</td>
                 <td>{{ session.address || '-' }}</td>
-                <td>{{ formatUptime(session.uptime) }}</td>
+                <td>{{ session.uptime || 'N/A' }}</td>
                 <td>
                   <div class="speed-info">
-                    <div>↓ {{ formatBandwidth(session.rxRate) }}</div>
-                    <div>↑ {{ formatBandwidth(session.txRate) }}</div>
+                    <div>↓ {{ formatBitsPerSecond(session.rxRate) }}</div>
+                    <div>↑ {{ formatBitsPerSecond(session.txRate) }}</div>
                   </div>
                 </td>
                 <td>
@@ -255,13 +257,13 @@
           </div>
           
           <div class="form-group">
-            <label for="userPassword">Contraseña *</label>
+            <label for="userPassword">{{ editingUser ? 'Nueva Contraseña (opcional)' : 'Contraseña *' }}</label>
             <input 
               type="password" 
               id="userPassword" 
               v-model="userForm.password" 
-              required
-              placeholder="Contraseña del usuario"
+              :required="!editingUser"
+              :placeholder="editingUser ? 'Dejar vacío para mantener la actual' : 'Contraseña del usuario'"
             />
           </div>
           
@@ -273,6 +275,21 @@
                 {{ profile.name }}
               </option>
             </select>
+          </div>
+          
+          <!-- NUEVO CAMPO: IP Pool -->
+          <div class="form-group">
+            <label for="userIPPool">IP Pool (opcional)</label>
+            <select id="userIPPool" v-model="userForm.ipPool">
+              <option value="">Automático (usar perfil)</option>
+              <option v-for="pool in availablePools" :key="pool.id" :value="pool.name">
+                {{ pool.name }} - {{ pool.comment || 'Sin comentario' }}
+                <span v-if="pool.usedIPs && pool.totalIPs">
+                  ({{ pool.usedIPs }}/{{ pool.totalIPs }})
+                </span>
+              </option>
+            </select>
+            <small>Selecciona un pool específico o deja en automático para usar el del perfil</small>
           </div>
           
           <div class="form-group">
@@ -337,6 +354,9 @@ export default {
       profiles: [],
       userSearch: '',
       filteredUsers: [],
+      // NUEVO: Agregado para IP Pools
+      availablePools: [],
+      loadingPools: false,
       pppoeSummary: {
         totalUsers: 0,
         activeSessions: 0,
@@ -348,7 +368,8 @@ export default {
         name: '',
         password: '',
         profile: '',
-        comment: ''
+        comment: '',
+        ipPool: ''  // NUEVO CAMPO
       },
       savingUser: false,
       showConfirmModal: false,
@@ -366,6 +387,7 @@ export default {
     this.loadUsers();
     this.loadActiveSessions();
     this.loadProfiles();
+    this.loadIPPools();  // NUEVO: Cargar pools al inicializar
   },
   methods: {
     async loadDevice() {
@@ -418,6 +440,18 @@ export default {
       }
     },
     
+    // NUEVO MÉTODO: Cargar IP Pools
+    async loadIPPools() {
+      this.loadingPools = true;
+      try {
+        const response = await MikrotikService.getIPPools(this.deviceId);
+        this.availablePools = response.data.data || [];
+      } catch (error) {
+        console.error('Error cargando IP pools:', error);
+      } finally {
+        this.loadingPools = false;
+      }
+    },
     filterUsers() {
       if (!this.userSearch.trim()) {
         this.filteredUsers = this.users;
@@ -437,7 +471,8 @@ export default {
         name: user.name,
         password: '', // Por seguridad, no cargar la contraseña existente
         profile: user.profile || '',
-        comment: user.comment || ''
+        comment: user.comment || '',
+        ipPool: user.remoteAddress || ''  // MODIFICADO: Cargar el pool/IP actual
       };
       this.showCreateUserModal = true;
     },
@@ -445,15 +480,34 @@ export default {
     async saveUser() {
       this.savingUser = true;
       try {
+        // Preparar datos del formulario
+        const userData = { ...this.userForm };
+        
+        // Si se seleccionó un pool específico, enviarlo como remoteAddress
+        if (userData.ipPool) {
+          userData.remoteAddress = userData.ipPool;
+          delete userData.ipPool; // Eliminar el campo ipPool ya que el backend espera remoteAddress
+        }
+		
+		console.log('Datos que se van a enviar:', userData);
+        console.log('Device ID:', this.deviceId);
+        
+        // Si estamos editando y la contraseña está vacía, no enviarla
+        if (this.editingUser && !userData.password) {
+          delete userData.password;
+        }
+        
         if (this.editingUser) {
-          await MikrotikService.updatePPPoEUser(this.deviceId, this.userForm.id, this.userForm);
+          await MikrotikService.updatePPPoEUser(this.deviceId, this.userForm.id, userData);
         } else {
-          await MikrotikService.createPPPoEUser(this.deviceId, this.userForm);
+          await MikrotikService.createPPPoEUser(this.deviceId, userData);
         }
         
         this.closeUserModal();
         this.loadUsers();
       } catch (error) {
+        console.error('Error guardando usuario:', error);
+        console.error('Error response:', error.response?.data);
         console.error('Error guardando usuario:', error);
         alert('Error al guardar el usuario: ' + (error.response?.data?.message || error.message));
       } finally {
@@ -468,7 +522,8 @@ export default {
         name: '',
         password: '',
         profile: '',
-        comment: ''
+        comment: '',
+        ipPool: ''  // MODIFICADO: Limpiar también este campo
       };
     },
     
@@ -579,15 +634,32 @@ export default {
       };
     },
     
+    formatBytes(bytes) {
+      if (!bytes && bytes !== 0) return 'N/A';
+      
+      if (bytes === 0) return '0 B';
+      
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k));
+      
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    },
+    
+    formatBitsPerSecond(bps) {
+      if (!bps || bps === 0) return 'N/A';
+      
+      // Convertir de bits a bytes y formatear
+      const bytes = bps / 8;
+      return this.formatBytes(bytes) + '/s';
+    },
+    
     formatUptime(uptime) {
       return MikrotikService.formatUptime(uptime);
     },
     
-    formatBytes(bytes) {
-      return MikrotikService.formatBytes(bytes);
-    },
-    
     formatBandwidth(bps) {
+      console.log('formatBandwidth recibió:', bps);
       if (!bps) return 'N/A';
       return this.formatBytes(bps) + '/s';
     },
@@ -893,6 +965,13 @@ export default {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 5px;
+  color: #666;
+  font-size: 0.85rem;
 }
 
 .modal-actions {

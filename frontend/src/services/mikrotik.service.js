@@ -100,6 +100,13 @@ class MikrotikService {
     });
   }
   
+  // **NUEVO: Obtener IP Pools disponibles**
+  getIPPools(deviceId) {
+    return axios.get(API_URL + `mikrotik/devices/${deviceId}/ip-pools`, {
+      headers: authHeader()
+    });
+  }
+  
   // ===== GESTIÓN DE QoS =====
   
   // Configurar QoS para un cliente

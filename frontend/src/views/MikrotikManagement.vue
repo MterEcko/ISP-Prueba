@@ -144,7 +144,7 @@
         <div class="details-grid">
           <div class="detail-item">
             <span class="label">Sistema:</span>
-            <span class="value">{{ deviceInfo.system || 'N/A' }}</span>
+            <span class="value">{{ deviceInfo.name || 'N/A' }}</span>
           </div>
           <div class="detail-item">
             <span class="label">Versión:</span>
@@ -152,19 +152,19 @@
           </div>
           <div class="detail-item">
             <span class="label">Uptime:</span>
-            <span class="value">{{ formatUptime(deviceInfo.uptime) }}</span>
+            <span class="value">{{ deviceInfo.uptime || 'N/A' }}</span>
           </div>
           <div class="detail-item">
             <span class="label">CPU:</span>
-            <span class="value">{{ deviceInfo.cpu || 'N/A' }}%</span>
+            <span class="value">{{ deviceInfo.cpuLoad || 'N/A' }}%</span>
           </div>
           <div class="detail-item">
             <span class="label">Memoria:</span>
-            <span class="value">{{ deviceInfo.memory || 'N/A' }}%</span>
+            <span class="value">{{ deviceInfo.memoryUsage || 'N/A' }}%</span>
           </div>
           <div class="detail-item">
-            <span class="label">Clientes PPPoE:</span>
-            <span class="value">{{ deviceInfo.pppoeClients || 0 }}</span>
+            <span class="label">Clientes Configuraddos PPPoE:</span>
+            <span class="value">{{ deviceInfo.clients || 0 }}</span>
           </div>
         </div>
       </div>
