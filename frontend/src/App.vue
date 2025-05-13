@@ -46,6 +46,12 @@
                 </router-link>
               </li>
               <li>
+                <router-link to="/mikrotik">
+                  <span class="icon">🔧</span>
+                  <span class="text" v-if="!sidebarCollapsed">Mikrotik</span>
+                </router-link>
+              </li>
+              <li>
                 <router-link to="/tickets">
                   <span class="icon">🎫</span>
                   <span class="text" v-if="!sidebarCollapsed">Tickets</span>

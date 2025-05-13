@@ -18,6 +18,10 @@ import NodeForm from '../views/NodeForm.vue';
 import SectorDetail from '../views/SectorDetail.vue';
 import SectorForm from '../views/SectorForm.vue';
 
+// Nuevas importaciones para Mikrotik
+import MikrotikManagement from '../views/MikrotikManagement.vue';
+import MikrotikClientControl from '../views/MikrotikClientControl.vue';
+
 const routes = [
   {
     path: '/',
@@ -85,7 +89,7 @@ const routes = [
     component: TicketForm,
     meta: { requiresAuth: true }
   },
-  // Rutas de Dispositivos
+  // Rutas de Dispositivos (Inventario)
   {
     path: '/devices',
     name: 'DeviceList',
@@ -116,14 +120,14 @@ const routes = [
     component: SettingView,
     meta: { requiresAuth: true }
   },
-  // Dentro del array de rutas, añade:
+  // Rutas de Red
   {
     path: '/network',
     name: 'Network',
     component: NetworkView,
     meta: { requiresAuth: true }
   },
-// Rutas para nodos
+  // Rutas para nodos
   {
     path: '/nodes/new',
     name: 'CreateNode',
@@ -142,7 +146,7 @@ const routes = [
     component: () => import('../views/NodeForm.vue'),
     meta: { requiresAuth: true }
   },
-// Rutas para sectores
+  // Rutas para sectores
   {
     path: '/sectors/new',
     name: 'CreateSector',
@@ -160,6 +164,43 @@ const routes = [
     name: 'EditSector',
     component: () => import('../views/SectorForm.vue'),
     meta: { requiresAuth: true }
+  },
+  // ===== NUEVAS RUTAS PARA MIKROTIK =====
+  {
+    path: '/mikrotik',
+    name: 'MikrotikManagement',
+    component: MikrotikManagement,
+    meta: { 
+      requiresAuth: true,
+      title: 'Gestión Mikrotik'
+    }
+  },
+  {
+    path: '/mikrotik/device/new',
+    name: 'NewMikrotikDevice',
+    component: () => import('../views/MikrotikDeviceForm.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: 'Nuevo Router Mikrotik'
+    }
+  },
+  {
+    path: '/mikrotik/device/:id/edit',
+    name: 'EditMikrotikDevice',
+    component: () => import('../views/MikrotikDeviceForm.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: 'Editar Router Mikrotik'
+    }
+  },
+  {
+    path: '/mikrotik/device/:deviceId/pppoe',
+    name: 'MikrotikClientControl',
+    component: MikrotikClientControl,
+    meta: { 
+      requiresAuth: true,
+      title: 'Control PPPoE'
+    }
   }
 ];
 

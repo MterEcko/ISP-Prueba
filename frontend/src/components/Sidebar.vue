@@ -41,9 +41,15 @@
           </router-link>
         </li>
         <li>
+          <router-link to="/mikrotik">
+            <span class="icon">🔧</span>
+            <span class="text" v-if="!isCollapsed">Mikrotik</span>
+          </router-link>
+        </li>
+        <li>
           <router-link to="/tickets">
             <span class="icon">🎫</span>
-            <span class="text" v-if="!isCollapsed">Tickets</span>
+            <span class="text" v-if="!isCollapsed">Tickets 1</span>
           </router-link>
         </li>
         <li>
