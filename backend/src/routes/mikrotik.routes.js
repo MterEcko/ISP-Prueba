@@ -177,4 +177,15 @@ module.exports = function(app) {
     [authJwt.verifyToken, authJwt.checkRole('admin')],
     MikrotikController.executeAction
   );
+  
+  /**
+   * @route    GET /api/mikrotik/devices/:id/ip-pools/:poolName/available-ips
+   * @desc     Obtener IPs disponibles de un pool específico
+  * @access   Privado (Admin, Técnico)
+  */
+  app.get(
+  "/api/mikrotik/devices/:id/ip-pools/:poolName/available-ips",
+  [authJwt.verifyToken, authJwt.checkRole('technician')],
+  MikrotikController.getPoolAvailableIPs
+  );
 };

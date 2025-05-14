@@ -314,6 +314,127 @@ const MikrotikService = {
     }
   },
   
+  
+  // Agregar al objeto MikrotikService en mikrotik.service.js
+
+  // Obtener IPs disponibles de un pool específico
+  getPoolAvailableIPs: async (ipAddress, apiPort = 8728, username, password, poolName) => {
+    let api = null;
+    try {
+    logger.info(`Obteniendo IPs disponibles del pool ${poolName} en ${ipAddress}`);
+    
+    // Crear la conexión
+    api = new RouterOSAPI({
+      host: ipAddress,
+      port: apiPort,
+      user: username,
+      password: password,
+      timeout: 10000
+    });
+    
+    // Conectar
+    await api.connect();
+    
+    // Obtener información del pool específico
+    const pools = await api.write('/ip/pool/print', [`?name=${poolName}`]);
+    
+    if (pools.length === 0) {
+      throw new Error(`Pool ${poolName} no encontrado`);
+    }
+    
+    const pool = pools[0];
+    
+    // Obtener IPs usadas del pool
+    const usedIPs = await api.write('/ppp/secret/print', [`?pool=${poolName}`]);
+    const usedIPAddresses = usedIPs.map(ip => ip.address);
+    
+    // Parsear el rango de IPs del pool
+    const availableIPs = [];
+    const ranges = pool.ranges.split(',');
+    
+    for (const range of ranges) {
+      const trimmedRange = range.trim();
+      
+      if (trimmedRange.includes('-')) {
+      // Es un rango (ej: 192.168.1.10-192.168.1.100)
+      const [startIP, endIP] = trimmedRange.split('-');
+      const startParts = startIP.trim().split('.').map(Number);
+      const endParts = endIP.trim().split('.').map(Number);
+      
+      // Generar todas las IPs en el rango
+      for (let i = startParts[3]; i <= endParts[3]; i++) {
+        const ip = `${startParts[0]}.${startParts[1]}.${startParts[2]}.${i}`;
+        
+        // Omitir .1 y .254 como solicitado
+        if (i === 1 || i === 254) continue;
+        
+        // Verificar si la IP no está usada
+        if (!usedIPAddresses.includes(ip)) {
+        availableIPs.push(ip);
+        }
+      }
+      } else if (trimmedRange.includes('/')) {
+      // Es una subred CIDR (ej: 192.168.1.0/24)
+      const [network, cidr] = trimmedRange.split('/');
+      const networkParts = network.split('.').map(Number);
+      const subnetMask = parseInt(cidr);
+      
+      // Calcular rango de hosts
+      const hostBits = 32 - subnetMask;
+      const maxHosts = Math.pow(2, hostBits) - 2; // -2 para network y broadcast
+      
+      // Generar IPs disponibles (excluyendo .1 y .254)
+      for (let i = 2; i < maxHosts + 1; i++) {
+        if (i === 254) continue; // Omitir .254
+        
+        const ip = `${networkParts[0]}.${networkParts[1]}.${networkParts[2]}.${i}`;
+        
+        // Verificar si la IP no está usada
+        if (!usedIPAddresses.includes(ip)) {
+        availableIPs.push(ip);
+        }
+      }
+      } else {
+      // Es una IP única
+      if (!usedIPAddresses.includes(trimmedRange)) {
+        availableIPs.push(trimmedRange);
+      }
+      }
+    }
+    
+    // Ordenar las IPs de menor a mayor
+    availableIPs.sort((a, b) => {
+      const aParts = a.split('.').map(Number);
+      const bParts = b.split('.').map(Number);
+      
+      for (let i = 0; i < 4; i++) {
+      if (aParts[i] !== bParts[i]) {
+        return aParts[i] - bParts[i];
+      }
+      }
+      return 0;
+    });
+    
+    logger.info(`Encontradas ${availableIPs.length} IPs disponibles en el pool ${poolName}`);
+    
+    return {
+      poolName,
+      totalAvailable: availableIPs.length,
+      totalUsed: usedIPAddresses.length,
+      availableIPs,
+      usedIPs: usedIPAddresses
+    };
+    } catch (error) {
+    logger.error(`Error obteniendo IPs disponibles del pool ${poolName}: ${error.message}`);
+    throw error;
+    } finally {
+    if (api && api.connected) {
+      api.close();
+    }
+    }
+  },
+  
+  
   // Crear un nuevo usuario PPPoE
   // ALTERNATIVA: Crear usuarios con pool específico usando perfiles dinámicos
   createPPPoEUser: async (ipAddress, apiPort = 8728, username, password, userData) => {

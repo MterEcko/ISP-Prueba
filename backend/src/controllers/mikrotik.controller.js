@@ -485,6 +485,59 @@ const MikrotikController = {
     }
   },
   
+  // Agregar al objeto MikrotikController en mikrotik.controller.js
+
+  // **NUEVO: Obtener IPs disponibles de un pool específico**
+  getPoolAvailableIPs: async (req, res) => {
+    try {
+    const { id, poolName } = req.params;
+    
+    // Obtener dispositivo de la base de datos
+    const device = await Device.findByPk(id);
+    if (!device) {
+      return res.status(404).json({
+      success: false,
+      message: `Dispositivo con ID ${id} no encontrado`
+      });
+    }
+    
+    // Asegurarse de que el dispositivo tiene credenciales
+    if (!device.ipAddress || !device.username || !device.password) {
+      return res.status(400).json({
+      success: false,
+      message: 'El dispositivo no tiene configuradas las credenciales API'
+      });
+    }
+    
+    const result = await MikrotikService.getPoolAvailableIPs(
+      device.ipAddress, 
+      device.apiPort || 8728, 
+      device.username, 
+      device.password,
+      poolName
+    );
+    
+    // Actualizar último acceso al dispositivo
+    await Device.update(
+      { lastSeen: new Date() },
+      { where: { id: id } }
+    );
+    
+    return res.status(200).json({
+      success: true,
+      data: result
+    });
+    } catch (error) {
+    logger.error(`Error en getPoolAvailableIPs: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al obtener IPs disponibles del pool',
+      error: error.message
+    });
+    }
+  },
+  
+  
   // Configurar QoS
   configureQoS: async (req, res) => {
     try {
