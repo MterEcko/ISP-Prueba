@@ -241,6 +241,7 @@
     </div>
     
     <!-- Modal para crear/editar usuario -->
+    <!-- Modal para crear/editar usuario -->
     <div v-if="showCreateUserModal" class="modal">
       <div class="modal-content">
         <h3>{{ editingUser ? 'Editar Usuario' : 'Nuevo Usuario PPPoE' }}</h3>
@@ -277,19 +278,101 @@
             </select>
           </div>
           
-          <!-- NUEVO CAMPO: IP Pool -->
-          <div class="form-group">
-            <label for="userIPPool">IP Pool (opcional)</label>
-            <select id="userIPPool" v-model="userForm.ipPool">
-              <option value="">Automático (usar perfil)</option>
-              <option v-for="pool in availablePools" :key="pool.id" :value="pool.name">
-                {{ pool.name }} - {{ pool.comment || 'Sin comentario' }}
-                <span v-if="pool.usedIPs && pool.totalIPs">
-                  ({{ pool.usedIPs }}/{{ pool.totalIPs }})
-                </span>
-              </option>
-            </select>
-            <small>Selecciona un pool específico o deja en automático para usar el del perfil</small>
+          <!-- NUEVA SECCIÓN: Asignación de IP -->
+          <div class="form-section">
+            <h4>Asignación de IP</h4>
+
+            <div class="form-group">
+              <label for="assignmentMode">Modo de asignación</label>
+              <select 
+                id="assignmentMode" 
+                v-model="userForm.assignmentMode"
+                @change="onAssignmentModeChange"
+              >
+                <option value="auto">Automático (usar perfil)</option>
+                <option value="pool">Seleccionar pool específico</option>
+                <option value="specific">IP específica</option>
+              </select>
+            </div>
+            
+            <!-- Pool específico -->
+            <div v-if="userForm.assignmentMode === 'pool'" class="form-group">
+              <label for="userIPPool">Seleccionar Pool</label>
+              <select 
+                id="userIPPool" 
+                v-model="userForm.ipPool"
+                @change="onPoolChange"
+                required
+              >
+                <option value="">Seleccionar pool</option>
+                <option v-for="pool in availablePools" :key="pool.id" :value="pool.name">
+                  {{ pool.name }} - {{ pool.comment || 'Sin comentario' }}
+                  <span v-if="pool.usedIPs !== undefined && pool.totalIPs !== undefined">
+                    ({{ pool.usedIPs }}/{{ pool.totalIPs }})
+                  </span>
+                </option>
+              </select>
+            </div>
+            
+            <!-- IP específica del pool -->
+            <div v-if="userForm.assignmentMode === 'pool' && userForm.ipPool" class="form-group">
+              <label for="specificPoolIP">IP del Pool</label>
+              <div class="ip-selection">
+                <label class="radio-option">
+                  <input 
+                    type="radio" 
+                    value="auto-from-pool" 
+                    v-model="userForm.specificIP"
+                  />
+                  <span>Automática del pool (primera disponible)</span>
+                </label>
+                
+                <div v-if="loadingAvailableIPs" class="loading-text">
+                  Cargando IPs disponibles...
+                </div>
+                
+                <div v-else-if="availableIPs.length > 0" class="available-ips">
+                  <label class="radio-option">
+                    <input 
+                      type="radio" 
+                      value="select-from-list" 
+                      v-model="userForm.specificIP"
+                    />
+                    <span>Seleccionar IP específica:</span>
+                  </label>
+                  
+                  <select 
+                    v-if="userForm.specificIP === 'select-from-list'"
+                    v-model="userForm.selectedPoolIP"
+                    class="ip-dropdown"
+                  >
+                    <option value="">Seleccionar IP</option>
+                    <option v-for="ip in availableIPs" :key="ip" :value="ip">
+                      {{ ip }}
+                    </option>
+                  </select>
+                </div>
+                
+                <div v-else-if="availableIPs.length === 0 && userForm.ipPool">
+                  <em>No hay IPs disponibles en este pool</em>
+                </div>
+              </div>
+            </div>
+            
+            <!-- IP completamente específica -->
+            <div v-if="userForm.assignmentMode === 'specific'" class="form-group">
+              <label for="userSpecificIP">IP Específica</label>
+              <input 
+                type="text" 
+                id="userSpecificIP" 
+                v-model="userForm.specificIP" 
+                placeholder="192.168.1.100"
+                pattern="^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$"
+                title="Ingrese una dirección IP válida"
+                required
+              />
+              <small>Ingrese la dirección IP exacta a asignar</small>
+            </div>
           </div>
           
           <div class="form-group">
@@ -354,8 +437,15 @@ export default {
       profiles: [],
       userSearch: '',
       filteredUsers: [],
+      
       // NUEVO: Agregado para IP Pools
       availablePools: [],
+      // NUEVOS campos para IP dinámicas
+      availableIPs: [],
+      loadingAvailableIPs: false,
+      selectedPool: '',
+      ipAssignmentMode: 'auto', // 'auto', 'specific', 'pool'
+      
       loadingPools: false,
       pppoeSummary: {
         totalUsers: 0,
@@ -369,7 +459,10 @@ export default {
         password: '',
         profile: '',
         comment: '',
-        ipPool: ''  // NUEVO CAMPO
+        ipPool: '',
+        specificIP: '',
+        assignmentMode: 'auto',
+        selectedPoolIP: ''
       },
       savingUser: false,
       showConfirmModal: false,
@@ -452,6 +545,100 @@ export default {
         this.loadingPools = false;
       }
     },
+    
+    // NUEVO: Cambio en modo de asignación
+    onAssignmentModeChange() {
+      // Limpiar campos relacionados cuando se cambia el modo
+      this.userForm.ipPool = '';
+      this.userForm.specificIP = '';
+      this.userForm.selectedPoolIP = '';
+      this.availableIPs = [];
+    },
+    
+    // NUEVO: Cambio de pool seleccionado
+    async onPoolChange() {
+      if (this.userForm.ipPool) {
+        await this.loadAvailableIPs(this.userForm.ipPool);
+        // Seleccionar automáticamente la primera opción (automática del pool)
+        this.userForm.specificIP = 'auto-from-pool';
+      } else {
+        this.availableIPs = [];
+        this.userForm.specificIP = '';
+      }
+    },
+    
+    // NUEVO: Cargar IPs disponibles de un pool
+    async loadAvailableIPs(poolName) {
+      this.loadingAvailableIPs = true;
+      try {
+		// Obtener TODAS las IPs del pool desde el backend
+		const response = await MikrotikService.getPoolAvailableIPs(this.deviceId, poolName);
+		const allPoolIPs = response.data.data.availableIPs || [];
+		
+		// Obtener IPs ya asignadas a usuarios PPPoE (que son direcciones IP específicas)
+		const assignedIPs = this.users
+          .map(user => user.remoteAddress)
+          .filter(ip => ip && ip.includes('.')) // Solo las que son IPs, no pools
+          .filter(ip => this.isIPInPool(ip, poolName)); // Solo las del pool actual
+		
+		// Filtrar las IPs disponibles excluyendo las asignadas
+		this.availableIPs = allPoolIPs.filter(ip => !assignedIPs.includes(ip));
+		
+		console.log('IPs del pool:', allPoolIPs.length);
+		console.log('IPs asignadas:', assignedIPs);
+		console.log('IPs disponibles:', this.availableIPs.length);
+		
+      } catch (error) {
+        console.error('Error cargando IPs disponibles:', error);
+        this.availableIPs = [];
+      } finally {
+        this.loadingAvailableIPs = false;
+      }
+    },
+
+    // NUEVO método para verificar si una IP pertenece a un pool
+    isIPInPool(ip, poolName) {
+      // Verificar si la IP pertenece al rango del pool seleccionado
+      const pool = this.availablePools.find(p => p.name === poolName);
+      if (!pool || !pool.ranges) return false;
+      
+      const ranges = pool.ranges.split(',');
+      const ipParts = ip.split('.').map(Number);
+      
+      for (const range of ranges) {
+        const trimmedRange = range.trim();
+        
+        if (trimmedRange.includes('-')) {
+          // Rango: 192.168.1.10-192.168.1.100
+          const [startIP, endIP] = trimmedRange.split('-');
+          const startParts = startIP.trim().split('.').map(Number);
+          const endParts = endIP.trim().split('.').map(Number);
+          
+          // Verificar que esté en el rango
+          if (ipParts[0] === startParts[0] && 
+              ipParts[1] === startParts[1] && 
+              ipParts[2] === startParts[2] &&
+              ipParts[3] >= startParts[3] && 
+              ipParts[3] <= endParts[3]) {
+            return true;
+          }
+        } else if (trimmedRange.includes('/')) {
+          // CIDR: 192.168.1.0/24
+          const [network, cidr] = trimmedRange.split('/');
+          const networkParts = network.split('.').map(Number);
+          
+          // Verificar que esté en la misma subred
+          if (ipParts[0] === networkParts[0] && 
+              ipParts[1] === networkParts[1] && 
+              ipParts[2] === networkParts[2]) {
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    },
+    
     filterUsers() {
       if (!this.userSearch.trim()) {
         this.filteredUsers = this.users;
@@ -464,33 +651,76 @@ export default {
       }
     },
     
+    // MODIFICAR: editUser para manejar los nuevos campos
     editUser(user) {
       this.editingUser = true;
+      
+      // Determinar el modo de asignación basado en la IP actual
+      let assignmentMode = 'auto';
+      let ipPool = '';
+      let specificIP = '';
+      let selectedPoolIP = '';
+      
+      if (user.remoteAddress) {
+        if (user.remoteAddress.includes('.')) {
+          // Es una IP específica
+          assignmentMode = 'specific';
+          specificIP = user.remoteAddress;
+        } else {
+          // Es un pool
+          assignmentMode = 'pool';
+          ipPool = user.remoteAddress;
+        }
+      }
+      
       this.userForm = {
         id: user.id,
         name: user.name,
-        password: '', // Por seguridad, no cargar la contraseña existente
+        password: '',
         profile: user.profile || '',
         comment: user.comment || '',
-        ipPool: user.remoteAddress || ''  // MODIFICADO: Cargar el pool/IP actual
+        assignmentMode,
+        ipPool,
+        specificIP,
+        selectedPoolIP
       };
+      
+      // Si tiene un pool asignado, cargar las IPs disponibles
+      if (assignmentMode === 'pool' && ipPool) {
+        this.loadAvailableIPs(ipPool);
+      }
+      
       this.showCreateUserModal = true;
     },
     
+    // MODIFICAR: saveUser para manejar las nuevas opciones de IP
     async saveUser() {
       this.savingUser = true;
       try {
-        // Preparar datos del formulario
         const userData = { ...this.userForm };
         
-        // Si se seleccionó un pool específico, enviarlo como remoteAddress
-        if (userData.ipPool) {
+        // Procesar la asignación de IP según el modo seleccionado
+        if (userData.assignmentMode === 'pool') {
+          // Usar el pool seleccionado
           userData.remoteAddress = userData.ipPool;
-          delete userData.ipPool; // Eliminar el campo ipPool ya que el backend espera remoteAddress
+          
+          // Si se seleccionó una IP específica del pool, usar esa IP
+          if (userData.specificIP === 'select-from-list' && userData.selectedPoolIP) {
+            userData.remoteAddress = userData.selectedPoolIP;
+          }
+        } else if (userData.assignmentMode === 'specific') {
+          // Usar la IP específica ingresada
+          userData.remoteAddress = userData.specificIP;
         }
-		
-		console.log('Datos que se van a enviar:', userData);
-        console.log('Device ID:', this.deviceId);
+        // Si es 'auto', no enviar remoteAddress (usará el del perfil)
+        
+        // Limpiar campos que no van al backend
+        delete userData.assignmentMode;
+        delete userData.ipPool;
+        delete userData.specificIP;
+        delete userData.selectedPoolIP;
+        
+        console.log('Datos que se van a enviar:', userData);
         
         // Si estamos editando y la contraseña está vacía, no enviarla
         if (this.editingUser && !userData.password) {
@@ -507,14 +737,13 @@ export default {
         this.loadUsers();
       } catch (error) {
         console.error('Error guardando usuario:', error);
-        console.error('Error response:', error.response?.data);
-        console.error('Error guardando usuario:', error);
         alert('Error al guardar el usuario: ' + (error.response?.data?.message || error.message));
       } finally {
         this.savingUser = false;
       }
     },
     
+    // MODIFICAR: closeUserModal para limpiar los nuevos campos
     closeUserModal() {
       this.showCreateUserModal = false;
       this.editingUser = false;
@@ -523,8 +752,12 @@ export default {
         password: '',
         profile: '',
         comment: '',
-        ipPool: ''  // MODIFICADO: Limpiar también este campo
+        ipPool: '',
+        specificIP: '',
+        assignmentMode: 'auto',
+        selectedPoolIP: ''
       };
+      this.availableIPs = [];
     },
     
     toggleUserStatus(user) {
@@ -929,17 +1162,22 @@ export default {
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start; /* Cambiar de center a flex-start */
   z-index: 1000;
+  padding: 20px; /* Agregar padding */
+  overflow-y: auto; /* Hacer scrolleable */
 }
 
 .modal-content {
   background-color: white;
   border-radius: 8px;
   padding: 30px;
-  width: 400px;
+  width: 500px; /* Aumentar ancho */
   max-width: 90%;
+  max-height: 85vh; /* Limitar altura máxima */
+  overflow-y: auto; /* Hacer el contenido scrolleable */
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  margin-top: 20px; /* Agregar margen superior */
 }
 
 .modal-content h3 {
@@ -972,6 +1210,63 @@ export default {
   margin-top: 5px;
   color: #666;
   font-size: 0.85rem;
+}
+
+/* NUEVOS ESTILOS PARA ASIGNACIÓN DE IP */
+.form-section {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+.form-section h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #495057;
+  font-size: 1rem;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: normal;
+  margin-bottom: 0;
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+  width: auto;
+}
+
+.ip-selection {
+  background-color: white;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.available-ips {
+  margin-top: 10px;
+}
+
+.ip-dropdown {
+  margin-top: 8px;
+  margin-left: 20px;
+  width: calc(100% - 20px);
+}
+
+.loading-text {
+  color: #666;
+  font-style: italic;
+  padding: 10px;
 }
 
 .modal-actions {
