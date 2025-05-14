@@ -1,4 +1,43 @@
-# Sistema Integral para Proveedores de Internet (ISP)
+#### Chat y Comunicaciones
+- `GET /api/chat/conversations/:clientId` - Obtener conversaciones de cliente
+- `POST /api/chat/messages` - Enviar mensaje
+- `GET /api/chat/messages/:conversationId` - Obtener mensajes
+- `POST /api/chat/telegram/webhook` - Webhook de Telegram
+- `POST /api/chat/whatsapp/webhook` - Webhook de WhatsApp7. **Sistema de chat integrado**:
+   - Chat en tiempo real con Socket.io
+   - Conversaciones organizadas por cliente
+   - Integración con Telegram y WhatsApp
+   - Sistema de asignación a técnicos
+   - Historial completo de comunicaciones
+
+8. **Soporte para fibra óptica**:
+   - Gestión de equipos ONT/OLT
+   - Monitoreo de métricas específicas de fibra
+   - Topologías PON y punto a punto
+   - Integración con emuladores de red
+   - APIs para principales vendors de fibra💬 Chat Integrado</strong></summary>
+<ul>
+  <li>Chat web en tiempo real con Socket.io</li>
+  <li>Conversaciones por cliente específico</li>
+  <li>Integración con Telegram para clientes</li>
+  <li>Historial completo de comunicaciones</li>
+  <li>Asignación de conversaciones a técnicos</li>
+</ul>
+</details>
+
+<details>
+<summary><strong>🌐 Soporte para Fibra Óptica</strong></summary>
+<ul>
+  <li>Gestión de ONT/OLT (en desarrollo)</li>
+  <li>Monitoreo de potencia óptica</li>
+  <li>Topología PON</li>
+  <li>Métricas específicas de fibra</li>
+  <li>Integración SNMP para equipos PON</li>
+</ul>
+</details>
+
+<details>
+<summary><strong># Sistema Integral para Proveedores de Internet (ISP)
 
 <div align="center">
   <!-- <img src="frontend/src/assets/logo.png" alt="ISP Sistema Logo" width="200"> -->
@@ -49,6 +88,7 @@ Administración completa de clientes con:
   <li>Métricas en tiempo real de tráfico y calidad de conexión</li>
   <li>Alertas y notificaciones automáticas</li>
   <li>Gestión de equipos Mikrotik, Ubiquiti y TP-Link Pharos</li>
+  <li>Soporte para fibra óptica (en desarrollo)</li>
   <li>Monitoreo vía SNMP</li>
 </ul>
 </details>
@@ -223,6 +263,10 @@ Control de acceso granular basado en roles y permisos específicos para cada mó
     <td><strong>CFDI Generator</strong></td>
     <td>Facturación electrónica para México (SAT)</td>
   </tr>
+  <tr>
+    <td><strong>Fibra Óptica**</strong></td>
+    <td>Soporte para ONT/OLT (en desarrollo)</td>
+  </tr>
 </table>
 
 ### Bibliotecas y Dependencias
@@ -239,6 +283,11 @@ Control de acceso granular basado en roles y permisos específicos para cada mó
 - `routeros` - Mikrotik RouterOS API
 - `axios` - Cliente HTTP para APIs REST
 - `snmp-native` - Monitoreo SNMP
+- `net-snmp` - SNMP mejorado para PON/fibra
+
+**Chat y Tiempo Real:**
+- `socket.io` - WebSockets para chat en tiempo real
+- `socket.io-client` - Cliente WebSocket
 
 **Utilidades:**
 - `pdfkit` - Generación de PDFs
@@ -263,6 +312,11 @@ Control de acceso granular basado en roles y permisos específicos para cada mó
 - `@paypal/checkout-server-sdk` - PayPal SDK
 - `cfdi-generator` - Facturación electrónica México (SAT)
 
+**Fibra Óptica:**
+- `node-ssh` - Conexión SSH a ONT/OLT
+- `node-telnet-client` - Conexión Telnet legacy
+- `net-snmp` - Monitoreo SNMP para equipos PON
+
 </details>
 
 <div id="estado-del-proyecto"></div>
@@ -279,6 +333,8 @@ El proyecto se encuentra en desarrollo activo. A continuación, se detalla el es
 - ✅ Base para gestión de clientes
 - ✅ Instalación de todas las librerías necesarias
 - ✅ APIs de pago (MercadoPago, PayPal) y facturación (CFDI)
+- ✅ Librerías para chat en tiempo real (Socket.io)
+- ✅ Soporte básico para fibra óptica (librerías instaladas)
 
 ### En Desarrollo:
 - 🔄 Gestión completa de dispositivos de red (Mikrotik, Ubiquiti, TP-Link)
@@ -289,6 +345,8 @@ El proyecto se encuentra en desarrollo activo. A continuación, se detalla el es
 - 🔄 Sistema de inventario con códigos QR
 - 🔄 Implementación de pagos con MercadoPago y PayPal
 - 🔄 Sistema de facturación electrónica (CFDI)
+- 🔄 Chat en tiempo real con Socket.io
+- 🔄 Soporte para fibra óptica (ONT/OLT)
 
 ### Pendientes:
 - ⭕ Módulo de facturación y pagos (interfaces de usuario)
