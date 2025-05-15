@@ -1,0 +1,191 @@
+erDiagram
+    USUARIOS {
+        int id PK
+        string nombre
+        string apellidos
+        string email
+        string password_hash
+        int rol_id FK
+        boolean activo
+        timestamp creado
+        timestamp actualizado
+    }
+
+    ROLES {
+        int id PK
+        string nombre
+        string descripcion
+        int nivel
+        string categoria
+    }
+
+    PERMISOS {
+        int id PK
+        string nombre
+        string descripcion
+        string modulo
+    }
+
+    ROL_PERMISOS {
+        int rol_id FK
+        int permiso_id FK
+    }
+
+    CLIENTES {
+        int id PK
+        string nombre
+        string apellidos
+        string correo
+        string telefono
+        string whatsapp
+        date fecha_nacimiento
+        date fecha_inicio
+        float latitud
+        float longitud
+        int sector_id FK
+        boolean activo
+        timestamp creado
+        timestamp actualizado
+    }
+
+    DOCUMENTOS_CLIENTE {
+        int id PK
+        int cliente_id FK
+        string tipo
+        string nombre_archivo
+        string ruta_archivo
+        timestamp subido
+    }
+
+    SECTORES {
+        int id PK
+        string nombre
+        int nodo_id FK
+        string descripcion
+    }
+
+    NODOS {
+        int id PK
+        string nombre
+        string ubicacion
+        float latitud
+        float longitud
+    }
+
+    DISPOSITIVOS_RED {
+        int id PK
+        string tipo
+        string marca
+        string modelo
+        string ip
+        string mac
+        int nodo_id FK
+        int sector_id FK
+        int cliente_id FK
+        boolean activo
+        boolean es_fibra_optica "Identifica si es equipo de fibra"
+    }
+
+    EQUIPOS_FIBRA_OPTICA {
+        int id PK
+        int dispositivo_id FK "FK to DISPOSITIVOS_RED.id"
+        string ont_serial_number "Serial del ONT"
+        string olt_port "Puerto OLT (slot/puerto/id_ont)"
+        int vlan_id "VLAN asignada"
+        string tipo_conector_fibra "Ej: SC/APC, LC/UPC"
+        float potencia_senal_rx_dbm "Potencia Rx (dBm)"
+        float potencia_senal_tx_dbm "Potencia Tx (dBm)"
+        string estado_provisionamiento "Ej: pendiente, aprovisionado"
+        timestamp fecha_ultima_sincronizacion_monitoreo
+        string datos_adicionales_monitoreo JSON "Otros datos de monitoreo"
+    }
+
+    CREDENCIALES_DISPOSITIVO {
+        int id PK
+        int dispositivo_id FK
+        string usuario
+        string password_encriptado
+        string tipo_conexion
+        timestamp actualizado
+    }
+
+    METRICAS_RED {
+        int id PK
+        int dispositivo_id FK
+        float trafico_up
+        float trafico_down
+        float latencia
+        float packet_loss
+        timestamp registrado
+    }
+
+    UBICACIONES_INVENTARIO {
+        int id PK
+        string nombre
+        string tipo
+        int parent_id FK
+    }
+
+    INVENTARIO {
+        int id PK
+        string nombre
+        string marca
+        string modelo
+        string numero_serie
+        string estado
+        int ubicacion_id FK
+        int cliente_id FK
+        timestamp creado
+        timestamp actualizado
+    }
+
+    PLANES_SERVICIO {
+        int id PK
+        string nombre
+        float precio
+        int velocidad_down "Mbps"
+        int velocidad_up "Mbps"
+        boolean acceso_netflix
+        string descripcion
+        string tipo_tecnologia "Ej: FIBRA, COAXIAL, RADIO"
+    }
+
+    SERVICIOS_CLIENTE {
+        int id PK
+        int cliente_id FK
+        int plan_id FK
+        int dispositivo_id FK "Dispositivo principal del servicio"
+        date fecha_contratacion
+        date fecha_activacion
+        date fecha_cancelacion
+        string estado_servicio "Ej: Activo, Suspendido"
+        string observaciones
+        timestamp creado
+        timestamp actualizado
+    }
+
+    PLANTILLAS_MENSAJE {
+        int id PK
+        string nombre
+        string contenido
+        string tipo
+        string canal
+    }
+
+    USUARIOS ||--o{ ROLES : tiene
+    ROLES ||--|{ ROL_PERMISOS : contiene
+    PERMISOS ||--|{ ROL_PERMISOS : aplica_a
+    CLIENTES ||--o{ SECTORES : pertenece_a
+    CLIENTES ||--|{ DOCUMENTOS_CLIENTE : tiene
+    CLIENTES ||--|{ DISPOSITIVOS_RED : posee
+    CLIENTES ||--|{ INVENTARIO : asignado_a
+    CLIENTES ||--|{ SERVICIOS_CLIENTE : tiene_contratado
+    SECTORES ||--o{ NODOS : agrupa
+    NODOS ||--|{ DISPOSITIVOS_RED : contiene
+    DISPOSITIVOS_RED ||--o{ EQUIPOS_FIBRA_OPTICA : "es_detallado_por (si es_fibra_optica=true)"
+    DISPOSITIVOS_RED ||--|{ CREDENCIALES_DISPOSITIVO : tiene
+    DISPOSITIVOS_RED ||--|{ METRICAS_RED : genera
+    DISPOSITIVOS_RED ||--o{ SERVICIOS_CLIENTE : "asociado_a_servicio (opcional)"
+    UBICACIONES_INVENTARIO ||--|{ INVENTARIO : contiene
+    PLANES_SERVICIO ||--|{ SERVICIOS_CLIENTE : "es_aplicado_en"
+
