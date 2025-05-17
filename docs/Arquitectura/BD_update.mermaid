@@ -1,0 +1,271 @@
+erDiagram
+    USUARIOS {
+        int id PK
+        string nombre
+        string apellidos
+        string email
+        string password_hash
+        int rol_id FK
+        boolean activo
+        timestamp creado
+        timestamp actualizado
+    }
+
+    ROLES {
+        int id PK
+        string nombre
+        string descripcion
+        int nivel
+        string categoria
+    }
+
+    PERMISOS {
+        int id PK
+        string nombre
+        string descripcion
+        string modulo
+    }
+
+    ROL_PERMISOS {
+        int rol_id FK
+        int permiso_id FK
+    }
+
+    CLIENTES {
+        int id PK
+        string nombre
+        string apellidos
+        string correo
+        string telefono
+        string whatsapp
+        date fecha_nacimiento
+        date fecha_inicio
+        float latitud
+        float longitud
+        int sector_id FK
+        boolean activo
+        timestamp creado
+        timestamp actualizado
+    }
+
+    DOCUMENTOS_CLIENTE {
+        int id PK
+        int cliente_id FK
+        string tipo
+        string nombre_archivo
+        string ruta_archivo
+        timestamp subido
+    }
+
+    SECTORES {
+        int id PK
+        string nombre
+        int nodo_id FK
+        string descripcion
+    }
+
+    NODOS {
+        int id PK
+        string nombre
+        string ubicacion
+        float latitud
+        float longitud
+    }
+
+    PLANES_SERVICIO {
+        int id PK
+        string nombre
+        float precio
+        int velocidad_down
+        int velocidad_up
+        boolean acceso_jellyfin
+        string descripcion
+        string tipo_tecnologia
+    }
+
+    SERVICIOS_CONTRATADOS {
+        int id PK
+        int cliente_id FK
+        int plan_id FK
+        date fecha_inicio
+        date fecha_fin
+        boolean activo
+    }
+
+    SERVICIOS_CLIENTE {
+        int id PK
+        int cliente_id FK
+        int plan_id FK
+        int dispositivo_id FK
+        date fecha_contratacion
+        date fecha_activacion
+        date fecha_cancelacion
+        string estado_servicio
+        string observaciones
+        timestamp creado
+        timestamp actualizado
+    }
+
+    DISPOSITIVOS_RED {
+        int id PK
+        string tipo
+        string marca
+        string modelo
+        string ip
+        string mac
+        int nodo_id FK
+        int sector_id FK
+        int cliente_id FK
+        boolean activo
+        boolean es_fibra_optica
+    }
+
+    EQUIPOS_FIBRA_OPTICA {
+        int id PK
+        int dispositivo_id FK
+        string ont_serial_number
+        string olt_port
+        int vlan_id
+        string tipo_conector_fibra
+        float potencia_senal_rx_dbm
+        float potencia_senal_tx_dbm
+        string estado_provisionamiento
+        timestamp fecha_ultima_sincronizacion_monitoreo
+        string datos_adicionales_monitoreo
+    }
+
+    CREDENCIALES_DISPOSITIVO {
+        int id PK
+        int dispositivo_id FK
+        string usuario
+        string password_encriptado
+        string tipo_conexion
+        timestamp actualizado
+    }
+
+    METRICAS_RED {
+        int id PK
+        int dispositivo_id FK
+        float trafico_up
+        float trafico_down
+        float latencia
+        float packet_loss
+        timestamp registrado
+    }
+
+    TICKETS {
+        int id PK
+        int cliente_id FK
+        int usuario_id FK
+        string titulo
+        string descripcion
+        string estado
+        string prioridad
+        timestamp creado
+        timestamp actualizado
+        timestamp cerrado
+    }
+
+    COMENTARIOS_TICKET {
+        int id PK
+        int ticket_id FK
+        int usuario_id FK
+        string contenido
+        timestamp creado
+    }
+
+    UBICACIONES_INVENTARIO {
+        int id PK
+        string nombre
+        string tipo
+        int parent_id FK
+    }
+
+    INVENTARIO {
+        int id PK
+        string nombre
+        string marca
+        string modelo
+        string numero_serie
+        string estado
+        int ubicacion_id FK
+        int cliente_id FK
+        timestamp creado
+        timestamp actualizado
+    }
+
+    FACTURAS {
+        int id PK
+        int cliente_id FK
+        int servicio_id FK
+        float monto
+        string estado
+        date fecha_emision
+        date fecha_vencimiento
+        timestamp pagado
+    }
+
+    PAGOS {
+        int id PK
+        int factura_id FK
+        float monto
+        string metodo
+        string referencia
+        timestamp fecha
+    }
+
+    PLANTILLAS_MENSAJE {
+        int id PK
+        string nombre
+        string contenido
+        string tipo
+        string canal
+    }
+
+    COMUNICACIONES {
+        int id PK
+        int cliente_id FK
+        int plantilla_id FK
+        string canal
+        string estado
+        string contenido_enviado
+        timestamp enviado
+    }
+
+    JELLYFIN_USUARIOS {
+        int id PK
+        int cliente_id FK
+        string jellyfin_id
+        string estado
+        timestamp creado
+        timestamp actualizado
+    }
+
+    %% Relaciones
+    USUARIOS ||--o{ TICKETS : "asignado a"
+    USUARIOS ||--o{ COMENTARIOS_TICKET : "escribe"
+    ROLES ||--|{ ROL_PERMISOS : "contiene"
+    PERMISOS ||--|{ ROL_PERMISOS : "aplica_a"
+    CLIENTES ||--o{ SECTORES : "pertenece_a"
+    CLIENTES ||--|{ DOCUMENTOS_CLIENTE : "tiene"
+    CLIENTES ||--|{ SERVICIOS_CONTRATADOS : "contrata"
+    CLIENTES ||--|{ SERVICIOS_CLIENTE : "tiene_servicio"
+    CLIENTES ||--|{ TICKETS : "crea"
+    CLIENTES ||--|{ FACTURAS : "recibe"
+    CLIENTES ||--|{ COMUNICACIONES : "recibe"
+    CLIENTES ||--|{ JELLYFIN_USUARIOS : "posee"
+    CLIENTES ||--|{ DISPOSITIVOS_RED : "posee"
+    CLIENTES ||--|{ INVENTARIO : "asignado_a"
+    SECTORES ||--o{ NODOS : "agrupa"
+    NODOS ||--|{ DISPOSITIVOS_RED : "contiene"
+    PLANES_SERVICIO ||--|{ SERVICIOS_CONTRATADOS : "define"
+    PLANES_SERVICIO ||--|{ SERVICIOS_CLIENTE : "es_aplicado_en"
+    DISPOSITIVOS_RED ||--o{ EQUIPOS_FIBRA_OPTICA : "es_detallado_por"
+    DISPOSITIVOS_RED ||--|{ CREDENCIALES_DISPOSITIVO : "tiene"
+    DISPOSITIVOS_RED ||--|{ METRICAS_RED : "genera"
+    DISPOSITIVOS_RED ||--o{ SERVICIOS_CLIENTE : "asociado_a_servicio"
+    TICKETS ||--|{ COMENTARIOS_TICKET : "tiene"
+    UBICACIONES_INVENTARIO ||--|{ INVENTARIO : "contiene"
+    UBICACIONES_INVENTARIO ||--o{ UBICACIONES_INVENTARIO : "parent_child"
+    FACTURAS ||--|{ PAGOS : "recibe"
+    PLANTILLAS_MENSAJE ||--|{ COMUNICACIONES : "utiliza"
