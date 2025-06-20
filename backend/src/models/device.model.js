@@ -1,3 +1,6 @@
+// backend/src/models/device.model.js
+const { DataTypes } = require('sequelize');
+
 module.exports = (sequelize, Sequelize) => {
   const Device = sequelize.define("Device", {
     id: {
@@ -10,11 +13,11 @@ module.exports = (sequelize, Sequelize) => {
       allowNull: false
     },
     type: {
-      type: Sequelize.ENUM('router', 'switch', 'antenna', 'cpe', 'other'),
+      type: Sequelize.ENUM('router', 'switch', 'antenna', 'cpe', 'sector', 'fiberOnt', 'fiberOlt', 'other'),
       allowNull: false
     },
     brand: {
-      type: Sequelize.ENUM('mikrotik', 'ubiquiti', 'cambium', 'tplink', 'other'),
+      type: Sequelize.ENUM('mikrotik', 'ubiquiti', 'cambium', 'tplink', 'mimosa', 'huawei', 'zte', 'other'),
       allowNull: false
     },
     model: {
@@ -26,19 +29,36 @@ module.exports = (sequelize, Sequelize) => {
     macAddress: {
       type: Sequelize.STRING
     },
-    username: {
+    serialNumber: {
       type: Sequelize.STRING
     },
-    password: {
-      type: Sequelize.STRING
-    },
-    apiKey: {
-      type: Sequelize.STRING
-    },
-    apiPort: {
+    
+    // Ubicación física/lógica
+    nodeId: {
       type: Sequelize.INTEGER,
-      defaultValue: 8728
+      references: {
+        model: 'Nodes',
+        key: 'id'
+      }
     },
+    clientId: {
+      type: Sequelize.INTEGER,
+      references: {
+        model: 'Clients',
+        key: 'id'
+      }
+    },
+    
+    // Configuración técnica
+    firmwareVersion: {
+      type: Sequelize.STRING
+    },
+    isFiberDevice: {
+      type: Sequelize.BOOLEAN,
+      defaultValue: false
+    },
+    
+    // Estado y monitoreo
     status: {
       type: Sequelize.ENUM('online', 'offline', 'maintenance', 'unknown'),
       defaultValue: 'unknown'
@@ -57,7 +77,28 @@ module.exports = (sequelize, Sequelize) => {
     },
     notes: {
       type: Sequelize.TEXT
+    },
+    
+    // Datos técnicos adicionales
+    connectionParams: {
+      type: Sequelize.JSON,
+      defaultValue: {}
+    },
+    monitoringData: {
+      type: Sequelize.JSON,
+      defaultValue: {}
+    },
+    specificConfig: {
+      type: Sequelize.JSON,
+      defaultValue: {}
+    },
+    metadata: {
+      type: Sequelize.JSON,
+      defaultValue: {}
     }
+  }, {
+    tableName: 'Devices',
+    timestamps: true
   });
 
   return Device;

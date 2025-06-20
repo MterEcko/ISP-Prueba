@@ -1,3 +1,4 @@
+// backend/src/models/role.model.js
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -13,7 +14,8 @@ module.exports = (sequelize) => {
       unique: true
     },
     description: {
-      type: DataTypes.STRING
+      type: DataTypes.STRING,
+      allowNull: false
     },
     level: {
       type: DataTypes.INTEGER,
@@ -21,8 +23,11 @@ module.exports = (sequelize) => {
     },
     category: {
       type: DataTypes.STRING,
-      allowNull: false
+      defaultValue: 'general'
     }
+  }, {
+    tableName: 'Roles',
+    timestamps: true
   });
 
   return Role;

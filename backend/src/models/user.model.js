@@ -1,7 +1,10 @@
+// backend/src/models/user.model.js
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcrypt');
 
 module.exports = (sequelize) => {
+  const bcrypt = require('bcrypt');
+  
   const User = sequelize.define('User', {
     id: {
       type: DataTypes.INTEGER,
@@ -35,8 +38,18 @@ module.exports = (sequelize) => {
     },
     lastLogin: {
       type: DataTypes.DATE
+    },
+    roleId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Roles',
+        key: 'id'
+      }
     }
   }, {
+    tableName: 'Users',
+    timestamps: true,
     hooks: {
       beforeCreate: async (user) => {
         user.password = await bcrypt.hash(user.password, 10);

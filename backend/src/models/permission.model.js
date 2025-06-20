@@ -1,6 +1,8 @@
+// backend/src/models/permission.model.js
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
+
   const Permission = sequelize.define('Permission', {
     id: {
       type: DataTypes.INTEGER,
@@ -13,7 +15,8 @@ module.exports = (sequelize) => {
       unique: true
     },
     description: {
-      type: DataTypes.STRING
+      type: DataTypes.STRING,
+      allowNull: false
     },
     module: {
       type: DataTypes.STRING,

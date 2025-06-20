@@ -1,8 +1,8 @@
-// backend/src/models/node.model.js
+// backend/src/models/zone.model.js
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  const Node = sequelize.define('Node', {
+  const Zone = sequelize.define('Zone', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -10,10 +10,11 @@ module.exports = (sequelize) => {
     },
     name: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      comment: 'Los Ruiseñores, Acacias, La Estación'
     },
-    location: {
-      type: DataTypes.STRING
+    description: {
+      type: DataTypes.TEXT
     },
     latitude: {
       type: DataTypes.FLOAT
@@ -21,25 +22,14 @@ module.exports = (sequelize) => {
     longitude: {
       type: DataTypes.FLOAT
     },
-    description: {
-      type: DataTypes.TEXT
-    },
     active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
-    },
-    zoneId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Zones',
-        key: 'id'
-      }
     }
   }, {
-    tableName: 'Nodes',
+    tableName: 'Zones',
     timestamps: true
   });
 
-  return Node;
+  return Zone;
 };

@@ -1,44 +1,44 @@
-// backend/src/models/clientDocument.model.js
+// backend/src/models/ticketAttachment.model.js
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  const ClientDocument = sequelize.define('ClientDocument', {
+  const TicketAttachment = sequelize.define('TicketAttachment', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    clientId: {
+    ticketId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Clients',
+        model: 'Tickets',
         key: 'id'
       }
-    },
-    type: {
-      type: DataTypes.STRING,
-      allowNull: false
     },
     filename: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    path: {
+    filePath: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    uploadDate: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+    attachmentType: {
+      type: DataTypes.ENUM('photo', 'document', 'video'),
+      allowNull: false
     },
     description: {
-      type: DataTypes.STRING
+      type: DataTypes.TEXT
+    },
+    uploadedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
     }
   }, {
-    tableName: 'ClientDocuments',
+    tableName: 'TicketAttachments',
     timestamps: true
   });
 
-  return ClientDocument;
+  return TicketAttachment;
 };

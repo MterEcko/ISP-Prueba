@@ -1,3 +1,4 @@
+// backend/src/models/client.model.js - LIMPIO SIN PLUGINS
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -50,46 +51,47 @@ module.exports = (sequelize) => {
     notes: {
       type: DataTypes.TEXT
     },
-    // Campos para integración con Mikrotik
+    
+    // Ubicación jerárquica
+    zoneId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Zones',
+        key: 'id'
+      }
+    },
+    nodeId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Nodes',
+        key: 'id'
+      }
+    },
+    sectorId: {
+      type: DataTypes.INTEGER,
+      allowNull: true, // Opcional
+      references: {
+        model: 'Sectors',
+        key: 'id'
+      }
+    },
+    
+    // Información del contrato CORE
     contractNumber: {
       type: DataTypes.STRING,
       unique: true,
       allowNull: true
     },
-    mikrotikUsername: {
-      type: DataTypes.STRING,
-      unique: true,
-      allowNull: true
-    },
-    mikrotikProfile: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    deviceId: {
-      type: DataTypes.INTEGER,
-      references: {
-        model: 'Devices',
-        key: 'id'
-      },
-      allowNull: true
-    },
-    // Información del plan de servicio
     serviceType: {
       type: DataTypes.ENUM('residential', 'business', 'enterprise'),
       defaultValue: 'residential'
-    },
-    downloadSpeed: {
-      type: DataTypes.INTEGER, // en Mbps
-      allowNull: true
-    },
-    uploadSpeed: {
-      type: DataTypes.INTEGER, // en Mbps
-      allowNull: true
-    },
-    dataLimit: {
-      type: DataTypes.INTEGER, // en GB, null para ilimitado
-      allowNull: true
     }
+    // ❌ REMOVIDO: jellyfinUserId, jellyfinActive (van a plugin)
+  }, {
+    tableName: 'Clients',
+    timestamps: true
   });
 
   return Client;

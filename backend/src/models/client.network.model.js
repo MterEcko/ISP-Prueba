@@ -1,4 +1,4 @@
-// Modelo para almacenar la configuración de red de los clientes
+// backend/src/models/client.network.model.js (11/5/25 → ACTUALIZADO)
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -90,21 +90,8 @@ module.exports = (sequelize) => {
     }
   }, {
     timestamps: true,
-    tableName: 'client_networks'
+    tableName: 'ClientNetworks'
   });
-
-  // Definir las asociaciones en el archivo index.js de los modelos
-  ClientNetwork.associate = (models) => {
-    ClientNetwork.belongsTo(models.Client, {
-      foreignKey: 'clientId',
-      as: 'client'
-    });
-    
-    ClientNetwork.belongsTo(models.Device, {
-      foreignKey: 'deviceId',
-      as: 'device'
-    });
-  };
 
   return ClientNetwork;
 };
