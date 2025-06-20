@@ -73,8 +73,8 @@ erDiagram
     Role ||--o{ Permission : has
     Permission ||--o{ Role : grants
     InventoryLocation ||--o{ Inventory : stores
-    InventoryLocation ||--o{ InventoryMovement : from
-    InventoryLocation ||--o{ InventoryMovement : to
+    InventoryLocation ||--o{ InventoryMovement : origin
+    InventoryLocation ||--o{ InventoryMovement : destination
     InventoryLocation ||--o{ InventoryLocation : parent
     InventoryCategory ||--o{ InventoryType : categorizes
     InventoryType ||--o{ InventoryProduct : classifies
@@ -89,7 +89,9 @@ erDiagram
     NotificationRule ||--o{ NotificationQueue : triggers
     PaymentGateway ||--o{ Payment : processes
     DeviceCommand ||--o{ Device : configures
-
+	
+	
+	
     Client {
         int id PK
         string firstName
