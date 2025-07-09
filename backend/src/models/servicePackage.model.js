@@ -2,7 +2,7 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  const servicePackage = sequelize.define('servicePackage', {
+  const ServicePackage  = sequelize.define('ServicePackage', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -51,9 +51,9 @@ module.exports = (sequelize) => {
     }
     // ❌ REMOVIDO: hasJellyfin, jellyfinProfileId (van a plugin)
   }, {
-    tableName: 'servicePackages',
+    tableName: 'ServicePackages',
     timestamps: true
   });
 
-  return servicePackage;
+  return ServicePackage;
 };

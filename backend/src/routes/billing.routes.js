@@ -13,7 +13,7 @@ module.exports = function(app) {
   // Rutas para facturación - Actualmente solo retornan estructuras básicas para probar el frontend
   app.get(
     "/api/billing/invoices",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     (req, res) => {
       // Datos simulados para pruebas
       res.status(200).json({

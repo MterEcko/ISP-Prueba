@@ -14,19 +14,19 @@ module.exports = function(app) {
   // Rutas para clientes
   app.post(
     "/api/clients",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
     clients.create
   );
 
   app.get(
     "/api/clients",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     clients.findAll
   );
 
   app.get(
     "/api/clients/:id",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     clients.findOne
   );
 

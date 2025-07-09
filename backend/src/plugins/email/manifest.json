@@ -1,0 +1,149 @@
+// backend/src/plugins/email/manifest.json
+{
+  "name": "email",
+  "version": "1.0.0",
+  "description": "Plugin para envío de correos electrónicos",
+  "category": "communication",
+  "author": "Sistema ISP",
+  "main": "src/email.controller.js",
+  "channelType": "email",
+  "capabilities": ["send", "verify", "template", "webhook"],
+  "providers": ["smtp", "sendgrid", "mailgun"],
+  "tables": [],
+  "routes": [
+    {
+      "path": "/webhook/email",
+      "method": "POST",
+      "handler": "handleWebhook"
+    }
+  ],
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "provider": {
+        "type": "string",
+        "enum": ["smtp", "sendgrid", "mailgun"],
+        "title": "Proveedor de Email",
+        "description": "Seleccione el proveedor de email a utilizar"
+      },
+      "from": {
+        "type": "object",
+        "title": "Remitente",
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Nombre del remitente"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email del remitente"
+          }
+        },
+        "required": ["name", "email"]
+      },
+      "smtp": {
+        "type": "object",
+        "title": "Configuración SMTP",
+        "properties": {
+          "host": {
+            "type": "string",
+            "title": "Servidor SMTP"
+          },
+          "port": {
+            "type": "number",
+            "title": "Puerto",
+            "default": 587
+          },
+          "secure": {
+            "type": "boolean",
+            "title": "Conexión segura (SSL)",
+            "default": false
+          },
+          "auth": {
+            "type": "object",
+            "title": "Autenticación",
+            "properties": {
+              "user": {
+                "type": "string",
+                "title": "Usuario"
+              },
+              "pass": {
+                "type": "string",
+                "title": "Contraseña",
+                "format": "password"
+              }
+            },
+            "required": ["user", "pass"]
+          }
+        }
+      },
+      "sendgrid": {
+        "type": "object",
+        "title": "Configuración SendGrid",
+        "properties": {
+          "apiKey": {
+            "type": "string",
+            "title": "API Key de SendGrid",
+            "format": "password"
+          }
+        }
+      },
+      "mailgun": {
+        "type": "object",
+        "title": "Configuración Mailgun",
+        "properties": {
+          "apiKey": {
+            "type": "string",
+            "title": "API Key de Mailgun",
+            "format": "password"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Dominio de Mailgun"
+          }
+        }
+      }
+    },
+    "required": ["provider", "from"],
+    "dependencies": {
+      "provider": {
+        "oneOf": [
+          {
+            "properties": {
+              "provider": { "enum": ["smtp"] }
+            },
+            "required": ["smtp"]
+          },
+          {
+            "properties": {
+              "provider": { "enum": ["sendgrid"] }
+            },
+            "required": ["sendgrid"]
+          },
+          {
+            "properties": {
+              "provider": { "enum": ["mailgun"] }
+            },
+            "required": ["mailgun"]
+          }
+        ]
+      }
+    }
+  },
+  "permissions": [
+    "send_emails",
+    "manage_email_templates",
+    "view_email_statistics"
+  ],
+  "webhookSupport": {
+    "sendgrid": {
+      "events": ["delivered", "bounce", "dropped", "deferred", "processed"],
+      "signatureHeader": "X-Twilio-Email-Event-Webhook-Signature"
+    },
+    "mailgun": {
+      "events": ["delivered", "failed", "rejected", "accepted"],
+      "signatureHeader": "X-Mailgun-Signature"
+    }
+  }
+}

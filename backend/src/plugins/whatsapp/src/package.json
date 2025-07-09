@@ -1,0 +1,15 @@
+// backend/src/plugins/email/package.json
+{
+  "name": "isp-email-plugin",
+  "version": "1.0.0",
+  "description": "Plugin de Email para Sistema ISP",
+  "main": "src/email.controller.js",
+  "dependencies": {
+    "nodemailer": "^6.9.0",
+    "@sendgrid/mail": "^7.7.0",
+    "mailgun-js": "^0.22.0"
+  },
+  "keywords": ["email", "communication", "isp"],
+  "author": "Sistema ISP",
+  "license": "MIT"
+}
