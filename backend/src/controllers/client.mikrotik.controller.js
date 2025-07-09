@@ -1,83 +1,39 @@
-// Controlador para operaciones específicas de clientes con Mikrotik
-const MikrotikService = require('../services/mikrotik.service');
+// controllers/client.mikrotik.controller.js - Controlador actualizado para usar el nuevo servicio
+const ClientMikrotikService = require('../services/client.mikrotik.service');
 const logger = require('../utils/logger');
-const db = require('../models');
-const Client = db.Client;
-const Device = db.Device;
 
 const ClientMikrotikController = {
-  // Crear usuario PPPoE para un cliente en un dispositivo específico
+  /**
+   * Crear un usuario PPPoE para un cliente en un dispositivo específico
+   * @param {Object} req - Request Express
+   * @param {Object} res - Response Express
+   */
   createClientPPPoE: async (req, res) => {
     try {
       const { clientId, deviceId } = req.params;
-      const { profile, bandwidth, comment } = req.body;
-      
-      // Obtener información del cliente
-      const client = await Client.findByPk(clientId);
-      if (!client) {
-        return res.status(404).json({
-          success: false,
-          message: `Cliente con ID ${clientId} no encontrado`
-        });
-      }
-      
-      // Obtener información del dispositivo
-      const device = await Device.findByPk(deviceId);
-      if (!device) {
-        return res.status(404).json({
-          success: false,
-          message: `Dispositivo con ID ${deviceId} no encontrado`
-        });
-      }
-      
-      // Asegurarse de que el dispositivo tiene credenciales
-      if (!device.ipAddress || !device.username || !device.password) {
+      const pppoeData = req.body;
+
+      logger.info(`Controlador: Creando usuario PPPoE para cliente ${clientId} en dispositivo ${deviceId}`);
+
+      // Validar datos requeridos
+      if (!pppoeData.password) {
         return res.status(400).json({
           success: false,
-          message: 'El dispositivo no tiene configuradas las credenciales API'
+          message: 'Se requiere password para crear un usuario PPPoE'
         });
       }
-      
-      // Generar username basado en el cliente
-      const username = client.contractNumber || `client_${clientId}`;
-      // Generar password (puedes usar el mismo username o generar uno aleatorio)
-      const password = client.contractNumber || 'default_pass';
-      
-      const userData = {
-        name: username,
-        password: password,
-        profile: profile || 'default',
-        comment: comment || `Cliente: ${client.firstName} ${client.lastName}`
-      };
-      
-      const result = await MikrotikService.createPPPoEUser(
-        device.ipAddress,
-        device.apiPort || 8728,
-        device.username,
-        device.password,
-        userData
-      );
-      
-      // Actualizar cliente con información PPPoE
-      await Client.update(
-        { 
-          mikrotikUsername: username,
-          mikrotikProfile: profile,
-          deviceId: deviceId
-        },
-        { where: { id: clientId } }
-      );
-      
-      return res.status(201).json({
-        success: true,
-        message: 'Usuario PPPoE creado exitosamente para el cliente',
-        data: {
-          clientId,
-          username,
-          profile,
-          mikrotikId: result.id
-        }
-      });
+
+      // Validar que se proporcione profileId O profileName
+      if (!pppoeData.profileId && !pppoeData.profileName && !pppoeData.useServicePackageProfile) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere profileId, profileName o useServicePackageProfile=true'
+        });
+      }
+
+      const result = await ClientMikrotikService.createClientPPPoE(clientId, deviceId, pppoeData);
+
+      return res.status(201).json(result);
     } catch (error) {
       logger.error(`Error en createClientPPPoE: ${error.message}`);
       return res.status(500).json({
@@ -87,61 +43,22 @@ const ClientMikrotikController = {
       });
     }
   },
-  
-  // Actualizar usuario PPPoE de un cliente
+
+  /**
+   * Actualizar un usuario PPPoE de un cliente
+   * @param {Object} req - Request Express
+   * @param {Object} res - Response Express
+   */
   updateClientPPPoE: async (req, res) => {
     try {
       const { clientId } = req.params;
-      const updateData = req.body;
-      
-      // Obtener información del cliente
-      const client = await Client.findByPk(clientId);
-      if (!client) {
-        return res.status(404).json({
-          success: false,
-          message: `Cliente con ID ${clientId} no encontrado`
-        });
-      }
-      
-      // Obtener dispositivo asociado al cliente
-      const device = await Device.findByPk(client.deviceId);
-      if (!device) {
-        return res.status(404).json({
-          success: false,
-          message: 'El cliente no tiene un dispositivo Mikrotik asociado'
-        });
-      }
-      
-      // Obtener usuarios PPPoE del dispositivo
-      const users = await MikrotikService.getPPPoEUsers(
-        device.ipAddress,
-        device.apiPort || 8728,
-        device.username,
-        device.password
-      );
-      
-      // Buscar el usuario del cliente
-      const userToUpdate = users.find(user => user.name === client.mikrotikUsername);
-      if (!userToUpdate) {
-        return res.status(404).json({
-          success: false,
-          message: 'Usuario PPPoE del cliente no encontrado en Mikrotik'
-        });
-      }
-      
-      await MikrotikService.updatePPPoEUser(
-        device.ipAddress,
-        device.apiPort || 8728,
-        device.username,
-        device.password,
-        userToUpdate.id,
-        updateData
-      );
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Usuario PPPoE del cliente actualizado exitosamente'
-      });
+      const pppoeData = req.body;
+
+      logger.info(`Controlador: Actualizando usuario PPPoE para cliente ${clientId}`);
+
+      const result = await ClientMikrotikService.updateClientPPPoE(clientId, pppoeData);
+
+      return res.status(200).json(result);
     } catch (error) {
       logger.error(`Error en updateClientPPPoE: ${error.message}`);
       return res.status(500).json({
@@ -151,69 +68,21 @@ const ClientMikrotikController = {
       });
     }
   },
-  
-  // Eliminar usuario PPPoE de un cliente
+
+  /**
+   * Eliminar un usuario PPPoE de un cliente
+   * @param {Object} req - Request Express
+   * @param {Object} res - Response Express
+   */
   deleteClientPPPoE: async (req, res) => {
     try {
       const { clientId } = req.params;
-      
-      // Obtener información del cliente
-      const client = await Client.findByPk(clientId);
-      if (!client) {
-        return res.status(404).json({
-          success: false,
-          message: `Cliente con ID ${clientId} no encontrado`
-        });
-      }
-      
-      // Obtener dispositivo asociado al cliente
-      const device = await Device.findByPk(client.deviceId);
-      if (!device) {
-        return res.status(404).json({
-          success: false,
-          message: 'El cliente no tiene un dispositivo Mikrotik asociado'
-        });
-      }
-      
-      // Obtener usuarios PPPoE del dispositivo
-      const users = await MikrotikService.getPPPoEUsers(
-        device.ipAddress,
-        device.apiPort || 8728,
-        device.username,
-        device.password
-      );
-      
-      // Buscar el usuario del cliente
-      const userToDelete = users.find(user => user.name === client.mikrotikUsername);
-      if (!userToDelete) {
-        return res.status(404).json({
-          success: false,
-          message: 'Usuario PPPoE del cliente no encontrado en Mikrotik'
-        });
-      }
-      
-      await MikrotikService.deletePPPoEUser(
-        device.ipAddress,
-        device.apiPort || 8728,
-        device.username,
-        device.password,
-        userToDelete.id
-      );
-      
-      // Limpiar información PPPoE del cliente
-      await Client.update(
-        { 
-          mikrotikUsername: null,
-          mikrotikProfile: null,
-          deviceId: null
-        },
-        { where: { id: clientId } }
-      );
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Usuario PPPoE del cliente eliminado exitosamente'
-      });
+
+      logger.info(`Controlador: Eliminando usuario PPPoE para cliente ${clientId}`);
+
+      const result = await ClientMikrotikService.deleteClientPPPoE(clientId);
+
+      return res.status(200).json(result);
     } catch (error) {
       logger.error(`Error en deleteClientPPPoE: ${error.message}`);
       return res.status(500).json({
@@ -223,51 +92,30 @@ const ClientMikrotikController = {
       });
     }
   },
-  
-  // Configurar límites de ancho de banda para un cliente
+
+  /**
+   * Configurar límites de ancho de banda para un cliente
+   * @param {Object} req - Request Express
+   * @param {Object} res - Response Express
+   */
   setClientBandwidth: async (req, res) => {
     try {
       const { clientId } = req.params;
-      const { uploadLimit, downloadLimit } = req.body;
-      
-      // Obtener información del cliente
-      const client = await Client.findByPk(clientId);
-      if (!client) {
-        return res.status(404).json({
+      const qosData = req.body;
+
+      logger.info(`Controlador: Configurando límites de ancho de banda para cliente ${clientId}`);
+
+      // Validar datos requeridos
+      if (!qosData.downloadSpeed || !qosData.uploadSpeed) {
+        return res.status(400).json({
           success: false,
-          message: `Cliente con ID ${clientId} no encontrado`
+          message: 'Se requieren downloadSpeed y uploadSpeed'
         });
       }
-      
-      // Obtener dispositivo asociado al cliente
-      const device = await Device.findByPk(client.deviceId);
-      if (!device) {
-        return res.status(404).json({
-          success: false,
-          message: 'El cliente no tiene un dispositivo Mikrotik asociado'
-        });
-      }
-      
-      // Configurar QoS para el cliente
-      const qosData = {
-        name: `Client_${clientId}_QoS`,
-        target: client.mikrotikUsername,
-        maxLimit: `${uploadLimit}M/${downloadLimit}M`,
-        comment: `Límites para cliente ${client.firstName} ${client.lastName}`
-      };
-      
-      await MikrotikService.configureQoS(
-        device.ipAddress,
-        device.apiPort || 8728,
-        device.username,
-        device.password,
-        qosData
-      );
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Límites de ancho de banda configurados exitosamente'
-      });
+
+      const result = await ClientMikrotikService.setClientBandwidthLimits(clientId, qosData);
+
+      return res.status(200).json(result);
     } catch (error) {
       logger.error(`Error en setClientBandwidth: ${error.message}`);
       return res.status(500).json({
@@ -277,47 +125,21 @@ const ClientMikrotikController = {
       });
     }
   },
-  
-  // Obtener estadísticas de tráfico para un cliente
+
+  /**
+   * Obtener estadísticas de tráfico para un cliente
+   * @param {Object} req - Request Express
+   * @param {Object} res - Response Express
+   */
   getClientTrafficStats: async (req, res) => {
     try {
       const { clientId } = req.params;
-      
-      // Obtener información del cliente
-      const client = await Client.findByPk(clientId);
-      if (!client) {
-        return res.status(404).json({
-          success: false,
-          message: `Cliente con ID ${clientId} no encontrado`
-        });
-      }
-      
-      // Obtener dispositivo asociado al cliente
-      const device = await Device.findByPk(client.deviceId);
-      if (!device) {
-        return res.status(404).json({
-          success: false,
-          message: 'El cliente no tiene un dispositivo Mikrotik asociado'
-        });
-      }
-      
-      // Obtener estadísticas de tráfico
-      const stats = await MikrotikService.getTrafficStatistics(
-        device.ipAddress,
-        device.apiPort || 8728,
-        device.username,
-        device.password,
-        client.mikrotikUsername
-      );
-      
-      return res.status(200).json({
-        success: true,
-        data: {
-          clientId,
-          username: client.mikrotikUsername,
-          stats
-        }
-      });
+
+      logger.info(`Controlador: Obteniendo estadísticas de tráfico para cliente ${clientId}`);
+
+      const result = await ClientMikrotikService.getClientTrafficStats(clientId);
+
+      return res.status(200).json(result);
     } catch (error) {
       logger.error(`Error en getClientTrafficStats: ${error.message}`);
       return res.status(500).json({
@@ -327,59 +149,21 @@ const ClientMikrotikController = {
       });
     }
   },
-  
-  // Reiniciar sesión PPPoE de un cliente
+
+  /**
+   * Reiniciar la sesión PPPoE de un cliente
+   * @param {Object} req - Request Express
+   * @param {Object} res - Response Express
+   */
   restartClientPPPoESession: async (req, res) => {
     try {
       const { clientId } = req.params;
-      
-      // Obtener información del cliente
-      const client = await Client.findByPk(clientId);
-      if (!client) {
-        return res.status(404).json({
-          success: false,
-          message: `Cliente con ID ${clientId} no encontrado`
-        });
-      }
-      
-      // Obtener dispositivo asociado al cliente
-      const device = await Device.findByPk(client.deviceId);
-      if (!device) {
-        return res.status(404).json({
-          success: false,
-          message: 'El cliente no tiene un dispositivo Mikrotik asociado'
-        });
-      }
-      
-      // Obtener sesiones activas
-      const sessions = await MikrotikService.getActivePPPoESessions(
-        device.ipAddress,
-        device.apiPort || 8728,
-        device.username,
-        device.password
-      );
-      
-      // Buscar la sesión del cliente
-      const clientSession = sessions.find(session => session.name === client.mikrotikUsername);
-      if (!clientSession) {
-        return res.status(404).json({
-          success: false,
-          message: 'Sesión PPPoE del cliente no encontrada'
-        });
-      }
-      
-      await MikrotikService.restartPPPoESession(
-        device.ipAddress,
-        device.apiPort || 8728,
-        device.username,
-        device.password,
-        clientSession.id
-      );
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Sesión PPPoE del cliente reiniciada exitosamente'
-      });
+
+      logger.info(`Controlador: Reiniciando sesión PPPoE para cliente ${clientId}`);
+
+      const result = await ClientMikrotikService.restartClientPPPoESession(clientId);
+
+      return res.status(200).json(result);
     } catch (error) {
       logger.error(`Error en restartClientPPPoESession: ${error.message}`);
       return res.status(500).json({
@@ -389,61 +173,19 @@ const ClientMikrotikController = {
       });
     }
   },
-  
-  // Sincronizar todos los clientes con Mikrotik
+
+  /**
+   * Sincronizar todos los clientes con Mikrotik
+   * @param {Object} req - Request Express
+   * @param {Object} res - Response Express
+   */
   syncAllClientsWithMikrotik: async (req, res) => {
     try {
-      // Obtener todos los dispositivos Mikrotik
-      const devices = await Device.findAll({
-        where: { brand: 'mikrotik' }
-      });
-      
-      if (devices.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'No se encontraron dispositivos Mikrotik'
-        });
-      }
-      
-      let syncResults = [];
-      
-      for (const device of devices) {
-        try {
-          // Obtener usuarios PPPoE del dispositivo
-          const pppoeUsers = await MikrotikService.getPPPoEUsers(
-            device.ipAddress,
-            device.apiPort || 8728,
-            device.username,
-            device.password
-          );
-          
-          // Obtener clientes asociados a este dispositivo
-          const clients = await Client.findAll({
-            where: { deviceId: device.id }
-          });
-          
-          syncResults.push({
-            deviceId: device.id,
-            deviceName: device.name,
-            pppoeUsers: pppoeUsers.length,
-            clientsInDb: clients.length,
-            status: 'success'
-          });
-        } catch (error) {
-          syncResults.push({
-            deviceId: device.id,
-            deviceName: device.name,
-            status: 'error',
-            error: error.message
-          });
-        }
-      }
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Sincronización completada',
-        results: syncResults
-      });
+      logger.info('Controlador: Iniciando sincronización de todos los clientes con Mikrotik');
+
+      const result = await ClientMikrotikService.syncAllClientsWithMikrotik();
+
+      return res.status(200).json(result);
     } catch (error) {
       logger.error(`Error en syncAllClientsWithMikrotik: ${error.message}`);
       return res.status(500).json({
@@ -452,7 +194,253 @@ const ClientMikrotikController = {
         error: error.message
       });
     }
+  },
+
+  /**
+   * ✅ NUEVO: Cambiar plan de servicio de un cliente
+   * @param {Object} req - Request Express
+   * @param {Object} res - Response Express
+   */
+  changeClientServicePlan: async (req, res) => {
+    try {
+      const { clientId } = req.params;
+      const { newServicePackageId } = req.body;
+
+      logger.info(`Controlador: Cambiando plan de servicio para cliente ${clientId} a paquete ${newServicePackageId}`);
+
+      if (!newServicePackageId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere newServicePackageId'
+        });
+      }
+
+      const result = await ClientMikrotikService.changeClientServicePlan(clientId, newServicePackageId);
+
+      return res.status(200).json(result);
+    } catch (error) {
+      logger.error(`Error en changeClientServicePlan: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al cambiar plan de servicio del cliente',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * ✅ NUEVO: Mover cliente entre pools (para cortes/suspensiones)
+   * @param {Object} req - Request Express
+   * @param {Object} res - Response Express
+   */
+  moveClientToPool: async (req, res) => {
+    try {
+      const { clientId } = req.params;
+      const { targetPoolType } = req.body;
+
+      logger.info(`Controlador: Moviendo cliente ${clientId} a pool tipo ${targetPoolType}`);
+
+      if (!targetPoolType || !['active', 'suspended', 'cutService'].includes(targetPoolType)) {
+        return res.status(400).json({
+          success: false,
+          message: 'targetPoolType debe ser: active, suspended o cutService'
+        });
+      }
+
+      const result = await ClientMikrotikService.moveClientToPool(clientId, targetPoolType);
+
+      return res.status(200).json(result);
+    } catch (error) {
+      logger.error(`Error en moveClientToPool: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al mover cliente entre pools',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * ✅ NUEVO: Obtener información completa del cliente en Mikrotik
+   * @param {Object} req - Request Express
+   * @param {Object} res - Response Express
+   */
+  getClientMikrotikInfo: async (req, res) => {
+    try {
+      const { clientId } = req.params;
+
+      logger.info(`Controlador: Obteniendo información completa de Mikrotik para cliente ${clientId}`);
+
+      const result = await ClientMikrotikService.getClientMikrotikInfo(clientId);
+
+      return res.status(200).json(result);
+    } catch (error) {
+      logger.error(`Error en getClientMikrotikInfo: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al obtener información de Mikrotik del cliente',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * ✅ NUEVO: Obtener perfiles disponibles para un router específico
+   * @param {Object} req - Request Express
+   * @param {Object} res - Response Express
+   */
+  getAvailableProfiles: async (req, res) => {
+    try {
+      const { routerId } = req.params;
+
+      logger.info(`Controlador: Obteniendo perfiles disponibles para router ${routerId}`);
+
+      // Importar mikrotikService directamente para esta consulta
+      const MikrotikService = require('../services/mikrotik.service');
+      const db = require('../models');
+      const MikrotikRouter = db.MikrotikRouter;
+
+      const router = await MikrotikRouter.findByPk(routerId);
+      if (!router) {
+        return res.status(404).json({
+          success: false,
+          message: `Router ${routerId} no encontrado`
+        });
+      }
+
+      const profiles = await MikrotikService.getPPPoEProfiles(
+        router.ipAddress,
+        router.apiPort,
+        router.username,
+        router.passwordEncrypted // Asumir que está desencriptado en el servicio
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          routerId,
+          routerName: router.name,
+          profiles: profiles.map(profile => ({
+            id: profile.id,
+            name: profile.name,
+            rateLimit: profile.rateLimit,
+            localAddress: profile.localAddress,
+            remoteAddress: profile.remoteAddress,
+            bridge: profile.bridge,
+			queue: profile.queue,
+			dnsServer: profile.dnsServer
+          }))
+        }
+      });
+    } catch (error) {
+      logger.error(`Error en getAvailableProfiles: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al obtener perfiles disponibles',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * ✅ NUEVO: Obtener pools disponibles para un router específico
+   * @param {Object} req - Request Express
+   * @param {Object} res - Response Express
+   */
+  getAvailablePools: async (req, res) => {
+    try {
+      const { routerId } = req.params;
+
+      logger.info(`Controlador: Obteniendo pools disponibles para router ${routerId}`);
+
+      const MikrotikService = require('../services/mikrotik.service');
+      const db = require('../models');
+      const MikrotikRouter = db.MikrotikRouter;
+
+      const router = await MikrotikRouter.findByPk(routerId);
+      if (!router) {
+        return res.status(404).json({
+          success: false,
+          message: `Router ${routerId} no encontrado`
+        });
+      }
+
+      const pools = await MikrotikService.getIPPools(
+        router.ipAddress,
+        router.apiPort,
+        router.username,
+        router.passwordEncrypted
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          routerId,
+          routerName: router.name,
+          pools: pools.map(pool => ({
+            id: pool.id,
+            name: pool.name,
+            ranges: pool.ranges,
+            comment: pool.comment,
+            usedIPs: pool.usedIPs,
+            totalIPs: pool.totalIPs
+          }))
+        }
+      });
+    } catch (error) {
+      logger.error(`Error en getAvailablePools: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al obtener pools disponibles',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * ✅ NUEVO: Obtener IPs disponibles de un pool específico
+   * @param {Object} req - Request Express
+   * @param {Object} res - Response Express
+   */
+  getPoolAvailableIPs: async (req, res) => {
+    try {
+      const { routerId, poolName } = req.params;
+
+      logger.info(`Controlador: Obteniendo IPs disponibles del pool ${poolName} en router ${routerId}`);
+
+      const MikrotikService = require('../services/mikrotik.service');
+      const db = require('../models');
+      const MikrotikRouter = db.MikrotikRouter;
+
+      const router = await MikrotikRouter.findByPk(routerId);
+      if (!router) {
+        return res.status(404).json({
+          success: false,
+          message: `Router ${routerId} no encontrado`
+        });
+      }
+
+      const availableIPs = await MikrotikService.getPoolAvailableIPs(
+        router.ipAddress,
+        router.apiPort,
+        router.username,
+        router.passwordEncrypted,
+        poolName
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: availableIPs
+      });
+    } catch (error) {
+      logger.error(`Error en getPoolAvailableIPs: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al obtener IPs disponibles del pool',
+        error: error.message
+      });
+    }
   }
 };
 
-module.exports = ClientMikrotikController;
+module.exports = ClientMikrotikController

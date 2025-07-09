@@ -2,7 +2,7 @@ const db = require('../models');
 const Client = db.Client;
 const ClientDocument = db.ClientDocument;
 const Sector = db.Sector;
-const Service = db.Service;
+const ServicePackage = db.ServicePackage;
 const Subscription = db.Subscription;
 const Op = db.Sequelize.Op;
 
@@ -27,13 +27,17 @@ exports.create = async (req, res) => {
       birthDate: req.body.birthDate,
       startDate: req.body.startDate || new Date(),
       active: req.body.active !== undefined ? req.body.active : true,
-      notes: req.body.notes,
+	  notes: req.body.notes,
+	  zoneId: req.body.zoneId,
+      nodeId: req.body.nodeId,
       sectorId: req.body.sectorId
     });
 
     return res.status(201).json({ message: "Cliente creado exitosamente", client });
   } catch (error) {
     return res.status(500).json({ message: error.message });
+	return res.json({ message: "Error 500 validar"});
+	
   }
 };
 
@@ -49,12 +53,12 @@ exports.findAll = async (req, res) => {
     const condition = {};
     if (name) {
       condition[Op.or] = [
-        { firstName: { [Op.iLike]: `%${name}%` } },
-        { lastName: { [Op.iLike]: `%${name}%` } }
+        { firstName: { [Op.Like]: `%${name}%` } },
+        { lastName: { [Op.Like]: `%${name}%` } }
       ];
     }
-    if (email) condition.email = { [Op.iLike]: `%${email}%` };
-    if (phone) condition.phone = { [Op.iLike]: `%${phone}%` };
+    if (email) condition.email = { [Op.Like]: `%${email}%` };
+    if (phone) condition.phone = { [Op.Like]: `%${phone}%` };
     if (active !== undefined) condition.active = active === 'true';
     if (sectorId) condition.sectorId = sectorId;
 
@@ -103,11 +107,12 @@ exports.findOne = async (req, res) => {
           attributes: ['id', 'type', 'filename', 'uploadDate', 'description']
         },
         {
-          model: Service,
-          through: { 
-            model: Subscription,
-            attributes: ['id', 'startDate', 'endDate', 'status', 'ipAddress', 'username']
-          }
+          model: Subscription,
+          as: 'Subscriptions',
+          include: [{ 
+            model: ServicePackage,
+            as: 'ServicePackage'
+		}]
         }
       ]
     });

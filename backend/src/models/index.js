@@ -252,7 +252,7 @@ db.CommandHistory.belongsTo(db.User, {
 // Servicios y suscripciones
 db.Client.hasMany(db.Subscription, {
   foreignKey: 'clientId',
-  as: 'subscriptions'
+  as: 'Subscriptions'
 });
 
 db.Subscription.belongsTo(db.Client, {
@@ -267,7 +267,7 @@ db.ServicePackage.hasMany(db.Subscription, {
 
 db.Subscription.belongsTo(db.ServicePackage, {
   foreignKey: 'servicePackageId',
-  as: 'servicePackage'
+  as: 'ServicePackage'
 });
 
 // Tickets
@@ -600,23 +600,28 @@ db.ServicePackage.hasMany(db.MikrotikProfile, {
 
 db.MikrotikProfile.belongsTo(db.ServicePackage, {
   foreignKey: 'servicePackageId',
+  
 });
 
 // Clientes - nuevas relaciones
 db.Client.hasOne(db.ClientBilling, {
   foreignKey: 'clientId',
+  as: 'clientBilling'  // Agregar alias
 });
 
 db.ClientBilling.belongsTo(db.Client, {
   foreignKey: 'clientId',
+  as: 'client'  // ✅ ESTE ES EL ALIAS QUE USAS EN EL CONTROLADOR
 });
 
 db.ServicePackage.hasMany(db.ClientBilling, {
   foreignKey: 'servicePackageId',
+  as: 'clientBillings'  // ← Minúscula
 });
 
 db.ClientBilling.belongsTo(db.ServicePackage, {
   foreignKey: 'servicePackageId',
+  as: 'ServicePackage'  // ← Minúscula
 });
 
 db.IpPool.hasMany(db.ClientBilling, {

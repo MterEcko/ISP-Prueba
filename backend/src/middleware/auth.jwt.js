@@ -65,6 +65,12 @@ checkPermission = (requiredPermission) => {
       if (!user) {
         return res.status(404).json({ message: "Usuario no encontrado" });
       }
+      
+      // Si el usuario es admin, permitir acceso sin verificar permisos específicos
+      if (user.Role.name === 'admin') {
+        next();
+        return;
+      }
 
       // Verificar si el rol tiene el permiso requerido
       const hasPermission = user.Role.Permissions.some(
