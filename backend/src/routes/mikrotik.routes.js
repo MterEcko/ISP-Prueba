@@ -1,8 +1,14 @@
 // Rutas para operaciones con Mikrotik
 const MikrotikController = require('../controllers/mikrotik.controller');
+const MikrotikSyncController = require('../controllers/mikrotik.sync.controller');
 const { authJwt } = require('../middleware');
 
 // Debugging: Verificar que el controlador se importó correctamente
+// Debugging: Verificar que el controlador se importó correctamente
+console.log('MikrotikSyncController:', MikrotikSyncController);
+console.log('syncIpPools method:', MikrotikSyncController.syncIpPools);
+console.log('Is syncIpPools a function?', typeof MikrotikSyncController.syncIpPools === 'function');
+
 console.log('MikrotikController:', MikrotikController);
 console.log('testConnection method:', MikrotikController.testConnection);
 console.log('Is testConnection a function?', typeof MikrotikController.testConnection === 'function');
@@ -31,7 +37,7 @@ module.exports = function(app) {
    */
   app.post(
     "/api/mikrotik/test-connection",
-    [authJwt.verifyToken, authJwt.checkRole('technician')],
+    //[authJwt.verifyToken, authJwt.checkRole('technician')],
     MikrotikController.testConnection
   );
   
@@ -42,7 +48,7 @@ module.exports = function(app) {
    */
   app.post(
     "/api/mikrotik/device-info",
-    [authJwt.verifyToken, authJwt.checkRole('technician')],
+    //[authJwt.verifyToken, authJwt.checkRole('technician')],
     MikrotikController.getDeviceInfo
   );
   
@@ -53,7 +59,7 @@ module.exports = function(app) {
    */
   app.get(
     "/api/mikrotik/devices/:id/metrics",
-    [authJwt.verifyToken, authJwt.checkRole('technician')],
+    //[authJwt.verifyToken, authJwt.checkRole('technician')],
     MikrotikController.getMetrics
   );
   
@@ -64,7 +70,7 @@ module.exports = function(app) {
    */
   app.get(
     "/api/mikrotik/devices/:id/pppoe-users",
-    [authJwt.verifyToken, authJwt.checkRole('technician')],
+    //[authJwt.verifyToken, authJwt.checkRole('technician')],
     MikrotikController.getPPPoEUsers
   );
   
@@ -75,7 +81,7 @@ module.exports = function(app) {
    */
   app.get(
     "/api/mikrotik/devices/:id/active-sessions",
-    [authJwt.verifyToken, authJwt.checkRole('technician')],
+    //[authJwt.verifyToken, authJwt.checkRole('technician')],
     MikrotikController.getActivePPPoESessions
   );
   
@@ -86,7 +92,7 @@ module.exports = function(app) {
    */
   app.post(
     "/api/mikrotik/devices/:id/pppoe-users",
-    [authJwt.verifyToken, authJwt.checkRole('admin')],
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
     MikrotikController.createPPPoEUser
   );
   
@@ -97,7 +103,7 @@ module.exports = function(app) {
    */
   app.put(
     "/api/mikrotik/devices/:deviceId/pppoe-users/:userId",
-    [authJwt.verifyToken, authJwt.checkRole('admin')],
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
     MikrotikController.updatePPPoEUser
   );
   
@@ -108,7 +114,7 @@ module.exports = function(app) {
    */
   app.delete(
     "/api/mikrotik/devices/:deviceId/pppoe-users/:userId",
-    [authJwt.verifyToken, authJwt.checkRole('admin')],
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
     MikrotikController.deletePPPoEUser
   );
   
@@ -119,7 +125,7 @@ module.exports = function(app) {
    */
   app.get(
     "/api/mikrotik/devices/:id/pppoe-profiles",
-    [authJwt.verifyToken, authJwt.checkRole('technician')],
+    //[authJwt.verifyToken, authJwt.checkRole('technician')],
     MikrotikController.getPPPoEProfiles
   );
   
@@ -130,7 +136,7 @@ module.exports = function(app) {
    */
   app.get(
     "/api/mikrotik/devices/:id/ip-pools",
-    [authJwt.verifyToken, authJwt.checkRole('technician')],
+    //[authJwt.verifyToken, authJwt.checkRole('technician')],
     MikrotikController.getIPPools
   );
   
@@ -141,7 +147,7 @@ module.exports = function(app) {
    */
   app.post(
     "/api/mikrotik/devices/:deviceId/qos",
-    [authJwt.verifyToken, authJwt.checkRole('admin')],
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
     MikrotikController.configureQoS
   );
   
@@ -152,7 +158,7 @@ module.exports = function(app) {
    */
   app.get(
     "/api/mikrotik/devices/:deviceId/traffic",
-    [authJwt.verifyToken, authJwt.checkRole('technician')],
+    //[authJwt.verifyToken, authJwt.checkRole('technician')],
     MikrotikController.getTrafficStatistics
   );
   
@@ -163,7 +169,7 @@ module.exports = function(app) {
    */
   app.post(
     "/api/mikrotik/devices/:deviceId/restart-session/:sessionId",
-    [authJwt.verifyToken, authJwt.checkRole('technician')],
+    //[authJwt.verifyToken, authJwt.checkRole('technician')],
     MikrotikController.restartPPPoESession
   );
   
@@ -174,7 +180,7 @@ module.exports = function(app) {
    */
   app.post(
     "/api/mikrotik/devices/:deviceId/execute-action",
-    [authJwt.verifyToken, authJwt.checkRole('admin')],
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
     MikrotikController.executeAction
   );
   
@@ -185,7 +191,150 @@ module.exports = function(app) {
   */
   app.get(
   "/api/mikrotik/devices/:id/ip-pools/:poolName/available-ips",
-  [authJwt.verifyToken, authJwt.checkRole('technician')],
+  //[authJwt.verifyToken, authJwt.checkRole('technician')],
   MikrotikController.getPoolAvailableIPs
+  );
+  
+  // ✅ NUEVA RUTA: Perfiles desde BD
+app.get(
+  "/api/mikrotik/routers/:id/profiles-db",
+//  [authJwt.verifyToken],
+  MikrotikController.getProfilesFromDatabase
+);
+  // ======================================
+  // RUTAS DE SINCRONIZACIÓN MIKROTIK
+  // ======================================
+
+
+  /**
+   * @route    GET /api/mikrotik/sync/full
+   * @desc     Ejecutar sincronización completa
+   * @access   Privado (Admin)
+   */
+  app.get(
+    "/api/mikrotik/sync/full",
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
+    MikrotikSyncController.runFullSync
+  );
+
+  /**
+   * @route    POST /api/mikrotik/sync/ip-pools
+   * @desc     Sincronizar solo IP Pools
+   * @access   Privado (Admin)
+   */
+  app.post(
+    "/api/mikrotik/sync/ip-pools",
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
+    MikrotikSyncController.syncPoolIPs  
+  );
+
+  /**
+   * @route    POST /api/mikrotik/sync/pool-ips
+   * @desc     Sincronizar solo IPs de pools
+   * @access   Privado (Admin)
+   */
+  app.post(
+    "/api/mikrotik/sync/pool-ips",
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
+    MikrotikSyncController.syncPoolIPs
+  );
+
+  /**
+   * @route    POST /api/mikrotik/sync/pppoe-profiles
+   * @desc     Sincronizar solo perfiles PPPoE
+   * @access   Privado (Admin)
+   */
+  app.post(
+    "/api/mikrotik/sync/pppoe-profiles",
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
+    MikrotikSyncController.syncProfiles
+  );
+
+  /**
+   * @route    POST /api/mikrotik/sync/pppoe-users
+   * @desc     Sincronizar solo usuarios PPPoE
+   * @access   Privado (Admin)
+   */
+  app.post(
+    "/api/mikrotik/sync/pppoe-users",
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
+    MikrotikSyncController.syncUsers
+  );
+
+  /**
+   * @route    POST /api/mikrotik/sync/user/:clientId
+   * @desc     Sincronizar usuario específico
+   * @access   Privado (Admin, Técnico)
+   */
+  app.post(
+    "/api/mikrotik/sync/user/:clientId",
+    //[authJwt.verifyToken, authJwt.checkRole('technician')],
+    MikrotikSyncController.syncSpecificUser
+  );
+
+  /**
+   * @route    POST /api/mikrotik/sync/pool/:poolId
+   * @desc     Sincronizar pool específico
+   * @access   Privado (Admin)
+   */
+  app.post(
+    "/api/mikrotik/sync/pool/:poolId",
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
+    MikrotikSyncController.syncSpecificPool
+  );
+
+  /**
+   * @route    POST /api/mikrotik/sync/clean-orphaned-ips
+   * @desc     Limpiar IPs huérfanas
+   * @access   Privado (Admin)
+   */
+  app.post(
+    "/api/mikrotik/sync/clean-orphaned-ips",
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
+    MikrotikSyncController.cleanupOrphanedIPs
+  );
+
+  /**
+   * @route    GET /api/mikrotik/sync/config
+   * @desc     Obtener configuración de sincronización
+   * @access   Privado (Admin)
+   */
+  app.get(
+    "/api/mikrotik/sync/config",
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
+    MikrotikSyncController.getConfig
+  );
+
+  /**
+   * @route    PUT /api/mikrotik/sync/config
+   * @desc     Actualizar configuración de sincronización
+   * @access   Privado (Admin)
+   */
+  app.put(
+    "/api/mikrotik/sync/config",
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
+    MikrotikSyncController.updateConfig
+  );
+
+  /**
+   * @route    GET /api/mikrotik/sync/status
+   * @desc     Obtener estado de sincronización
+   * @access   Privado (Admin, Técnico)
+   */
+  app.get(
+    "/api/mikrotik/sync/status",
+    //[authJwt.verifyToken, authJwt.checkRole('technician')],
+    MikrotikSyncController.getSyncStatus
+  );
+
+  /**
+   * @route    POST /api/mikrotik/sync/reset-times
+   * @desc     Resetear tiempos de sincronización
+   * @access   Privado (Admin)
+   */
+  app.post(
+    "/api/mikrotik/sync/reset-times",
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
+    MikrotikSyncController.resetSyncTimes
   );
 };

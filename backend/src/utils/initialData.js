@@ -65,7 +65,7 @@ async function createInitialData() {
               title: 'Velocidad lenta', 
               description: 'Cliente reporta velocidad de internet muy lenta, especialmente en horas pico.', 
               clientId: clients[1].id, 
-              status: 'in_progress', 
+              status: 'inProgress', 
               priority: 'medium', 
               createdById: users[0].id 
             }

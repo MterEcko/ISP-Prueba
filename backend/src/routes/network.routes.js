@@ -10,10 +10,50 @@ module.exports = function(app) {
     next();
   });
 
+  // Rutas para zonas
+  app.post(
+    "/api/zones",
+   // [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    network.createZone
+  );
+
+  app.get(
+    "/api/zones",
+    [authJwt.verifyToken],
+    network.findAllZones
+  );
+
+  app.get(
+    "/api/zones/:id/nodes",
+    //[authJwt.verifyToken],
+    network.findNodesByZone
+  );
+  
+  app.get(
+    "/api/zones/:id",
+    //[authJwt.verifyToken],
+    network.findZoneById
+  );
+
+  app.put(
+    "/api/zones/:id",
+    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    network.updateZone
+  );
+
+  app.delete(
+    "/api/zones/:id",
+    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    network.deleteZone
+  );
+
   // Rutas para nodos
+  
+
+  
   app.post(
     "/api/nodes",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_network")],
+    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     network.createNode
   );
 
@@ -25,50 +65,59 @@ module.exports = function(app) {
 
   app.get(
     "/api/nodes/:id",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     network.findNodeById
   );
 
   app.put(
     "/api/nodes/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_network")],
+    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     network.updateNode
   );
 
   app.delete(
     "/api/nodes/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_network")],
+    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     network.deleteNode
   );
+  
+  
 
   // Rutas para sectores
+  app.get(
+    "/api/nodes/:id/sectors",
+    [authJwt.verifyToken],
+    network.findNodesByZone
+  );
+  
+   app.get(
+    "/api/sectors",
+    //[authJwt.verifyToken],
+    network.findAllSector
+  );
+
+  
+  app.get(
+    "/api/nodes/:id/sectors",
+    [authJwt.verifyToken],
+    network.findNodesByZone
+  );
+  
   app.post(
     "/api/sectors",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_network")],
+    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     network.createSector
   );
-
-  app.get(
-    "/api/sectors",
-    [authJwt.verifyToken],
-    network.findAllSectors
-  );
-
-  app.get(
-    "/api/sectors/:id",
-    [authJwt.verifyToken],
-    network.findSectorById
-  );
-
+  
   app.put(
     "/api/sectors/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_network")],
+    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     network.updateSector
   );
-
+  
   app.delete(
     "/api/sectors/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_network")],
+    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     network.deleteSector
   );
 };

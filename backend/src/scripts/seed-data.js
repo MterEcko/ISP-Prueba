@@ -29,7 +29,7 @@ async function seedData() {
       { name: 'view_dashboard', description: 'Ver dashboard', module: 'dashboard' },
       { name: 'manage_clients', description: 'Gestionar clientes', module: 'clients' },
       { name: 'view_network', description: 'Ver estado de red', module: 'network' },
-      { name: 'manage_network', description: 'Gestionar red', module: 'network' },
+      { name: 'manageNetwork', description: 'Gestionar red', module: 'network' },
       { name: 'view_billing', description: 'Ver facturación', module: 'billing' },
       { name: 'manage_billing', description: 'Gestionar facturación', module: 'billing' },
       { name: 'view_inventory', description: 'Ver inventario', module: 'inventory' },
@@ -270,8 +270,8 @@ async function seedData() {
     // Crear tickets
     const tickets = [
       { title: 'Sin conexión a internet', description: 'Cliente reporta que no tiene acceso a internet desde hace 2 horas.', status: 'open', priority: 'high', category: 'connectivity', clientId: client1.id, createdById: 1, assignedToId: 2 },
-      { title: 'Velocidad lenta', description: 'Cliente reporta velocidad de internet muy lenta, especialmente en horas pico.', status: 'in_progress', priority: 'medium', category: 'performance', clientId: client2.id, createdById: 1, assignedToId: 3 },
-      { title: 'Cambio de plan', description: 'Cliente solicita cambio de plan básico a estándar.', status: 'in_progress', priority: 'low', category: 'billing', clientId: client6.id, createdById: 1, assignedToId: 2 },
+      { title: 'Velocidad lenta', description: 'Cliente reporta velocidad de internet muy lenta, especialmente en horas pico.', status: 'inProgress', priority: 'medium', category: 'performance', clientId: client2.id, createdById: 1, assignedToId: 3 },
+      { title: 'Cambio de plan', description: 'Cliente solicita cambio de plan básico a estándar.', status: 'inProgress', priority: 'low', category: 'billing', clientId: client6.id, createdById: 1, assignedToId: 2 },
       { title: 'Problemas de facturación', description: 'Cliente indica que no ha recibido la factura del mes actual.', status: 'resolved', priority: 'medium', category: 'billing', clientId: client4.id, createdById: 1, assignedToId: 3, resolvedAt: new Date(Date.now() - 86400000) },
       { title: 'Instalación de nuevo servicio', description: 'Programar visita para instalación de nuevo servicio contratado.', status: 'open', priority: 'medium', category: 'installation', clientId: client7.id, createdById: 1 },
       { title: 'Interferencia en la señal', description: 'Cliente reporta que la señal se pierde intermitentemente.', status: 'open', priority: 'high', category: 'connectivity', clientId: client3.id, createdById: 1, assignedToId: 2 },
