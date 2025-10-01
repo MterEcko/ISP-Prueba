@@ -251,7 +251,6 @@
 
 <script>
 import NetworkService from '@/services/network.service';
-import ClientService from '@/services/client.service';
 
 export default {
   name: 'NetworkView',
@@ -297,14 +296,7 @@ export default {
         const response = await NetworkService.getAllZones(this.filters);
         
         if (response && response.data) {
-          // Calcular conteos para cada zona
-          this.zones = response.data.map(zone => ({
-            ...zone,
-            nodes_count: zone.Nodes?.length || 0,
-            sectors_count: zone.Nodes?.reduce((sum, node) => sum + (node.Sectors?.length || 0), 0) || 0,
-            clients_count: zone.Nodes?.reduce((sum, node) => 
-              sum + (node.Sectors?.reduce((sSum, sector) => sSum + (sector.Clients?.length || 0), 0) || 0), 0) || 0
-          }));
+          this.zones = response.data;
           this.totalZones = this.zones.length;
         } else {
           throw new Error('Formato de respuesta inesperado');
@@ -320,21 +312,17 @@ export default {
     async loadStats() {
       try {
         // Cargar estadísticas generales de la red
-        const [nodesResponse, sectorsResponse, clientsResponse] = await Promise.all([
+        const [nodesResponse, sectorsResponse] = await Promise.all([
           NetworkService.getAllNodes(),
-          NetworkService.getAllSectors(),
-          ClientService.getAllClients()
+          NetworkService.getAllSectors()
         ]);
         
         this.totalNodes = nodesResponse.data?.length || 0;
         this.totalSectors = sectorsResponse.data?.length || 0;
-        this.totalClients = clientsResponse.data?.totalItems || 0;
-        console.log('clientsResponse.data:', clientsResponse.data);
-        console.log('this.totalClients final:', this.totalClients);
         
         // Calcular total de clientes (esto podría venir de una API específica)
         // Por ahora lo calculamos sumando los clientes de cada zona
-        //this.totalClients = this.zones.reduce((sum, zone) => sum + (zone.clients_count || 0), 0);
+        this.totalClients = this.zones.reduce((sum, zone) => sum + (zone.clients_count || 0), 0);
       } catch (error) {
         console.error('Error al cargar estadísticas:', error);
       }
@@ -436,8 +424,7 @@ export default {
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: white;
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -454,7 +441,10 @@ export default {
 
 .stat-icon {
   font-size: 2.5rem;
-  opacity: 0.9;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .stat-info h3 {

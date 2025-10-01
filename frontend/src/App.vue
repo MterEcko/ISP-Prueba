@@ -33,48 +33,121 @@
                   <span class="text" v-if="!sidebarCollapsed">Dashboard</span>
                 </router-link>
               </li>
+              
               <li>
                 <router-link to="/clients">
                   <span class="icon">👥</span>
                   <span class="text" v-if="!sidebarCollapsed">Clientes</span>
                 </router-link>
               </li>
-              <li>
-                <router-link to="/network">
-                  <span class="icon">📡</span>
-                  <span class="text" v-if="!sidebarCollapsed">Red</span>
+              
+              <!-- Gestión de Red con submenu -->
+              <li class="menu-group">
+                <router-link to="/network" class="main-menu-item">
+                  <span class="icon">🏢</span>
+                  <span class="text" v-if="!sidebarCollapsed">Gestión de Red</span>
+                  <span v-if="!sidebarCollapsed && isNetworkSectionActive" class="expand-icon">▼</span>
+                  <span v-else-if="!sidebarCollapsed" class="expand-icon">▶</span>
                 </router-link>
+                
+                <!-- Submenu para Gestión de Red -->
+                <ul v-if="!sidebarCollapsed && isNetworkSectionActive" class="submenu">
+                  <li>
+                    <router-link to="/network" class="submenu-item">
+                      <span class="submenu-icon">📋</span>
+                      <span class="submenu-text">Vista General</span>
+                    </router-link>
+                  </li>
+                  <li>
+                    <router-link to="/zones/new" class="submenu-item">
+                      <span class="submenu-icon">➕</span>
+                      <span class="submenu-text">Nueva Zona</span>
+                    </router-link>
+                  </li>
+                </ul>
               </li>
-              <li>
-                <router-link to="/mikrotik">
+              
+              <!-- Mikrotik con submenu -->
+              <li class="menu-group">
+                <router-link to="/mikrotik" class="main-menu-item">
                   <span class="icon">🔧</span>
                   <span class="text" v-if="!sidebarCollapsed">Mikrotik</span>
+                  <span v-if="!sidebarCollapsed && isMikrotikSectionActive" class="expand-icon">▼</span>
+                  <span v-else-if="!sidebarCollapsed" class="expand-icon">▶</span>
                 </router-link>
+                
+                <!-- Submenu para Mikrotik -->
+                <ul v-if="!sidebarCollapsed && isMikrotikSectionActive" class="submenu">
+                  <li>
+                    <router-link to="/mikrotik" class="submenu-item">
+                      <span class="submenu-icon">🔧</span>
+                      <span class="submenu-text">Routers</span>
+                    </router-link>
+                  </li>
+                  <li>
+                    <router-link to="/mikrotik/pools" class="submenu-item">
+                      <span class="submenu-icon">🌐</span>
+                      <span class="submenu-text">Pools IP</span>
+                    </router-link>
+                  </li>
+                  <li>
+                    <router-link to="/mikrotik/profiles" class="submenu-item">
+                      <span class="submenu-icon">⚙️</span>
+                      <span class="submenu-text">Perfiles</span>
+                    </router-link>
+                  </li>
+                </ul>
               </li>
+              
               <li>
                 <router-link to="/tickets">
                   <span class="icon">🎫</span>
                   <span class="text" v-if="!sidebarCollapsed">Tickets</span>
                 </router-link>
               </li>
+              
               <li>
-                <router-link to="/billing">
+                <router-link to="/devices">
+                  <span class="icon">💻</span>
+                  <span class="text" v-if="!sidebarCollapsed">Dispositivos</span>
+                </router-link>
+              </li>
+              
+              <li>
+                <router-link to="/inventory">
+                  <span class="icon">📦</span>
+                  <span class="text" v-if="!sidebarCollapsed">Inventario</span>
+                </router-link>
+              </li>
+              
+              <li>
+                <router-link to="/service-packages">
+                  <span class="icon">📋</span>
+                  <span class="text" v-if="!sidebarCollapsed">Paquetes</span>
+                </router-link>
+              </li>
+              
+              <li>
+                <router-link to="/billing" v-if="false">
                   <span class="icon">💰</span>
                   <span class="text" v-if="!sidebarCollapsed">Facturación</span>
                 </router-link>
               </li>
+              
               <li>
-                <router-link to="/jellyfin">
+                <router-link to="/jellyfin" v-if="false">
                   <span class="icon">📺</span>
                   <span class="text" v-if="!sidebarCollapsed">Jellyfin</span>
                 </router-link>
               </li>
+              
               <li>
                 <router-link to="/settings">
                   <span class="icon">⚙️</span>
                   <span class="text" v-if="!sidebarCollapsed">Configuración</span>
                 </router-link>
               </li>
+              
               <li>
                 <a href="#" @click.prevent="logout">
                   <span class="icon">🚪</span>
@@ -111,6 +184,13 @@ export default {
     },
     isLoggedIn() {
       return this.$store.state.auth.status.loggedIn;
+    },
+    isNetworkSectionActive() {
+      const networkPaths = ['/network', '/zones', '/nodes', '/sectors'];
+      return networkPaths.some(path => this.$route.path.includes(path));
+    },
+    isMikrotikSectionActive() {
+      return this.$route.path.includes('/mikrotik');
     }
   },
   methods: {
@@ -164,6 +244,7 @@ body {
   padding: 0 20px;
   height: 60px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 100;
 }
 
 .header-brand {
@@ -260,6 +341,10 @@ body {
 .app-sidebar nav ul {
   list-style: none;
   padding: 0;
+}
+
+.app-sidebar nav li {
+  position: relative;
 }
 
 .app-sidebar nav li a {

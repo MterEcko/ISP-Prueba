@@ -14,6 +14,24 @@
             placeholder="Ingrese nombre del nodo"
           />
         </div>
+		
+        <div class="form-group">
+          <label for="zoneId">Zona *</label>
+          <select 
+            id="zoneId" 
+            v-model="node.zoneId" 
+            required
+          >
+            <option value="">Seleccione una zona</option>
+            <option 
+              v-for="zone in zones" 
+                  :key="zone.id" 
+                  :value="zone.id"
+                  >
+                {{ zone.name }}
+            </option>
+          </select>
+        </div>
         
         <div class="form-group">
           <label for="location">Ubicación</label>
@@ -94,8 +112,10 @@ export default {
         latitude: null,
         longitude: null,
         description: '',
-        active: true
+        active: true,
+		zoneId: null  // <- AGREGAR
       },
+      zones: [],  // <- AGREGAR
       loading: false,
       errorMessage: '',
       isEdit: false
@@ -105,7 +125,9 @@ export default {
     // Verificar si estamos en modo edición
     const nodeId = this.$route.params.id;
     this.isEdit = nodeId && nodeId !== 'new';
-    
+
+    this.loadZones();  // <- AGREGAR
+
     if (this.isEdit) {
       this.loadNode(nodeId);
     }
@@ -124,7 +146,8 @@ export default {
           latitude: node.latitude,
           longitude: node.longitude,
           description: node.description || '',
-          active: node.active
+          active: node.active,
+          zoneId: node.zoneId  // <- AGREGAR
         };
       } catch (error) {
         console.error('Error cargando nodo:', error);
@@ -134,10 +157,24 @@ export default {
       }
     },
     
+    async loadZones() {
+      try {
+        const response = await NetworkService.getAllZones();
+        this.zones = response.data || [];
+      } catch (error) {
+        console.error('Error cargando zonas:', error);
+        this.errorMessage = 'Error al cargar las zonas.';
+      }
+    },
+    
     async submitForm() {
       // Validación básica
       if (!this.node.name) {
         this.errorMessage = 'El nombre del nodo es obligatorio.';
+        return;
+      }
+      if (!this.node.zoneId) {
+        this.errorMessage = 'Debe seleccionar una zona.';
         return;
       }
       

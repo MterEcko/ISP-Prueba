@@ -35,6 +35,48 @@
               />
             </div>
           </div>
+
+          <!-- ===== NUEVOS CAMPOS: MAC Y SERIAL ===== -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="macAddress">MAC Address</label>
+              <input 
+                type="text"
+                id="macAddress"
+                v-model="device.macAddress"
+                placeholder="AA:BB:CC:DD:EE:FF"
+                @blur="searchInventoryByMac"
+              />
+            </div>
+            
+            <div class="form-group">
+              <label for="serialNumber">Número de Serie</label>
+              <input 
+                type="text"
+                id="serialNumber"
+                v-model="device.serialNumber"
+                placeholder="Ej: ABC123456789"
+                @blur="searchInventoryBySerial"
+              />
+            </div>
+          </div>
+
+          <!-- Información del Inventario (si se encuentra) -->
+          <div v-if="inventoryData" class="inventory-info">
+            <h4>📦 Información del Inventario</h4>
+            <div class="inventory-card">
+              <div class="inventory-details">
+                <p><strong>Nombre:</strong> {{ inventoryData.name }}</p>
+                <p><strong>Marca:</strong> {{ inventoryData.brand }}</p>
+                <p><strong>Modelo:</strong> {{ inventoryData.model }}</p>
+                <p><strong>Estado:</strong> {{ inventoryData.status }}</p>
+                <p v-if="inventoryData.location"><strong>Ubicación:</strong> {{ inventoryData.location.name }}</p>
+              </div>
+              <button type="button" @click="useInventoryData" class="btn-use-inventory">
+                Usar Datos del Inventario
+              </button>
+            </div>
+          </div>
           
           <div class="form-group">
             <label for="deviceLocation">Ubicación</label>
@@ -44,6 +86,71 @@
               v-model="device.location" 
               placeholder="ej. Torre Principal, Rack Sala Servidores"
             />
+          </div>
+        </div>
+
+        <!-- ===== NUEVA SECCIÓN: UBICACIÓN EN RED ===== -->
+        <div class="form-section">
+          <h3>Ubicación en Red</h3>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="zoneId">Zona *</label>
+              <select 
+                id="zoneId"
+                v-model="device.zoneId"
+                @change="onZoneChange"
+                required
+              >
+                <option value="">Seleccionar zona</option>
+                <option v-for="zone in zones" :key="zone.id" :value="zone.id">
+                  {{ zone.name }}
+                </option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="nodeId">Nodo *</label>
+              <select 
+                id="nodeId"
+                v-model="device.nodeId"
+                @change="onNodeChange"
+                :disabled="!device.zoneId"
+                required
+              >
+                <option value="">Seleccionar nodo</option>
+                <option v-for="node in availableNodes" :key="node.id" :value="node.id">
+                  {{ node.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Coordenadas (se llenan automáticamente del nodo) -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="deviceLatitude">Latitud</label>
+              <input 
+                type="number" 
+                id="deviceLatitude" 
+                v-model="device.latitude" 
+                step="0.0000001"
+                placeholder="Se completa automáticamente del nodo"
+                readonly
+              />
+            </div>
+            
+            <div class="form-group">
+              <label for="deviceLongitude">Longitud</label>
+              <input 
+                type="number" 
+                id="deviceLongitude" 
+                v-model="device.longitude" 
+                step="0.0000001"
+                placeholder="Se completa automáticamente del nodo"
+                readonly
+              />
+            </div>
           </div>
         </div>
 
@@ -118,30 +225,6 @@
         <div class="form-section">
           <h3>Información Adicional</h3>
           
-          <div class="form-row">
-            <div class="form-group">
-              <label for="deviceLatitude">Latitud</label>
-              <input 
-                type="number" 
-                id="deviceLatitude" 
-                v-model="device.latitude" 
-                step="0.0000001"
-                placeholder="Coordenadas GPS"
-              />
-            </div>
-            
-            <div class="form-group">
-              <label for="deviceLongitude">Longitud</label>
-              <input 
-                type="number" 
-                id="deviceLongitude" 
-                v-model="device.longitude" 
-                step="0.0000001"
-                placeholder="Coordenadas GPS"
-              />
-            </div>
-          </div>
-          
           <div class="form-group">
             <label for="deviceNotes">Notas</label>
             <textarea 
@@ -179,6 +262,8 @@
 <script>
 import MikrotikService from '../services/mikrotik.service';
 import DeviceService from '../services/device.service';
+import InventoryService from '../services/inventory.service';
+import NetworkService from '../services/network.service';
 
 export default {
   name: 'MikrotikDeviceForm',
@@ -190,6 +275,8 @@ export default {
         type: 'router',
         model: '',
         ipAddress: '',
+        macAddress: '',
+        serialNumber: '',
         apiPort: 8728,
         username: 'admin',
         password: '',
@@ -197,10 +284,15 @@ export default {
         latitude: null,
         longitude: null,
         notes: '',
+        zoneId: null,        // ← NUEVO
         nodeId: null,
         sectorId: null,
         clientId: null // Siempre null para routers Mikrotik
       },
+      zones: [],             // ← NUEVO
+      nodes: [],             // ← NUEVO
+      availableNodes: [],    // ← NUEVO
+      inventoryData: null,   // ← NUEVO
       isEdit: false,
       saving: false,
       testingConnection: false,
@@ -212,11 +304,129 @@ export default {
     const deviceId = this.$route.params.id;
     this.isEdit = deviceId && deviceId !== 'new';
     
+    // ===== CARGAR DATOS INICIALES =====
+    this.loadInitialData();
+    
     if (this.isEdit) {
       this.loadDevice(deviceId);
     }
   },
   methods: {
+    // ===== NUEVO: CARGAR ZONAS Y NODOS =====
+    async loadInitialData() {
+      try {
+        const [zonesResponse, nodesResponse] = await Promise.all([
+          NetworkService.getAllZones({ active: true }),
+          NetworkService.getAllNodes({ active: true })
+        ]);
+        
+        this.zones = zonesResponse.data.zones || zonesResponse.data || [];
+        this.nodes = nodesResponse.data.nodes || nodesResponse.data || [];
+      } catch (error) {
+        console.error('Error cargando datos iniciales:', error);
+      }
+    },
+
+    // ===== NUEVO: CAMBIO DE ZONA =====
+    onZoneChange() {
+      // Filtrar nodos por zona seleccionada
+      this.availableNodes = this.nodes.filter(node => 
+        node.zoneId === parseInt(this.device.zoneId)
+      );
+      
+      // Limpiar nodo seleccionado si no pertenece a la zona
+      if (this.device.nodeId && !this.availableNodes.find(n => n.id === parseInt(this.device.nodeId))) {
+        this.device.nodeId = null;
+        this.device.latitude = null;
+        this.device.longitude = null;
+        this.device.location = '';
+      }
+    },
+
+    // ===== NUEVO: CAMBIO DE NODO =====
+    onNodeChange() {
+      if (!this.device.nodeId) {
+        this.device.latitude = null;
+        this.device.longitude = null;
+        this.device.location = '';
+        return;
+      }
+
+      // Buscar el nodo seleccionado y usar sus coordenadas
+      const selectedNode = this.availableNodes.find(node => node.id === parseInt(this.device.nodeId));
+      if (selectedNode) {
+        if (selectedNode.latitude && selectedNode.longitude) {
+          this.device.latitude = selectedNode.latitude;
+          this.device.longitude = selectedNode.longitude;
+        }
+        
+        // Usar la ubicación del nodo
+        if (selectedNode.location) {
+          this.device.location = selectedNode.location;
+        }
+      }
+    },
+
+    // ===== NUEVO: BÚSQUEDA POR MAC =====
+    async searchInventoryByMac() {
+      if (!this.device.macAddress || this.device.macAddress.length < 3) {
+        this.inventoryData = null;
+        return;
+      }
+
+      try {
+        const response = await InventoryService.searchInventoryByMac(this.device.macAddress);
+        const items = response.data.items || [];
+        
+        if (items.length > 0) {
+          this.inventoryData = items[0];
+        } else {
+          this.inventoryData = null;
+        }
+      } catch (error) {
+        console.error('Error buscando en inventario:', error);
+        this.inventoryData = null;
+      }
+    },
+
+    // ===== NUEVO: BÚSQUEDA POR SERIAL =====
+    async searchInventoryBySerial() {
+      if (!this.device.serialNumber || this.device.serialNumber.length < 3) {
+        this.inventoryData = null;
+        return;
+      }
+
+      try {
+        const response = await InventoryService.searchInventoryBySerial(this.device.serialNumber);
+        const items = response.data.items || [];
+        
+        if (items.length > 0) {
+          this.inventoryData = items[0];
+        } else {
+          this.inventoryData = null;
+        }
+      } catch (error) {
+        console.error('Error buscando en inventario:', error);
+        this.inventoryData = null;
+      }
+    },
+
+    // ===== NUEVO: USAR DATOS DEL INVENTARIO =====
+    useInventoryData() {
+      if (!this.inventoryData) return;
+
+      // Llenar campos automáticamente
+      this.device.name = this.inventoryData.name || this.device.name;
+      this.device.model = this.inventoryData.model || this.device.model;
+      this.device.macAddress = this.inventoryData.macAddress || this.device.macAddress;
+      this.device.serialNumber = this.inventoryData.serialNumber || this.device.serialNumber;
+
+      // Si hay ubicación, usarla
+      if (this.inventoryData.location) {
+        this.device.location = this.inventoryData.location.name;
+      }
+    },
+
     async loadDevice(id) {
       try {
         const response = await DeviceService.getDevice(id);
@@ -229,6 +439,8 @@ export default {
           type: device.type,
           model: device.model || '',
           ipAddress: device.ipAddress || '',
+          macAddress: device.macAddress || '',
+          serialNumber: device.serialNumber || '',
           apiPort: device.apiPort || 8728,
           username: device.username || '',
           password: '', // Por seguridad, no cargar la contraseña
@@ -236,10 +448,16 @@ export default {
           latitude: device.latitude || null,
           longitude: device.longitude || null,
           notes: device.notes || '',
+          zoneId: device.zoneId || null,      // ← NUEVO
           nodeId: device.nodeId || null,
           sectorId: device.sectorId || null,
           clientId: device.clientId || null
         };
+        
+        // ===== CARGAR NODOS DE LA ZONA =====
+        if (this.device.zoneId) {
+          this.onZoneChange();
+        }
         
         // Si es edición, marcar como conexión probada
         this.connectionTestPassed = true;
@@ -291,8 +509,8 @@ export default {
     
     async saveDevice() {
       // Validaciones
-      if (!this.device.name || !this.device.ipAddress || !this.device.username) {
-        alert('Por favor complete los campos obligatorios');
+      if (!this.device.name || !this.device.ipAddress || !this.device.username || !this.device.zoneId || !this.device.nodeId) {
+        alert('Por favor complete los campos obligatorios (nombre, IP, usuario, zona, nodo)');
         return;
       }
       
@@ -304,7 +522,7 @@ export default {
       this.saving = true;
       
       try {
-        // Preparar datos del dispositivo
+        // ===== PREPARAR DATOS COMPLETOS =====
         const deviceData = {
           ...this.device,
           // Asegurarse de que es un router Mikrotik
@@ -313,7 +531,12 @@ export default {
           // Los routers no se asocian a clientes
           clientId: null,
           // Establecer estado basado en la prueba de conexión
-          status: this.connectionTestPassed ? 'online' : 'unknown'
+          status: this.connectionTestPassed ? 'online' : 'unknown',
+          // ===== INCLUIR CREDENCIALES =====
+          username: this.device.username,
+          password: this.device.password,
+          apiPort: this.device.apiPort,
+          apiType: 'RouterOs'
         };
         
         if (this.isEdit) {

@@ -67,7 +67,7 @@
             🔄 Actualizar
           </button>
           <router-link 
-            to="/mikrotik/device/new" 
+            to="/devices/new?brand=mikrotik" 
             class="btn btn-primary"
           >
             + Agregar Router Mikrotik
@@ -81,7 +81,7 @@
       
       <div v-else-if="mikrotikDevices.length === 0" class="empty-state">
         <p>No hay dispositivos Mikrotik registrados.</p>
-        <router-link to="/devices/new" class="btn">Agregar Primer Dispositivo</router-link>
+        <router-link to="/devices/new?brand=mikrotik" class="btn">Agregar Primer Dispositivo</router-link>
       </div>
       
       <div v-else class="devices-grid">
@@ -89,7 +89,7 @@
           <div class="device-header">
             <h3>{{ device.name }}</h3>
             <span class="status-badge" :class="getStatusClass(device.status)">
-              {{ device.status === 'online' ? 'Conectado' : 'Desconectado' }}
+              {{ getStatusText(device.status) }}
             </span>
           </div>
           
@@ -107,8 +107,12 @@
               <span class="value">{{ device.location || 'No especificada' }}</span>
             </div>
             <div class="info-item">
+              <span class="label">Nodo:</span>
+              <span class="value">{{ device.Node?.name || 'Sin nodo' }}</span>
+            </div>
+            <div class="info-item">
               <span class="label">Último acceso:</span>
-              <span class="value">{{ formatDate(device.lastSeen) }}</span>
+              <span class="value">{{ formatDate(device.updatedAt || device.lastSeen) }}</span>
             </div>
           </div>
           
@@ -127,11 +131,25 @@
               Panel PPPoE
             </button>
             <router-link 
-              :to="`/mikrotik/device/${device.id}/edit`" 
+              :to="`/devices/${device.id}/edit`" 
               class="btn btn-small btn-outline"
             >
               ⚙️ Configurar
             </router-link>
+            <router-link 
+              :to="`/devices/${device.id}`" 
+              class="btn btn-small btn-success"
+            >
+              👁️ Ver Detalle
+            </router-link>
+            <!-- ✅ AGREGAR ESTE BOTÓN: -->
+            <button 
+              class="btn btn-small btn-danger" 
+              @click="openDeleteConfirmation(device)"
+              title="Eliminar dispositivo (requiere confirmación triple)"
+            >
+               🗑️ Eliminar
+            </button>
           </div>
         </div>
       </div>
@@ -144,27 +162,35 @@
         <div class="details-grid">
           <div class="detail-item">
             <span class="label">Sistema:</span>
-            <span class="value">{{ deviceInfo.name || 'N/A' }}</span>
+            <span class="value">{{ deviceInfo.identity || deviceInfo.name || 'N/A' }}</span>
           </div>
           <div class="detail-item">
             <span class="label">Versión:</span>
             <span class="value">{{ deviceInfo.version || 'N/A' }}</span>
           </div>
           <div class="detail-item">
+            <span class="label">Arquitectura:</span>
+            <span class="value">{{ deviceInfo.architecture || 'N/A' }}</span>
+          </div>
+          <div class="detail-item">
             <span class="label">Uptime:</span>
-            <span class="value">{{ deviceInfo.uptime || 'N/A' }}</span>
+            <span class="value">{{ formatUptime(deviceInfo.uptime) }}</span>
           </div>
           <div class="detail-item">
             <span class="label">CPU:</span>
-            <span class="value">{{ deviceInfo.cpuLoad || 'N/A' }}%</span>
+            <span class="value">{{ deviceInfo.cpuLoad || deviceInfo['cpu-load'] || 'N/A' }}%</span>
           </div>
           <div class="detail-item">
-            <span class="label">Memoria:</span>
-            <span class="value">{{ deviceInfo.memoryUsage || 'N/A' }}%</span>
+            <span class="label">Memoria Libre:</span>
+            <span class="value">{{ formatBytes(deviceInfo.freeMemory || deviceInfo['free-memory']) }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">Clientes Configuraddos PPPoE:</span>
-            <span class="value">{{ deviceInfo.clients || 0 }}</span>
+            <span class="label">Memoria Total:</span>
+            <span class="value">{{ formatBytes(deviceInfo.totalMemory || deviceInfo['total-memory']) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Board:</span>
+            <span class="value">{{ deviceInfo.boardName || deviceInfo['board-name'] || 'N/A' }}</span>
           </div>
         </div>
       </div>
@@ -192,6 +218,83 @@
         </div>
       </div>
     </div>
+<!-- Modal de confirmación para eliminar dispositivo -->
+<div v-if="showDeleteModal" class="modal-overlay">
+  <div class="modal-content delete-modal">
+    <h3>⚠️ Eliminar Dispositivo Mikrotik</h3>
+    
+    <div class="device-info-summary">
+      <strong>{{ deviceToDelete?.name }}</strong><br>
+      <span>{{ deviceToDelete?.ipAddress }}</span><br>
+      <small>{{ deviceToDelete?.location }}</small>
+    </div>
+
+    <div class="warning-message">
+      <p><strong>Esta acción realizará las siguientes operaciones:</strong></p>
+      <ul>
+        <li>🧹 Eliminará TODOS los usuarios PPPoE del router</li>
+        <li>🔑 Eliminará las credenciales de acceso</li>
+        <li>📱 Desactivará el dispositivo en el sistema</li>
+        <li>📊 Los datos históricos se conservarán</li>
+      </ul>
+    </div>
+
+    <div class="confirmation-steps">
+      <!-- Paso 1 -->
+      <label class="confirmation-step">
+        <input 
+          type="checkbox" 
+          v-model="deleteConfirmationSteps.step1"
+        />
+        Entiendo que esta acción afectará a todos los clientes conectados a este router
+      </label>
+
+      <!-- Paso 2 -->
+      <label class="confirmation-step">
+        <input 
+          type="checkbox" 
+          v-model="deleteConfirmationSteps.step2"
+        />
+        Confirmo que he notificado a los clientes sobre esta desconexión
+      </label>
+
+      <!-- Paso 3 -->
+      <div class="confirmation-step">
+        <label>
+          <input 
+            type="checkbox" 
+            v-model="deleteConfirmationSteps.step3"
+          />
+          Para confirmar, escriba el nombre del dispositivo:
+        </label>
+        <input 
+          type="text" 
+          v-model="deleteConfirmationSteps.deviceNameInput"
+          :placeholder="deviceToDelete?.name"
+          class="device-name-input"
+        />
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button 
+        @click="showDeleteModal = false" 
+        class="btn btn-secondary"
+        :disabled="deletionInProgress"
+      >
+        Cancelar
+      </button>
+      
+      <button 
+        @click="executeDeviceDeletion" 
+        class="btn btn-danger"
+        :disabled="!canProceedWithDeletion || deletionInProgress"
+      >
+        {{ deletionInProgress ? 'Eliminando...' : 'Eliminar Dispositivo' }}
+      </button>
+    </div>
+  </div>
+</div>
   </div>
 </template>
 
@@ -220,13 +323,34 @@ export default {
         onlineDevices: 0,
         totalPPPoEUsers: 0,
         activeSessions: 0
-      }
+      },
+      showDeleteModal: false,
+      deviceToDelete: null,
+      deleteConfirmationSteps: {
+        step1: false,
+        step2: false,
+        step3: false,
+        deviceNameInput: ''
+      },
+      deletionInProgress: false
     };
   },
+  
+  // ✅ COMPUTED PROPERTIES (correctamente definidas)
+  computed: {
+    canProceedWithDeletion() {
+      return this.deleteConfirmationSteps.step1 && 
+             this.deleteConfirmationSteps.step2 && 
+             this.deleteConfirmationSteps.step3 &&
+             this.deleteConfirmationSteps.deviceNameInput === this.deviceToDelete?.name;
+    }
+  },
+  
   created() {
     this.loadMikrotikDevices();
     this.loadNetworkStats();
   },
+  
   methods: {
     async testConnection() {
       if (!this.connectionTest.ip || !this.connectionTest.username) {
@@ -274,8 +398,7 @@ export default {
     async loadMikrotikDevices() {
       this.loading = true;
       try {
-        // Cargar solo dispositivos Mikrotik
-        const response = await DeviceService.getDevices({ brand: 'mikrotik' });
+        const response = await DeviceService.getAllDevices({ brand: 'mikrotik' });
         this.mikrotikDevices = response.data.devices || [];
       } catch (error) {
         console.error('Error cargando dispositivos Mikrotik:', error);
@@ -285,9 +408,8 @@ export default {
     },
     
     async getDeviceInfo(device) {
-      // Verificar que el dispositivo tenga credenciales
-      if (!device.ipAddress || !device.username || !device.password) {
-        alert('El dispositivo no tiene configuradas las credenciales necesarias');
+      if (!device.ipAddress) {
+        alert('El dispositivo no tiene configurada una dirección IP');
         return;
       }
       
@@ -296,19 +418,40 @@ export default {
       this.deviceInfo = null;
       
       try {
+        const credentialsResponse = await DeviceService.getDeviceCredentials(device.id);
+        const credentials = credentialsResponse.data.credentials || [];
+        const activeCredential = credentials.find(cred => cred.isActive) || credentials[0];
+
+        if (!activeCredential || !activeCredential.username) {
+          alert('El dispositivo no tiene credenciales configuradas');
+          return;
+        }    
+        
         const response = await MikrotikService.getDeviceInfo(
           device.ipAddress,
-          device.username,
-          device.password,
-          device.apiPort || 8728
+          activeCredential.username,
+          activeCredential.password || '',
+          activeCredential.port || device.apiPort || 8728
         );
-        
-        this.deviceInfo = response.data.data;
-        // Actualizar estado del dispositivo
-        device.status = response.data.success ? 'online' : 'offline';
+    
+        if (response.data.success) {
+          this.deviceInfo = response.data.data || response.data;
+          console.log('Información del dispositivo:', this.deviceInfo);
+          device.status = 'online';
+        } else {
+          alert('No se pudo conectar al dispositivo: ' + response.data.message);
+          device.status = 'offline';
+        }
+    
       } catch (error) {
         console.error('Error obteniendo información del dispositivo:', error);
-        alert('Error al obtener información del dispositivo');
+    
+        if (error.response?.status === 404) {
+          alert('No se encontraron credenciales para este dispositivo');
+        } else {
+          alert('Error al obtener información del dispositivo: ' + (error.response?.data?.message || error.message));
+        }
+    
         device.status = 'offline';
       } finally {
         device.checking = false;
@@ -321,48 +464,66 @@ export default {
     
     async loadNetworkStats() {
       try {
-        // Cargar estadísticas generales
-        const devicesResponse = await DeviceService.getDevices({ brand: 'mikrotik' });
-        const devices = devicesResponse.data.devices || [];
-        
+        const devicesResponse = await DeviceService.getAllDevices({ brand: 'mikrotik' });
+        const devices = devicesResponse.data.devices || devicesResponse.data || [];
+    
         this.networkStats.totalDevices = devices.length;
         this.networkStats.onlineDevices = devices.filter(d => d.status === 'online').length;
-        
-        // Cargar estadísticas de PPPoE para cada dispositivo online
+    
         let totalPPPoEUsers = 0;
         let activeSessions = 0;
-        
-        for (const device of devices.filter(d => d.status === 'online' && d.ipAddress)) {
+    
+        for (const device of devices.filter(d => d.ipAddress)) {
           try {
-            // Obtener usuarios PPPoE
+            const credentialsResponse = await DeviceService.getDeviceCredentials(device.id);
+            const credentials = credentialsResponse.data.credentials || [];
+        
+            if (credentials.length === 0) {
+              console.log(`Dispositivo ${device.name} sin credenciales, saltando...`);
+              continue;
+            }
+        
             const usersResponse = await MikrotikService.getPPPoEUsers(device.id);
             if (usersResponse.data.success) {
               totalPPPoEUsers += usersResponse.data.count || 0;
             }
-            
-            // Obtener sesiones activas
+        
             const sessionsResponse = await MikrotikService.getActivePPPoESessions(device.id);
             if (sessionsResponse.data.success) {
               activeSessions += sessionsResponse.data.count || 0;
             }
+        
           } catch (error) {
-            console.error(`Error obteniendo estadísticas de ${device.name}:`, error);
+            console.warn(`Error obteniendo estadísticas de ${device.name}:`, error.message);
           }
         }
-        
+    
         this.networkStats.totalPPPoEUsers = totalPPPoEUsers;
         this.networkStats.activeSessions = activeSessions;
+    
       } catch (error) {
         console.error('Error cargando estadísticas de red:', error);
       }
     },
-    
+
     getStatusClass(status) {
       return {
         'status-online': status === 'online',
-        'status-offline': status === 'offline',
-        'status-unknown': status === 'unknown'
+        'status-offline': status === 'offline' || status === 'unknown',
+        'status-warning': status === 'warning',
+        'status-maintenance': status === 'maintenance'
       };
+    },
+    
+    getStatusText(status) {
+      const texts = {
+        online: 'Conectado',
+        offline: 'Desconectado',
+        unknown: 'Desconocido',
+        warning: 'Con alertas',
+        maintenance: 'Mantenimiento'
+      };
+      return texts[status] || 'Desconocido';
     },
     
     formatDate(dateString) {
@@ -387,10 +548,161 @@ export default {
     
     formatUptime(uptime) {
       return MikrotikService.formatUptime(uptime);
+    },
+    
+    formatBytes(bytes) {
+      return MikrotikService.formatBytes(bytes);
+    },
+
+    // ===== MÉTODOS DE ELIMINACIÓN =====
+    
+    openDeleteConfirmation(device) {
+      this.deviceToDelete = device;
+      this.resetDeleteConfirmation();
+      this.showDeleteModal = true;
+    },
+
+    resetDeleteConfirmation() {
+      this.deleteConfirmationSteps = {
+        step1: false,
+        step2: false,
+        step3: false,
+        deviceNameInput: ''
+      };
+    },
+
+    async executeDeviceDeletion() {
+      if (!this.canProceedWithDeletion) {
+        alert('Por favor complete todas las confirmaciones requeridas');
+        return;
+      }
+
+      this.deletionInProgress = true;
+      
+      try {
+        await this.hybridDeviceDeletion(this.deviceToDelete);
+        
+        await this.loadMikrotikDevices();
+        await this.loadNetworkStats();
+        
+        this.showDeleteModal = false;
+        
+        alert(`Dispositivo ${this.deviceToDelete.name} eliminado exitosamente`);
+        
+      } catch (error) {
+        console.error('Error durante la eliminación:', error);
+        alert('Error durante la eliminación: ' + (error.message || error));
+      } finally {
+        this.deletionInProgress = false;
+      }
+    },
+
+    async hybridDeviceDeletion(device) {
+      const results = {
+        mikrotikCleanup: false,
+        credentialsRemoved: false,
+        deviceDeactivated: false,
+        pppoeUsersRemoved: false
+      };
+
+      try {
+        // Limpiar configuraciones en Mikrotik
+        if (device.ipAddress && device.status !== 'offline') {
+          try {
+            console.log('🧹 Limpiando configuraciones en Mikrotik...');
+            
+            const pppoeResponse = await MikrotikService.getPPPoEUsers(device.id);
+            if (pppoeResponse.data.success && pppoeResponse.data.users) {
+              for (const user of pppoeResponse.data.users) {
+                try {
+                  await MikrotikService.deletePPPoEUser(device.id, user.mikrotikId);
+                  console.log(`✅ Usuario PPPoE eliminado: ${user.username}`);
+                } catch (error) {
+                  console.warn(`⚠️ Error eliminando usuario PPPoE ${user.username}:`, error);
+                }
+              }
+            }
+            
+            results.mikrotikCleanup = true;
+            results.pppoeUsersRemoved = true;
+            
+          } catch (error) {
+            console.warn('⚠️ No se pudo limpiar Mikrotik (dispositivo offline):', error);
+          }
+        }
+
+        // Eliminar credenciales
+        try {
+          console.log('🔑 Eliminando credenciales...');
+          const credentialsResponse = await DeviceService.getDeviceCredentials(device.id);
+          const credentials = credentialsResponse.data.credentials || [];
+          
+          for (const credential of credentials) {
+            await DeviceService.deleteDeviceCredentials(credential.id);
+            console.log(`✅ Credencial eliminada: ${credential.id}`);
+          }
+          
+          results.credentialsRemoved = true;
+          
+        } catch (error) {
+          console.warn('⚠️ Error eliminando credenciales:', error);
+        }
+
+        // Desactivar dispositivo
+        try {
+          console.log('📱 Desactivando dispositivo en base de datos...');
+          
+          await DeviceService.updateDevice(device.id, {
+            status: 'deleted',
+            active: false,
+            notes: (device.notes || '') + `\n[ELIMINADO el ${new Date().toLocaleString()}]`
+          });
+          
+          results.deviceDeactivated = true;
+          console.log('✅ Dispositivo desactivado exitosamente');
+          
+        } catch (error) {
+          console.error('❌ Error desactivando dispositivo:', error);
+          throw new Error('No se pudo desactivar el dispositivo en la base de datos');
+        }
+
+        return results;
+
+      } catch (error) {
+        console.error('❌ Error en proceso de eliminación híbrida:', error);
+        throw error;
+      }
+    },
+
+    async cleanupMikrotikConfiguration(device) {
+      if (!device.ipAddress) return;
+      
+      try {
+        const users = await MikrotikService.getPPPoEUsers(device.id);
+        if (users.data.success) {
+          for (const user of users.data.users || []) {
+            await MikrotikService.deletePPPoEUser(device.id, user.mikrotikId);
+          }
+        }
+      } catch (error) {
+        console.warn('No se pudo limpiar configuración Mikrotik:', error);
+      }
+    },
+
+    async removeDeviceCredentials(device) {
+      try {
+        const credentials = await DeviceService.getDeviceCredentials(device.id);
+        for (const credential of credentials.data.credentials || []) {
+          await DeviceService.deleteDeviceCredentials(credential.id);
+        }
+      } catch (error) {
+        console.warn('No se pudieron eliminar las credenciales:', error);
+      }
     }
   }
 };
 </script>
+
 
 <style scoped>
 .mikrotik-management {
@@ -489,7 +801,7 @@ export default {
 
 .devices-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 20px;
 }
 
@@ -534,9 +846,14 @@ export default {
   color: #721c24;
 }
 
-.status-unknown {
+.status-warning {
   background-color: #fff3cd;
   color: #856404;
+}
+
+.status-maintenance {
+  background-color: #e2e3e5;
+  color: #383d41;
 }
 
 .device-info {
@@ -641,6 +958,15 @@ export default {
   color: white;
 }
 
+.btn-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: #218838;
+}
+
 .btn-small {
   padding: 6px 12px;
   font-size: 12px;
@@ -651,6 +977,130 @@ export default {
   cursor: not-allowed;
 }
 
+/* Estilos para el botón de eliminar y modal */
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+  border: 1px solid #dc3545;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+.btn-danger:disabled {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.delete-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  width: 90%;
+  max-width: 600px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.device-info-summary {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 15px 0;
+  text-align: center;
+}
+
+.warning-message {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 15px 0;
+}
+
+.warning-message ul {
+  margin: 10px 0 0 20px;
+}
+
+.confirmation-steps {
+  margin: 20px 0;
+}
+
+.confirmation-step {
+  display: block;
+  margin: 15px 0;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.confirmation-step:hover {
+  background: #f8f9fa;
+}
+
+.confirmation-step input[type="checkbox"] {
+  margin-right: 10px;
+  transform: scale(1.2);
+}
+
+.device-name-input {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #dee2e6;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  border: 1px solid #6c757d;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Media queries para responsive */
 @media (max-width: 768px) {
   .form-row {
     grid-template-columns: 1fr;
@@ -662,6 +1112,10 @@ export default {
   
   .header-actions {
     flex-direction: column;
+  }
+  
+  .device-actions {
+    justify-content: center;
   }
 }
 </style>

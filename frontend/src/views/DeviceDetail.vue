@@ -1,353 +1,348 @@
+
 <template>
   <div class="device-detail">
-    <h1 class="page-title">Detalle de Dispositivo</h1>
+    <div class="header">
+      <h2>Detalle de Dispositivo</h2>
+      <div class="actions">
+        <button @click="refreshDevice" class="refresh-button" :disabled="loading">
+          🔄 Actualizar
+        </button>
+        <button @click="goToEdit" class="edit-button">
+          ✏️ Editar
+        </button>
+        <button @click="goBack" class="back-button">
+          ← Volver
+        </button>
+      </div>
+    </div>
     
-    <div v-if="loading" class="loading-spinner">
+    <div v-if="loading" class="loading">
       Cargando información del dispositivo...
     </div>
     
-    <div v-else-if="error" class="error-message">
+    <div v-else-if="error" class="error">
       {{ error }}
     </div>
     
     <div v-else class="device-content">
-      <div class="card mb-4">
-        <div class="device-header d-flex justify-between">
-          <div>
-            <h2>{{ device.name }}</h2>
-            <div class="device-meta">
-              <span class="status" :class="getStatusClass(device.status)">
-                {{ getStatusText(device.status) }}
-              </span>
-              <span v-if="device.lastSeen" class="last-seen">
-                Última vez visto: {{ formatDate(device.lastSeen) }}
-              </span>
-            </div>
-          </div>
-          
-          <div class="device-actions">
-            <button class="btn mr-2" @click="goBack">Volver</button>
-            <button class="btn btn-primary mr-2" @click="editDevice">Editar</button>
-            <button 
-              class="btn btn-outline-success mr-2" 
-              @click="checkStatus"
-              :disabled="checkingStatus"
-            >
-              {{ checkingStatus ? 'Verificando...' : 'Verificar Estado' }}
-            </button>
-            <button class="btn btn-outline-danger" @click="showRebootModal = true">
-              Reiniciar
-            </button>
-          </div>
-        </div>
-        
-        <div class="device-info-grid mt-4">
-          <div class="device-info-item">
-            <div class="info-label">Tipo</div>
-            <div class="info-value">{{ getTypeText(device.type) }}</div>
-          </div>
-          
-          <div class="device-info-item">
-            <div class="info-label">Marca</div>
-            <div class="info-value">{{ getBrandText(device.brand) }}</div>
-          </div>
-          
-          <div class="device-info-item">
-            <div class="info-label">Modelo</div>
-            <div class="info-value">{{ device.model || 'No especificado' }}</div>
-          </div>
-          
-          <div class="device-info-item">
-            <div class="info-label">Dirección IP</div>
-            <div class="info-value">
-              <a v-if="device.ipAddress" :href="`http://${device.ipAddress}`" target="_blank">
-                {{ device.ipAddress }}
-              </a>
-              <span v-else>No especificada</span>
-            </div>
-          </div>
-          
-          <div class="device-info-item">
-            <div class="info-label">Dirección MAC</div>
-            <div class="info-value">{{ device.macAddress || 'No especificada' }}</div>
-          </div>
-          
-          <div class="device-info-item">
-            <div class="info-label">Ubicación</div>
-            <div class="info-value">{{ device.location || 'No especificada' }}</div>
-          </div>
-        </div>
-        
-        <div class="device-info-grid mt-4">
-          <div class="device-info-item">
-            <div class="info-label">Nodo</div>
-            <div class="info-value">
-              <router-link
-                v-if="device.Node"
-                :to="`/nodes/${device.Node.id}`"
-              >
-                {{ device.Node.name }}
-              </router-link>
-              <span v-else>No asignado</span>
-            </div>
-          </div>
-          
-          <div class="device-info-item">
-            <div class="info-label">Sector</div>
-            <div class="info-value">
-              <router-link
-                v-if="device.Sector"
-                :to="`/sectors/${device.Sector.id}`"
-              >
-                {{ device.Sector.name }}
-              </router-link>
-              <span v-else>No asignado</span>
-            </div>
-          </div>
-          
-          <div class="device-info-item">
-            <div class="info-label">Cliente</div>
-            <div class="info-value">
-              <router-link
-                v-if="device.Client"
-                :to="`/clients/${device.Client.id}`"
-              >
-                {{ device.Client.firstName }} {{ device.Client.lastName }}
-              </router-link>
-              <span v-else>No asignado</span>
-            </div>
-          </div>
-        </div>
-        
-        <div v-if="device.notes" class="device-notes mt-4">
-          <h3>Notas</h3>
-          <div class="notes-content">
-            {{ device.notes }}
-          </div>
-        </div>
-      </div>
-      
-      <div class="card mb-4">
+      <!-- Información Básica -->
+      <div class="panel device-info">
         <h3>Información del Dispositivo</h3>
         
-        <div v-if="deviceInfo" class="device-info-grid">
-          <div class="device-info-item">
-            <div class="info-label">Nombre</div>
-            <div class="info-value">{{ deviceInfo.name }}</div>
+        <div class="device-header-info">
+          <div class="device-icon">
+            {{ getBrandIcon(device.brand) }}
           </div>
-          
-          <div class="device-info-item">
-            <div class="info-label">Modelo</div>
-            <div class="info-value">{{ deviceInfo.model }}</div>
+          <div class="device-basic">
+            <h4>{{ device.name }}</h4>
+            <div class="device-tags">
+              <span class="tag brand">{{ device.brand?.toUpperCase() }}</span>
+              <span class="tag type">{{ device.type?.toUpperCase() }}</span>
+              <span :class="['tag', 'status', device.status]">
+                {{ getStatusText(device.status) }}
+              </span>
+            </div>
           </div>
-          
-          <div class="device-info-item">
-            <div class="info-label">Versión</div>
-            <div class="info-value">{{ deviceInfo.version }}</div>
-          </div>
-          
-          <div class="device-info-item">
-            <div class="info-label">Uptime</div>
-            <div class="info-value">{{ deviceInfo.uptime }}</div>
-          </div>
-          
-          <div class="device-info-item">
-            <div class="info-label">CPU</div>
-            <div class="info-value">{{ deviceInfo.cpuLoad }}%</div>
-          </div>
-          
-          <div class="device-info-item">
-            <div class="info-label">Memoria</div>
-            <div class="info-value">{{ deviceInfo.memoryUsage }}%</div>
-          </div>
-          
-          <div v-if="isMikrotik()" class="device-info-item">
-            <div class="info-label">Interfaces</div>
-            <div class="info-value">{{ deviceInfo.interfaces }}</div>
-          </div>
-          
-          <div v-if="isMikrotik()" class="device-info-item">
-            <div class="info-label">Clientes Conectados</div>
-            <div class="info-value">{{ deviceInfo.clients }}</div>
-          </div>
-          
-          <div v-if="isUbiquiti()" class="device-info-item">
-            <div class="info-label">Señal</div>
-            <div class="info-value">{{ deviceInfo.signal }} dBm</div>
-          </div>
-          
-          <div v-if="isUbiquiti()" class="device-info-item">
-            <div class="info-label">Ruido</div>
-            <div class="info-value">{{ deviceInfo.noiseFloor }} dBm</div>
-          </div>
-          
-          <div v-if="isUbiquiti()" class="device-info-item">
-            <div class="info-label">Frecuencia</div>
-            <div class="info-value">{{ deviceInfo.frequency }}</div>
-          </div>
-          
-          <div v-if="isUbiquiti()" class="device-info-item">
-            <div class="info-label">Canal</div>
-            <div class="info-value">{{ deviceInfo.channel }}</div>
+          <div class="device-status-indicator">
+            <div :class="['status-circle', device.status]"></div>
+            <span class="last-seen">
+              Última conexión: {{ formatDate(device.lastSeen) }}
+            </span>
           </div>
         </div>
         
-        <div v-else class="empty-state">
-          <p>No hay información disponible del dispositivo.</p>
-          <button 
-            class="btn" 
-            @click="checkStatus" 
-            :disabled="checkingStatus"
-          >
-            {{ checkingStatus ? 'Verificando...' : 'Obtener Información' }}
-          </button>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Modelo:</span>
+            <span class="value">{{ device.model || 'No especificado' }}</span>
+          </div>
+          
+          <div class="info-item">
+            <span class="label">Dirección IP:</span>
+            <span class="value">{{ device.ipAddress || 'No asignada' }}</span>
+          </div>
+          
+          <div class="info-item">
+            <span class="label">MAC Address:</span>
+            <span class="value">{{ device.macAddress || 'No disponible' }}</span>
+          </div>
+          
+          <div class="info-item">
+            <span class="label">Firmware:</span>
+            <span class="value">{{ device.firmwareVersion || 'No disponible' }}</span>
+          </div>
+          
+          <div class="info-item">
+            <span class="label">Nodo:</span>
+            <span class="value">{{ device.Node?.name || 'Sin nodo' }}</span>
+          </div>
+          
+          <div class="info-item">
+            <span class="label">Sector:</span>
+            <span class="value">{{ device.Sector?.name || 'Sin sector' }}</span>
+          </div>
+          
+          <div class="info-item" v-if="device.Client">
+            <span class="label">Cliente Asignado:</span>
+            <span class="value">
+              <router-link :to="`/clients/${device.Client.id}`">
+                {{ device.Client.firstName }} {{ device.Client.lastName }}
+              </router-link>
+            </span>
+          </div>
+          
+          <div class="info-item">
+            <span class="label">Activo:</span>
+            <span class="value">{{ device.active ? 'Sí' : 'No' }}</span>
+          </div>
         </div>
       </div>
       
-      <div class="card mb-4">
-        <div class="d-flex justify-between align-center mb-3">
-          <h3>Métricas</h3>
-          
-          <div class="metrics-period">
-            <select v-model="metricsPeriod" @change="loadMetrics">
-              <option value="1h">Última hora</option>
-              <option value="6h">Últimas 6 horas</option>
-              <option value="24h">Últimas 24 horas</option>
-              <option value="7d">Últimos 7 días</option>
-              <option value="30d">Últimos 30 días</option>
-            </select>
-          </div>
+      <!-- Métricas en Tiempo Real -->
+      <div class="panel metrics-panel">
+        <h3>Métricas en Tiempo Real</h3>
+        
+        <div class="metrics-actions">
+          <button @click="refreshMetrics" :disabled="loadingMetrics">
+            {{ loadingMetrics ? '⏳' : '🔄' }} Actualizar Métricas
+          </button>
+          <select v-model="selectedPeriod" @change="loadMetrics">
+            <option value="1h">Última hora</option>
+            <option value="24h">Últimas 24 horas</option>
+            <option value="7d">Últimos 7 días</option>
+            <option value="30d">Últimos 30 días</option>
+          </select>
         </div>
         
-        <div v-if="loadingMetrics" class="loading-spinner">
+        <div v-if="loadingMetrics" class="loading-metrics">
           Cargando métricas...
         </div>
         
-        <div v-else-if="!metrics" class="empty-state">
-          <p>No hay métricas disponibles para el dispositivo.</p>
-          <button class="btn" @click="loadMetrics">Cargar Métricas</button>
+        <div v-else-if="currentMetrics" class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">🖥️</span>
+              <span class="metric-title">CPU</span>
+            </div>
+            <div class="metric-value">{{ currentMetrics.cpuUsage || 0 }}%</div>
+            <div class="metric-bar">
+              <div class="metric-fill cpu" :style="{ width: (currentMetrics.cpuUsage || 0) + '%' }"></div>
+            </div>
+          </div>
+          
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">💾</span>
+              <span class="metric-title">RAM</span>
+            </div>
+            <div class="metric-value">{{ currentMetrics.memoryUsage || 0 }}%</div>
+            <div class="metric-bar">
+              <div class="metric-fill memory" :style="{ width: (currentMetrics.memoryUsage || 0) + '%' }"></div>
+            </div>
+          </div>
+          
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">💿</span>
+              <span class="metric-title">Disco</span>
+            </div>
+            <div class="metric-value">{{ currentMetrics.diskUsage || 0 }}%</div>
+            <div class="metric-bar">
+              <div class="metric-fill disk" :style="{ width: (currentMetrics.diskUsage || 0) + '%' }"></div>
+            </div>
+          </div>
+          
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">⏱️</span>
+              <span class="metric-title">Uptime</span>
+            </div>
+            <div class="metric-value">{{ formatUptime(currentMetrics.uptime) }}</div>
+            <div class="metric-status">
+              {{ currentMetrics.uptime > 604800 ? 'Estable' : 'Reciente reinicio' }}
+            </div>
+          </div>
         </div>
         
-        <div v-else class="metrics-container">
-          <!-- En una aplicación real, aquí usaríamos Chart.js u otra biblioteca de gráficos -->
-          <div class="metrics-item">
-            <h4>Uso de CPU</h4>
-            <div class="chart-placeholder">
-              (Gráfico de CPU)
-              <div class="chart-value">
-                {{ metrics.cpu[metrics.cpu.length - 1].value }}%
-              </div>
-            </div>
-          </div>
-          
-          <div class="metrics-item">
-            <h4>Uso de Memoria</h4>
-            <div class="chart-placeholder">
-              (Gráfico de Memoria)
-              <div class="chart-value">
-                {{ metrics.memory[metrics.memory.length - 1].value }}%
-              </div>
-            </div>
-          </div>
-          
-          <div class="metrics-item">
-            <h4>Tráfico de Red</h4>
-            <div class="chart-placeholder">
-              (Gráfico de Tráfico)
-              <div class="chart-value">
-                ↓ {{ formatBytes(metrics.traffic[metrics.traffic.length - 1].rx) }}/s
-                <br>
-                ↑ {{ formatBytes(metrics.traffic[metrics.traffic.length - 1].tx) }}/s
-              </div>
-            </div>
-          </div>
-          
-          <div v-if="isUbiquiti() && metrics.signal" class="metrics-item">
-            <h4>Intensidad de Señal</h4>
-            <div class="chart-placeholder">
-              (Gráfico de Señal)
-              <div class="chart-value">
-                {{ metrics.signal[metrics.signal.length - 1].value }} dBm
-              </div>
-            </div>
-          </div>
+        <div v-else class="no-metrics">
+          No hay métricas disponibles
         </div>
       </div>
       
-      <div class="card mb-4">
-        <h3>Acciones del Dispositivo</h3>
+      <!-- Acciones y Comandos -->
+      <div class="panel actions-panel">
+        <h3>Acciones Rápidas</h3>
         
-        <div class="device-actions-grid">
-          <button class="action-button reboot" @click="showRebootModal = true">
-            <span class="action-icon">🔄</span>
-            <span class="action-name">Reiniciar</span>
+        <div class="actions-grid">
+          <button @click="executeAction('get_device_info')" 
+                  class="action-card info"
+                  :disabled="executingAction">
+            <div class="action-icon">ℹ️</div>
+            <div class="action-text">
+              <div class="action-title">Información</div>
+              <div class="action-desc">Obtener datos del sistema</div>
+            </div>
           </button>
           
-          <button class="action-button backup" @click="backupDevice">
-            <span class="action-icon">💾</span>
-            <span class="action-name">Backup</span>
+          <button @click="executeAction('restart')" 
+                  class="action-card restart"
+                  :disabled="executingAction">
+            <div class="action-icon">🔄</div>
+            <div class="action-text">
+              <div class="action-title">Reiniciar</div>
+              <div class="action-desc">Reiniciar dispositivo</div>
+            </div>
           </button>
           
-          <button 
-            v-if="isMikrotik()" 
-            class="action-button update" 
-            @click="checkUpdate"
-          >
-            <span class="action-icon">⬆️</span>
-            <span class="action-name">Verificar Actualización</span>
+          <button @click="executeAction('backup_config')" 
+                  class="action-card backup"
+                  :disabled="executingAction">
+            <div class="action-icon">💾</div>
+            <div class="action-text">
+              <div class="action-title">Backup</div>
+              <div class="action-desc">Respaldar configuración</div>
+            </div>
           </button>
           
-          <button 
-            v-if="isUbiquiti()" 
-            class="action-button scan" 
-            @click="spectrumScan"
-          >
-            <span class="action-icon">📊</span>
-            <span class="action-name">Escaneo de Espectro</span>
+          <button @click="executeAction('get_interfaces')" 
+                  class="action-card interfaces"
+                  :disabled="executingAction">
+            <div class="action-icon">🔌</div>
+            <div class="action-text">
+              <div class="action-title">Interfaces</div>
+              <div class="action-desc">Estado de puertos</div>
+            </div>
           </button>
           
-          <button class="action-button reset" @click="showResetModal = true">
-            <span class="action-icon">⚠️</span>
-            <span class="action-name">Reset de Fábrica</span>
+          <button v-if="device.type === 'cpe'" 
+                  @click="executeAction('get_metric_signal_strength')" 
+                  class="action-card signal"
+                  :disabled="executingAction">
+            <div class="action-icon">📶</div>
+            <div class="action-text">
+              <div class="action-title">Señal</div>
+              <div class="action-desc">Nivel de señal</div>
+            </div>
           </button>
+          
+          <button @click="showAdvancedCommands" 
+                  class="action-card advanced"
+                  :disabled="executingAction">
+            <div class="action-icon">⚙️</div>
+            <div class="action-text">
+              <div class="action-title">Avanzado</div>
+              <div class="action-desc">Más comandos</div>
+            </div>
+          </button>
+        </div>
+        
+        <div v-if="executingAction" class="executing-action">
+          <div class="spinner"></div>
+          <span>Ejecutando {{ currentAction }}...</span>
+        </div>
+      </div>
+      
+      <!-- Credenciales -->
+      <div class="panel credentials-panel">
+        <h3>Credenciales de Acceso</h3>
+        
+        <div v-if="credentials.length > 0">
+          <div class="credential-item" v-for="cred in credentials" :key="cred.id">
+            <div class="credential-info">
+              <div class="credential-type">{{ cred.connectionType?.toUpperCase() }}</div>
+              <div class="credential-details">
+                <div>Usuario: {{ cred.username }}</div>
+                <div>Puerto: {{ cred.port || 'Default' }}</div>
+                <div v-if="cred.snmpCommunity">Community: {{ cred.snmpCommunity }}</div>
+              </div>
+            </div>
+            <div class="credential-actions">
+              <button @click="testConnection(cred)" class="test-btn">
+                🔗 Probar
+              </button>
+              <button @click="editCredential(cred)" class="edit-btn">
+                ✏️ Editar
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div v-else class="no-credentials">
+          No hay credenciales configuradas
+        </div>
+        
+        <button @click="showAddCredentials" class="add-credentials-btn">
+          + Agregar Credenciales
+        </button>
+      </div>
+      
+      <!-- Historial de Comandos -->
+      <div class="panel history-panel">
+        <h3>Historial de Comandos</h3>
+        
+        <div class="history-controls">
+          <button @click="loadCommandHistory" :disabled="loadingHistory">
+            🔄 Actualizar
+          </button>
+          <button @click="clearHistory" class="clear-btn">
+            🗑️ Limpiar Historial
+          </button>
+        </div>
+        
+        <div v-if="loadingHistory" class="loading-history">
+          Cargando historial...
+        </div>
+        
+        <div v-else-if="commandHistory.length > 0" class="history-list">
+          <div class="history-item" v-for="cmd in commandHistory" :key="cmd.id">
+            <div class="history-header">
+              <div class="command-info">
+                <span class="command-name">{{ cmd.command }}</span>
+                <span class="command-user">por {{ cmd.User?.fullName || 'Sistema' }}</span>
+              </div>
+              <div class="command-meta">
+                <span :class="['status', cmd.success ? 'success' : 'error']">
+                  {{ cmd.success ? '✅' : '❌' }}
+                </span>
+                <span class="timestamp">{{ formatDate(cmd.executedAt) }}</span>
+              </div>
+            </div>
+            
+            <div v-if="cmd.output" class="command-output">
+              <pre>{{ cmd.output }}</pre>
+            </div>
+            
+            <div v-if="cmd.error" class="command-error">
+              {{ cmd.error }}
+            </div>
+          </div>
+        </div>
+        
+        <div v-else class="no-history">
+          No hay comandos ejecutados
         </div>
       </div>
     </div>
     
-    <!-- Modal de confirmación para reinicio -->
-    <div v-if="showRebootModal" class="modal">
-      <div class="modal-content">
-        <h3>Confirmar Reinicio</h3>
-        <p>¿Está seguro que desea reiniciar el dispositivo <strong>{{ device.name }}</strong>?</p>
-        <p class="warning">Esta acción puede causar una interrupción en el servicio.</p>
-        <div class="modal-actions">
-          <button class="btn" @click="showRebootModal = false">Cancelar</button>
-          <button 
-            class="btn btn-danger" 
-            @click="confirmReboot" 
-            :disabled="actionLoading"
-          >
-            {{ actionLoading ? 'Reiniciando...' : 'Reiniciar' }}
-          </button>
+    <!-- Modal para resultado de acción -->
+    <div v-if="showResultModal" class="modal" @click="closeResultModal">
+      <div class="modal-content result-modal" @click.stop>
+        <h3>Resultado: {{ lastExecutedAction }}</h3>
+        
+        <div class="result-content">
+          <div v-if="actionResult.success" class="success-result">
+            <div class="result-header">✅ Comando ejecutado exitosamente</div>
+            <pre class="result-output">{{ actionResult.output }}</pre>
+          </div>
+          
+          <div v-else class="error-result">
+            <div class="result-header">❌ Error al ejecutar comando</div>
+            <div class="error-message">{{ actionResult.error }}</div>
+          </div>
         </div>
-      </div>
-    </div>
-    
-    <!-- Modal de confirmación para reset de fábrica -->
-    <div v-if="showResetModal" class="modal">
-      <div class="modal-content">
-        <h3>Confirmar Reset de Fábrica</h3>
-        <p>¿Está seguro que desea resetear a configuración de fábrica el dispositivo <strong>{{ device.name }}</strong>?</p>
-        <p class="warning">¡ADVERTENCIA! Esta acción eliminará toda la configuración del dispositivo y lo restaurará a sus valores predeterminados.</p>
+        
         <div class="modal-actions">
-          <button class="btn" @click="showResetModal = false">Cancelar</button>
-          <button 
-            class="btn btn-danger" 
-            @click="confirmReset" 
-            :disabled="actionLoading"
-          >
-            {{ actionLoading ? 'Reseteando...' : 'Reset de Fábrica' }}
-          </button>
+          <button @click="closeResultModal">Cerrar</button>
         </div>
       </div>
     </div>
@@ -362,16 +357,19 @@ export default {
   data() {
     return {
       device: {},
-      deviceInfo: null,
-      metrics: null,
+      credentials: [],
+      currentMetrics: null,
+      commandHistory: [],
       loading: true,
-      checkingStatus: false,
       loadingMetrics: false,
+      loadingHistory: false,
+      executingAction: false,
       error: null,
-      metricsPeriod: '1h',
-      showRebootModal: false,
-      showResetModal: false,
-      actionLoading: false
+      selectedPeriod: '24h',
+      currentAction: '',
+      showResultModal: false,
+      actionResult: null,
+      lastExecutedAction: ''
     };
   },
   created() {
@@ -381,205 +379,205 @@ export default {
     async loadDevice() {
       this.loading = true;
       this.error = null;
-      
       try {
         const deviceId = this.$route.params.id;
         const response = await DeviceService.getDevice(deviceId);
-        this.device = response.data;
+        this.device = response.data.data || response.data;
         
-        // Si el dispositivo está online, cargar información y métricas
-        if (this.device.status === 'online') {
-          this.checkStatus();
-          this.loadMetrics();
-        }
+        // Cargar datos relacionados en paralelo
+        await Promise.all([
+          this.loadCredentials(),
+          this.loadMetrics(),
+          this.loadCommandHistory()
+        ].map(p => p.catch(error => {
+          console.error('Error en carga parcial:', error);
+          return null; // Continúa incluso si una promesa falla
+        })));
       } catch (error) {
-        console.error('Error cargando dispositivo:', error);
-        this.error = 'Error al cargar la información del dispositivo.';
+        console.error('Error cargando dispositivo:', {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data
+        });
+        this.error = error.response?.data?.message || 'Error cargando datos del dispositivo.';
       } finally {
         this.loading = false;
       }
     },
     
-    async checkStatus() {
-      this.checkingStatus = true;
-      
+    async loadCredentials() {
       try {
-        const deviceId = this.$route.params.id;
-        const response = await DeviceService.checkDeviceStatus(deviceId);
-        
-        // Actualizar estado e información del dispositivo
-        this.device.status = response.data.status;
-        this.device.lastSeen = response.data.lastSeen;
-        this.deviceInfo = response.data.deviceInfo;
-        
-        // Si está online, cargar métricas
-        if (this.device.status === 'online' && !this.metrics) {
-          this.loadMetrics();
-        }
+        const response = await DeviceService.getDeviceCredentials(this.device.id);
+        this.credentials = response.data.data || response.data;
       } catch (error) {
-        console.error('Error verificando estado:', error);
-      } finally {
-        this.checkingStatus = false;
+        console.error('Error cargando credenciales:', {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data
+        });
       }
     },
     
     async loadMetrics() {
       this.loadingMetrics = true;
-      
       try {
-        const deviceId = this.$route.params.id;
-        const response = await DeviceService.getDeviceMetrics(deviceId, this.metricsPeriod);
-        this.metrics = response.data.metrics;
+        const response = await DeviceService.getDeviceMetrics(this.device.id, {
+          period: this.selectedPeriod
+        });
+        const metrics = response.data.data || response.data;
+        this.currentMetrics = Array.isArray(metrics) && metrics.length > 0 ? metrics[0] : null;
       } catch (error) {
-        console.error('Error cargando métricas:', error);
+        console.error('Error cargando métricas:', {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data
+        });
       } finally {
         this.loadingMetrics = false;
       }
     },
     
-    async confirmReboot() {
-      this.actionLoading = true;
+    async loadCommandHistory() {
+      this.loadingHistory = true;
+      try {
+        const response = await DeviceService.getDeviceCommandHistory(this.device.id);
+        const history = response.data.data?.history || response.data.data || response.data;
+        this.commandHistory = Array.isArray(history) ? history.slice(0, 10) : [];
+      } catch (error) {
+        console.error('Error cargando historial:', {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data
+        });
+      } finally {
+        this.loadingHistory = false;
+      }
+    },
+    
+    async refreshDevice() {
+      await this.loadDevice();
+    },
+    
+    async refreshMetrics() {
+      await this.loadMetrics();
+    },
+    
+    async executeAction(action) {
+      this.executingAction = true;
+      this.currentAction = action;
       
       try {
-        const deviceId = this.$route.params.id;
-        await DeviceService.executeDeviceAction(deviceId, 'reboot');
-        this.showRebootModal = false;
+        const response = await DeviceService.executeDeviceAction(this.device.id, action, {});
+        this.actionResult = {
+          success: true,
+          output: response.data.output || response.data.message || 'Comando ejecutado correctamente'
+        };
+        this.lastExecutedAction = action;
+        this.showResultModal = true;
         
-        // Actualizar estado del dispositivo
-        this.device.status = 'unknown';
-        
-        // Mostrar mensaje
-        alert(`Se ha enviado la orden de reinicio al dispositivo ${this.device.name}`);
-        
-        // Recargar información después de un tiempo prudencial
-        setTimeout(() => {
-          this.checkStatus();
-        }, 30000); // 30 segundos
+        // Recargar historial después de ejecutar comando
+        await this.loadCommandHistory();
       } catch (error) {
-        console.error('Error al reiniciar dispositivo:', error);
-        alert(`Error al reiniciar el dispositivo: ${error.message}`);
+        console.error('Error ejecutando acción:', {
+          action,
+          deviceId: this.device.id,
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data
+        });
+        this.actionResult = {
+          success: false,
+          error: error.response?.data?.message || 'Error al ejecutar el comando'
+        };
+        this.lastExecutedAction = action;
+        this.showResultModal = true;
       } finally {
-        this.actionLoading = false;
+        this.executingAction = false;
+        this.currentAction = '';
       }
     },
     
-    async confirmReset() {
-      this.actionLoading = true;
-      
+    async testConnection(credential) {
       try {
-        const deviceId = this.$route.params.id;
-        const action = this.isMikrotik() ? 'reset-configuration' : 'factory-reset';
-        
-        await DeviceService.executeDeviceAction(deviceId, action);
-        this.showResetModal = false;
-        
-        // Actualizar estado del dispositivo
-        this.device.status = 'unknown';
-        
-        // Mostrar mensaje
-        alert(`Se ha enviado la orden de reset de fábrica al dispositivo ${this.device.name}`);
+        const response = await DeviceService.testConnection({
+          ipAddress: this.device.ipAddress,
+          username: credential.username,
+          password: credential.password,
+          port: credential.port,
+          connectionType: credential.connectionType
+        });
+        alert('Conexión exitosa: ' + response.data.message);
       } catch (error) {
-        console.error('Error al resetear dispositivo:', error);
-        alert(`Error al resetear el dispositivo: ${error.message}`);
-      } finally {
-        this.actionLoading = false;
+        console.error('Error probando conexión:', {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data
+        });
+        alert('Error de conexión: ' + (error.response?.data?.message || error.message));
       }
     },
     
-    async backupDevice() {
-      try {
-        const deviceId = this.$route.params.id;
-        const response = await DeviceService.executeDeviceAction(deviceId, 'backup');
-        
-        // En una aplicación real, aquí manejaríamos la descarga del archivo de backup
-        alert(`Backup realizado exitosamente: ${response.data.result.details.fileName}`);
-      } catch (error) {
-        console.error('Error al hacer backup:', error);
-        alert(`Error al realizar el backup: ${error.message}`);
+    editCredential(credential) {
+      this.$router.push(`/devices/${this.device.id}/credentials/${credential.id}/edit`);
+    },
+    
+    showAddCredentials() {
+      this.$router.push(`/devices/${this.device.id}/credentials/new`);
+    },
+    
+    showAdvancedCommands() {
+      this.$router.push(`/devices/${this.device.id}/commands`);
+    },
+    
+    async clearHistory() {
+      if (confirm('¿Está seguro de limpiar el historial de comandos?')) {
+        try {
+          await DeviceService.cleanCommandHistory(this.device.id, {});
+          await this.loadCommandHistory();
+        } catch (error) {
+          console.error('Error limpiando historial:', {
+            message: error.message,
+            status: error.response?.status,
+            data: error.response?.data
+          });
+        }
       }
     },
     
-    async checkUpdate() {
-      try {
-        const deviceId = this.$route.params.id;
-        const response = await DeviceService.executeDeviceAction(deviceId, 'check-update');
-        
-        // Mostrar resultado
-        alert(`Verificación de actualización: ${response.data.result.message}`);
-      } catch (error) {
-        console.error('Error al verificar actualización:', error);
-        alert(`Error al verificar actualización: ${error.message}`);
-      }
+    goToEdit() {
+      this.$router.push(`/devices/${this.device.id}/edit`);
     },
     
-    async spectrumScan() {
-      try {
-        const deviceId = this.$route.params.id;
-        const response = await DeviceService.executeDeviceAction(deviceId, 'spectrum-scan');
-        
-        // En una aplicación real, aquí mostraríamos los resultados en un gráfico
-        alert(`Escaneo de espectro completado. Se encontraron ${response.data.result.details.frequencies.length} frecuencias.`);
-      } catch (error) {
-        console.error('Error al realizar escaneo de espectro:', error);
-        alert(`Error al realizar escaneo de espectro: ${error.message}`);
-      }
+    goBack() {
+      this.$router.push('/devices');
     },
     
-    isMikrotik() {
-      return this.device.brand === 'mikrotik';
-    },
-    
-    isUbiquiti() {
-      return this.device.brand === 'ubiquiti';
-    },
-    
-    getTypeText(type) {
-      switch (type) {
-        case 'router': return 'Router';
-        case 'switch': return 'Switch';
-        case 'antenna': return 'Antena';
-        case 'cpe': return 'CPE';
-        case 'other': return 'Otro';
-        default: return type;
-      }
-    },
-    
-    getBrandText(brand) {
-      switch (brand) {
-        case 'mikrotik': return 'Mikrotik';
-        case 'ubiquiti': return 'Ubiquiti';
-        case 'cambium': return 'Cambium';
-        case 'tplink': return 'TP-Link';
-        case 'other': return 'Otra';
-        default: return brand;
-      }
-    },
-    
-    getStatusClass(status) {
-      switch (status) {
-        case 'online': return 'status-success';
-        case 'offline': return 'status-danger';
-        case 'maintenance': return 'status-warning';
-        case 'unknown': return 'status-inactive';
-        default: return '';
-      }
+    getBrandIcon(brand) {
+      const icons = {
+        mikrotik: '🔧',
+        ubiquiti: '📡',
+        tplink: '🌐',
+        cambium: '📶',
+        mimosa: '🎯'
+      };
+      return icons[brand?.toLowerCase()] || '🔌';
     },
     
     getStatusText(status) {
-      switch (status) {
-        case 'online': return 'En línea';
-        case 'offline': return 'Fuera de línea';
-        case 'maintenance': return 'Mantenimiento';
-        case 'unknown': return 'Desconocido';
-        default: return status;
-      }
+      const texts = {
+        online: 'En línea',
+        offline: 'Fuera de línea',
+        warning: 'Con alertas',
+        maintenance: 'Mantenimiento'
+      };
+      return texts[status] || 'Desconocido';
     },
     
     formatDate(dateString) {
-      if (!dateString) return '';
+      if (!dateString) return 'No disponible';
       
       const date = new Date(dateString);
-      return date.toLocaleDateString('es-MX', {
+      return date.toLocaleString('es-MX', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -588,22 +586,14 @@ export default {
       });
     },
     
-    formatBytes(bytes) {
-      if (bytes === 0) return '0 B';
+    formatUptime(seconds) {
+      if (!seconds) return 'No disponible';
       
-      const k = 1024;
-      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      const days = Math.floor(seconds / 86400);
+      const hours = Math.floor((seconds % 86400) / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
       
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    },
-    
-    goBack() {
-      this.$router.push('/devices');
-    },
-    
-    editDevice() {
-      this.$router.push(`/devices/${this.device.id}/edit`);
+      return `${days}d ${hours}h ${minutes}m`;
     }
   }
 };
@@ -611,141 +601,518 @@ export default {
 
 <style scoped>
 .device-detail {
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 20px;
 }
 
-.loading-spinner, .error-message, .empty-state {
-  padding: 30px;
-  text-align: center;
-}
-
-.error-message {
-  color: var(--danger);
-}
-
-.device-header {
-  margin-bottom: 20px;
-}
-
-.device-meta {
-  margin-top: 10px;
-}
-
-.last-seen {
-  margin-left: 10px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.device-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-}
-
-.device-info-item {
-  margin-bottom: 10px;
-}
-
-.info-label {
-  font-weight: bold;
-  color: var(--text-secondary);
-  margin-bottom: 5px;
-}
-
-.device-notes {
-  margin-top: 20px;
-}
-
-.notes-content {
-  padding: 15px;
-  background-color: #f9f9f9;
-  border-radius: 4px;
-  white-space: pre-line;
-}
-
-.metrics-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.metrics-item {
-  margin-bottom: 20px;
-}
-
-.metrics-item h4 {
-  margin-bottom: 10px;
-}
-
-.chart-placeholder {
-  height: 150px;
-  background-color: #f9f9f9;
-  border-radius: 4px;
+.header {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  color: var(--text-secondary);
+  margin-bottom: 24px;
 }
 
-.chart-value {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin-left: 20px;
+.actions {
+  display: flex;
+  gap: 10px;
 }
 
-.device-actions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 15px;
-}
-
-.action-button {
-  padding: 15px;
+.actions button {
+  padding: 8px 16px;
   border: none;
-  border-radius: 8px;
-  background-color: #f5f5f5;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.2s;
 }
 
-.action-button:hover {
+.refresh-button {
+  background-color: #6c757d;
+  color: white;
+}
+
+.edit-button {
+  background-color: #007bff;
+  color: white;
+}
+
+.back-button {
   background-color: #e0e0e0;
 }
 
-.action-icon {
-  font-size: 2rem;
+.loading, .error {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.error {
+  color: #f44336;
+}
+
+.device-content {
+  display: grid;
+  gap: 20px;
+}
+
+.panel {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.device-header-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.device-icon {
+  font-size: 3rem;
+}
+
+.device-basic h4 {
+  margin: 0 0 8px 0;
+  color: #333;
+}
+
+.device-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: 500;
+}
+
+.tag.brand {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.tag.type {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.tag.status.online {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.tag.status.offline {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.tag.status.warning {
+  background: #fff8e1;
+  color: #f57f17;
+}
+
+.device-status-indicator {
+  text-align: right;
+}
+
+.status-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin: 0 auto 5px;
+}
+
+.status-circle.online { background: #4caf50; }
+.status-circle.offline { background: #f44336; }
+.status-circle.warning { background: #ff9800; }
+.status-circle.maintenance { background: #9e9e9e; }
+
+.last-seen {
+  font-size: 0.8em;
+  color: #666;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.label {
+  font-weight: 500;
+  color: #666;
+}
+
+.value {
+  color: #333;
+}
+
+.value a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.metrics-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.metrics-actions button, .metrics-actions select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.metrics-actions button {
+  background: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.loading-metrics {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.metric-card {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
-.action-name {
+.metric-icon {
+  font-size: 1.2em;
+}
+
+.metric-title {
+  font-weight: 500;
+  color: #666;
+}
+
+.metric-value {
+  font-size: 1.5em;
   font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
 }
 
-.action-button.reboot {
-  background-color: #e3f2fd;
+.metric-bar {
+  height: 6px;
+  background: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 5px;
 }
 
-.action-button.backup {
-  background-color: #e8f5e9;
+.metric-fill {
+  height: 100%;
+  transition: width 0.3s;
 }
 
-.action-button.update {
-  background-color: #fff3e0;
+.metric-fill.cpu { background: #28a745; }
+.metric-fill.memory { background: #ffc107; }
+.metric-fill.disk { background: #dc3545; }
+
+.metric-status {
+  font-size: 0.8em;
+  color: #666;
 }
 
-.action-button.scan {
-  background-color: #f3e5f5;
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
 }
 
-.action-button.reset {
-  background-color: #ffebee;
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
+.action-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.action-card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.action-icon {
+  font-size: 1.5em;
+}
+
+.action-text {
+  flex: 1;
+}
+
+.action-title {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.action-desc {
+  font-size: 0.8em;
+  color: #666;
+}
+
+.executing-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 15px;
+  padding: 10px;
+  background: #fff3cd;
+  border-radius: 4px;
+  color: #856404;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.credential-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.credential-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.credential-type {
+  font-weight: bold;
+  padding: 4px 8px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 4px;
+  font-size: 0.8em;
+}
+
+.credential-details {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.credential-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.test-btn, .edit-btn {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+}
+
+.test-btn {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.edit-btn {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.no-credentials {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+}
+
+.add-credentials-btn {
+  width: 100%;
+  padding: 10px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+.history-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.history-controls button {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  background: white;
+}
+
+.clear-btn {
+  background: #ffebee !important;
+  color: #c62828 !important;
+  border-color: #ffcdd2 !important;
+}
+
+.loading-history {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.history-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.history-item {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  padding: 12px;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.command-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.command-name {
+  font-weight: bold;
+  color: #333;
+}
+
+.command-user {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.command-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status.success {
+  color: #2e7d32;
+}
+
+.status.error {
+  color: #c62828;
+}
+
+.timestamp {
+  font-size: 0.8em;
+  color: #999;
+}
+
+.command-output {
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.command-output pre {
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8em;
+  white-space: pre-wrap;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.command-error {
+  background: #ffebee;
+  color: #c62828;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 8px;
+  font-size: 0.9em;
+}
+
+.no-history, .no-metrics {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Modal styles */
 .modal {
   position: fixed;
   top: 0;
@@ -761,43 +1128,126 @@ export default {
 
 .modal-content {
   background-color: white;
-  border-radius: 8px;
   padding: 30px;
-  width: 400px;
+  border-radius: 8px;
+  width: 600px;
   max-width: 90%;
+  max-height: 80%;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .modal-content h3 {
   margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
 }
 
-.modal-content .warning {
-  color: var(--danger);
-  font-size: 0.9rem;
+.result-content {
+  margin-bottom: 20px;
+}
+
+.result-header {
+  font-weight: bold;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.success-result .result-header {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.error-result .result-header {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.result-output {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.error-message {
+  background: #ffebee;
+  padding: 15px;
+  border-radius: 4px;
+  color: #c62828;
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 20px;
+}
+
+.modal-actions button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  background: white;
 }
 
 @media (max-width: 768px) {
-  .device-header {
+  .device-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .device-header-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .history-controls {
     flex-direction: column;
   }
   
-  .device-actions {
-    margin-top: 15px;
+  .modal-content {
+    width: 95%;
+    padding: 20px;
   }
-  
-  .device-info-grid {
+}
+
+@media (max-width: 480px) {
+  .metrics-grid {
     grid-template-columns: 1fr;
   }
   
-  .metrics-container {
-    grid-template-columns: 1fr;
+  .device-header-info {
+    padding: 10px;
+  }
+  
+  .credential-item {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  
+  .history-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
   }
 }
 </style>
