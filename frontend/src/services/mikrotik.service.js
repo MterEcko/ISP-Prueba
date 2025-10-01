@@ -1,178 +1,225 @@
+// frontend/src/services/mikrotik.service.js - Versión mejorada
+
 import axios from 'axios';
 import authHeader from './auth-header';
+import { handleApiError } from '../utils/apiErrorHandler';
 
-const API_URL = 'http://localhost:3000/api/';
+import { API_URL } from './frontend_apiConfig';
 
 class MikrotikService {
+  constructor() {
+    // Configurar interceptor para manejar errores específicos de Mikrotik
+    this.setupErrorHandling();
+  }
+
+  setupErrorHandling() {
+    // Interceptor específico para errores de Mikrotik
+    axios.interceptors.response.use(
+      response => response,
+      error => {
+        if (error.config && error.config.url && error.config.url.includes('/mikrotik/')) {
+          const errorInfo = handleApiError(error);
+          if (errorInfo.mikrotikError) {
+            console.warn('Mikrotik Connection Error:', errorInfo.error);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+  }
+
   // ===== OPERACIONES BÁSICAS =====
   
   // Probar conexión con un dispositivo Mikrotik
-  testConnection(ipAddress, username, password, apiPort = 8728) {
-    return axios.post(API_URL + 'mikrotik/test-connection', {
-      ipAddress,
-      username,
-      password,
-      apiPort
-    }, { headers: authHeader() });
+  async testConnection(ipAddress, username, password, apiPort = 8728) {
+    try {
+      return await axios.post(API_URL + 'mikrotik/test-connection', {
+        ipAddress,
+        username,
+        password,
+        apiPort
+      }, { headers: authHeader() });
+    } catch (error) {
+      console.error('Error testing Mikrotik connection:', error);
+      throw this.handleMikrotikError(error);
+    }
   }
   
   // Obtener información del dispositivo
-  getDeviceInfo(ipAddress, username, password, apiPort = 8728) {
-    return axios.post(API_URL + 'mikrotik/device-info', {
-      ipAddress,
-      username,
-      password,
-      apiPort
-    }, { headers: authHeader() });
+  async getDeviceInfo(ipAddress, username, password, apiPort = 8728) {
+    try {
+      return await axios.post(API_URL + 'mikrotik/device-info', {
+        ipAddress,
+        username,
+        password,
+        apiPort
+      }, { headers: authHeader() });
+    } catch (error) {
+      console.error('Error getting device info:', error);
+      throw this.handleMikrotikError(error);
+    }
   }
   
   // ===== GESTIÓN DE DISPOSITIVOS =====
   
   // Obtener métricas de un dispositivo
-  getDeviceMetrics(deviceId, period = '1h') {
-    return axios.get(API_URL + `mikrotik/devices/${deviceId}/metrics?period=${period}`, {
-      headers: authHeader()
-    });
+  async getDeviceMetrics(deviceId, period = '1h') {
+    try {
+      return await axios.get(API_URL + `mikrotik/devices/${deviceId}/metrics?period=${period}`, {
+        headers: authHeader()
+      });
+    } catch (error) {
+      console.error('Error getting device metrics:', error);
+      throw this.handleMikrotikError(error);
+    }
   }
   
   // Obtener estadísticas de tráfico
-  getTrafficStatistics(deviceId, interfaceName) {
-    return axios.get(API_URL + `mikrotik/devices/${deviceId}/traffic?interfaceName=${interfaceName}`, {
-      headers: authHeader()
-    });
-  }
-  
-  // Ejecutar acción en el dispositivo
-  executeDeviceAction(deviceId, action) {
-    return axios.post(API_URL + `mikrotik/devices/${deviceId}/execute-action`, {
-      action
-    }, { headers: authHeader() });
+  async getTrafficStatistics(deviceId, interfaceName) {
+    try {
+      return await axios.get(API_URL + `mikrotik/devices/${deviceId}/traffic?interfaceName=${interfaceName}`, {
+        headers: authHeader()
+      });
+    } catch (error) {
+      console.error('Error getting traffic statistics:', error);
+      throw this.handleMikrotikError(error);
+    }
   }
   
   // ===== GESTIÓN DE PPPoE =====
   
   // Obtener todos los usuarios PPPoE de un dispositivo
-  getPPPoEUsers(deviceId) {
-    return axios.get(API_URL + `mikrotik/devices/${deviceId}/pppoe-users`, {
-      headers: authHeader()
-    });
+  async getPPPoEUsers(deviceId) {
+    try {
+      return await axios.get(API_URL + `mikrotik/devices/${deviceId}/pppoe-users`, {
+        headers: authHeader()
+      });
+    } catch (error) {
+      console.error('Error getting PPPoE users:', error);
+      throw this.handleMikrotikError(error);
+    }
   }
   
   // Obtener sesiones PPPoE activas
-  getActivePPPoESessions(deviceId) {
-    return axios.get(API_URL + `mikrotik/devices/${deviceId}/active-sessions`, {
-      headers: authHeader()
-    });
+  async getActivePPPoESessions(deviceId) {
+    try {
+      return await axios.get(API_URL + `mikrotik/devices/${deviceId}/active-sessions`, {
+        headers: authHeader()
+      });
+    } catch (error) {
+      console.error('Error getting active PPPoE sessions:', error);
+      throw this.handleMikrotikError(error);
+    }
   }
   
   // Crear usuario PPPoE
-  createPPPoEUser(deviceId, userData) {
-    return axios.post(API_URL + `mikrotik/devices/${deviceId}/pppoe-users`, userData, {
-      headers: authHeader()
-    });
+  async createPPPoEUser(deviceId, userData) {
+    try {
+      return await axios.post(API_URL + `mikrotik/devices/${deviceId}/pppoe-users`, userData, {
+        headers: authHeader()
+      });
+    } catch (error) {
+      console.error('Error creating PPPoE user:', error);
+      throw this.handleMikrotikError(error);
+    }
   }
   
-  // Actualizar usuario PPPoE
-  updatePPPoEUser(deviceId, userId, userData) {
-    return axios.put(API_URL + `mikrotik/devices/${deviceId}/pppoe-users/${userId}`, userData, {
-      headers: authHeader()
-    });
+  async deletePPPoEUser(deviceId, mikrotikUserId) {
+
+	try {
+      console.log('🗑️ Eliminando usuario PPPoE:', { deviceId, mikrotikUserId });
+      return await axios.delete(API_URL + `mikrotik/devices/${deviceId}/pppoe-users/${mikrotikUserId}`, mikrotikUserId, {
+        headers: authHeader()
+      });
+    } catch(error) {
+      console.error('Error eliminando usuario PPPoe:', error);
+      throw this.handleMikrotikError(error);	  
+
+    }		
   }
   
-  // Eliminar usuario PPPoE
-  deletePPPoEUser(deviceId, userId) {
-    return axios.delete(API_URL + `mikrotik/devices/${deviceId}/pppoe-users/${userId}`, {
-      headers: authHeader()
-    });
-  }
-  
-  // Reiniciar sesión PPPoE
-  restartPPPoESession(deviceId, sessionId) {
-    return axios.post(API_URL + `mikrotik/devices/${deviceId}/restart-session/${sessionId}`, {}, {
-      headers: authHeader()
-    });
+    // Método alternativo usando la ruta de cliente específica
+  async deleteClientPPPoE(clientId) {
+    try {
+      console.log('🗑️ Eliminando PPPoE de cliente:', clientId);
+      
+      const response = await axios.delete(
+        `${API_URL}client-mikrotik/clients/${clientId}/pppoe`, 
+        {
+          headers: authHeader()
+        }
+      );
+      
+      console.log('✅ PPPoE de cliente eliminado exitosamente:', response.data);
+      return response;
+      
+    } catch(error) {
+      console.error('❌ Error eliminando PPPoE de cliente:', error);
+      throw this.handleMikrotikError ? this.handleMikrotikError(error) : error;	  
+    }
   }
   
   // Obtener perfiles PPPoE disponibles
-  getPPPoEProfiles(deviceId) {
-    return axios.get(API_URL + `mikrotik/devices/${deviceId}/pppoe-profiles`, {
-      headers: authHeader()
-    });
+  async getPPPoEProfiles(deviceId) {
+    try {
+      return await axios.get(API_URL + `mikrotik/devices/${deviceId}/pppoe-profiles`, {
+        headers: authHeader()
+      });
+    } catch (error) {
+      console.error('Error getting PPPoE profiles:', error);
+      throw this.handleMikrotikError(error);
+    }
   }
   
-  // **NUEVO: Obtener IP Pools disponibles**
-  getIPPools(deviceId) {
-    return axios.get(API_URL + `mikrotik/devices/${deviceId}/ip-pools`, {
-      headers: authHeader()
-    });
+  // Obtener IP Pools disponibles
+  async getIPPools(deviceId) {
+    try {
+      return await axios.get(API_URL + `mikrotik/devices/${deviceId}/ip-pools`, {
+        headers: authHeader()
+      });
+    } catch (error) {
+      console.error('Error getting IP pools:', error);
+      throw this.handleMikrotikError(error);
+    }
   }
   
-  // **NUEVO: Obtener IPs disponibles de un pool específico**
-  getPoolAvailableIPs(deviceId, poolName) {
-    return axios.get(API_URL + `mikrotik/devices/${deviceId}/ip-pools/${poolName}/available-ips`, {
+  // ===== SINCRONIZACIÓN DE PERFILES =====
+async syncAllProfiles() {
+  try {
+    return await axios.post(API_URL + 'mikrotik/sync/pppoe-profiles', {}, {
       headers: authHeader()
     });
+  } catch (error) {
+    console.error('Error sincronizando todos los perfiles:', error);
+    throw this.handleMikrotikError(error);
   }
+}
   
+  // ===== MANEJO DE ERRORES ESPECÍFICOS =====
   
-  // ===== GESTIÓN DE QoS =====
-  
-  // Configurar QoS para un cliente
-  configureQoS(deviceId, qosData) {
-    return axios.post(API_URL + `mikrotik/devices/${deviceId}/qos`, qosData, {
-      headers: authHeader()
-    });
-  }
-  
-  // ===== OPERACIONES ESPECÍFICAS PARA CLIENTES =====
-  
-  // Crear usuario PPPoE para un cliente específico
-  createClientPPPoE(clientId, deviceId, connectionData) {
-    return axios.post(API_URL + `client-mikrotik/clients/${clientId}/devices/${deviceId}/pppoe`, connectionData, {
-      headers: authHeader()
-    });
-  }
-  
-  // Actualizar configuración PPPoE de un cliente
-  updateClientPPPoE(clientId, updateData) {
-    return axios.put(API_URL + `client-mikrotik/clients/${clientId}/pppoe`, updateData, {
-      headers: authHeader()
-    });
-  }
-  
-  // Eliminar configuración PPPoE de un cliente
-  deleteClientPPPoE(clientId) {
-    return axios.delete(API_URL + `client-mikrotik/clients/${clientId}/pppoe`, {
-      headers: authHeader()
-    });
-  }
-  
-  // Configurar límites de ancho de banda para un cliente
-  setClientBandwidth(clientId, bandwidthData) {
-    return axios.post(API_URL + `client-mikrotik/clients/${clientId}/bandwidth`, bandwidthData, {
-      headers: authHeader()
-    });
-  }
-  
-  // Obtener estadísticas de tráfico de un cliente
-  getClientTrafficStats(clientId) {
-    return axios.get(API_URL + `client-mikrotik/clients/${clientId}/traffic`, {
-      headers: authHeader()
-    });
-  }
-  
-  // Reiniciar sesión PPPoE de un cliente
-  restartClientPPPoESession(clientId) {
-    return axios.post(API_URL + `client-mikrotik/clients/${clientId}/restart-pppoe`, {}, {
-      headers: authHeader()
-    });
-  }
-  
-  // Sincronizar todos los clientes con Mikrotik
-  syncAllClientsWithMikrotik() {
-    return axios.post(API_URL + 'client-mikrotik/sync-all', {}, {
-      headers: authHeader()
-    });
+  handleMikrotikError(error) {
+    if (error.response) {
+      const status = error.response.status;
+      const message = error.response.data?.message || 'Error desconocido';
+      
+      switch (status) {
+        case 401:
+          return new Error('Error de autenticación con el router Mikrotik. Verifique las credenciales.');
+        case 404:
+          return new Error('Router Mikrotik no encontrado o no accesible.');
+        case 500:
+          return new Error('Error interno en el router Mikrotik.');
+        case 502:
+        case 503:
+          return new Error('Router Mikrotik no responde. Verifique la conexión de red.');
+        default:
+          return new Error(`Error ${status}: ${message}`);
+      }
+    } else if (error.request) {
+      return new Error('No se puede conectar con el router Mikrotik. Verifique la red.');
+    } else {
+      return new Error('Error de configuración en la solicitud.');
+    }
   }
   
   // ===== MÉTODOS DE UTILIDAD =====

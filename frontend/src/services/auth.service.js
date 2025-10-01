@@ -1,16 +1,17 @@
+// frontend/src/services/auth.service.js
 import axios from 'axios';
-
-const API_URL = 'http://localhost:3000/api/auth/';
+import { API_URL } from './frontend_apiConfig'; 
 
 class AuthService {
   login(username, password) {
     return axios
-      .post(API_URL + 'signin', {
+      .post(API_URL + 'auth/signin', {
         username,
         password
       })
       .then(response => {
         if (response.data.accessToken) {
+          // ✅ CORREGIDO: Era 'auth/user', ahora es 'user'
           localStorage.setItem('user', JSON.stringify(response.data));
         }
         return response.data;
@@ -22,7 +23,7 @@ class AuthService {
   }
 
   register(username, email, password, fullName) {
-    return axios.post(API_URL + 'signup', {
+    return axios.post(API_URL + 'auth/signup', {
       username,
       email,
       password,
