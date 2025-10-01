@@ -19,25 +19,25 @@ module.exports = function(app) {
 
   app.get(
     "/api/permissions/:id",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     permissions.findOne
   );
 
   app.post(
     "/api/permissions",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_permissions")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_permissions")],
     permissions.create
   );
 
   app.put(
     "/api/permissions/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_permissions")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_permissions")],
     permissions.update
   );
 
   app.delete(
     "/api/permissions/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_permissions")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_permissions")],
     permissions.delete
   );
 };

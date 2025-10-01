@@ -360,31 +360,68 @@ class ClientBillingService {
    * @param {string} reason - Razón del cambio de estado
    * @returns {Promise<Object>} Resultado de la actualización
    */
-  async updateClientStatus(clientId, status, reason = 'Actualización manual') {
-    const transaction = await db.sequelize.transaction();
+async updateClientStatus(clientId, status, reason = 'Actualización manual') {
+  const transaction = await db.sequelize.transaction();
+  
+  try {
+    logger.info(`Actualizando estado del cliente ${clientId} a ${status}`);
     
-    try {
-      logger.info(`Actualizando estado del cliente ${clientId} a ${status}`);
+    let client = await Client.findByPk(clientId, {
+      include: [
+        {
+          model: ClientBilling,
+          as: 'clientBilling',
+          include: [{ model: IpPool }]
+        }
+      ],
+      transaction
+    });
 
-      const client = await Client.findByPk(clientId, {
-        include: [
-          {
-            model: ClientBilling,
-            include: [{ model: IpPool, as: 'currentPool' }]
-          }
-        ],
+    if (!client) {
+      throw new Error(`Cliente ${clientId} no encontrado`);
+    }
+    
+    // ✅ NUEVO: Crear ClientBilling si no existe
+    if (!client.clientBilling) {
+      logger.info(`Creando configuración de facturación para cliente ${clientId}`);
+      
+      // Buscar datos de la suscripción para crear la facturación
+      const subscription = await db.Subscription.findOne({
+        where: { clientId, status: ['active', 'suspended'] },
+        include: [{ model: db.ServicePackage, as: 'ServicePackage' }],
         transaction
       });
 
-      if (!client) {
-        throw new Error(`Cliente ${clientId} no encontrado`);
-      }
+      if (subscription) {
+        await db.ClientBilling.create({
+          clientId,
+          servicePackageId: subscription.servicePackageId,
+          currentIpPoolId: subscription.currentIpPoolId,
+          clientStatus: 'active', // Estado inicial
+          billingDay: subscription.billingDay || 1,
+          monthlyFee: subscription.monthlyFee,
+          paymentMethod: 'cash',
+          graceDays: 5,
+          penaltyFee: subscription.monthlyFee * 0.1
+        }, { transaction });
 
-      if (!client.ClientBilling) {
-        throw new Error(`Cliente ${clientId} no tiene configuración de facturación`);
+        // Recargar cliente con la nueva configuración
+        client = await Client.findByPk(clientId, {
+          include: [
+            {
+              model: ClientBilling,
+              as: 'clientBilling',
+              include: [{ model: IpPool }]
+            }
+          ],
+          transaction
+        });
+      } else {
+        throw new Error(`Cliente ${clientId} no tiene suscripciones activas para crear facturación`);
       }
-
-      const billing = client.ClientBilling;
+    }
+    
+    const billing = client.clientBilling;
       const currentPoolType = billing.currentPool?.poolType;
       const targetPoolType = this._getPoolTypeForStatus(status);
 
@@ -1344,7 +1381,7 @@ const overdueDays = this._calculateOverdueDays(billing.nextDueDate);
      }
 
      const client = await Client.findByPk(clientId, {
-       include: [{ model: ClientBilling }]
+       include: [{ model: ClientBilling, as: 'clientBilling' }]
      });
 
      if (!client || !client.ClientBilling) return;
@@ -1410,6 +1447,66 @@ const overdueDays = this._calculateOverdueDays(billing.nextDueDate);
      logger.error(`Error programando recordatorios para cliente ${clientId}: ${error.message}`);
    }
  }
+
+
+
+
+/**
+ * Integración con el nuevo motor de pagos tardíos
+ */
+async processLatePaymentWithNewEngine(clientId, paymentData) {
+  try {
+    // Usar el nuevo motor para pagos tardíos
+    const newBillingService = require('./billing.service');
+    
+    logger.info(`Procesando pago tardío con nuevo motor para cliente ${clientId}`);
+    
+    // Llamar al nuevo sistema
+    const result = await newBillingService.processLatePayment(clientId, paymentData);
+    
+    // Sincronizar con el sistema actual si es necesario
+    if (result.success) {
+      await this._syncWithCurrentSystem(clientId, result);
+    }
+    
+    return result;
+    
+  } catch (error) {
+    logger.error(`Error en procesamiento con nuevo motor: ${error.message}`);
+    // Fallback al método tradicional
+    return await this._processTraditionalPayment(clientId, paymentData);
+  }
+}
+
+/**
+ * Sincroniza resultado del nuevo motor con sistema actual
+ */
+async _syncWithCurrentSystem(clientId, newSystemResult) {
+  try {
+    // Actualizar estado en el sistema actual según resultado del nuevo motor
+    if (newSystemResult.action === 'partial_activation') {
+      await this.updateClientStatus(
+        clientId, 
+        'active', 
+        `Reactivado por nuevo motor: ${newSystemResult.message}`
+      );
+    } else if (newSystemResult.action === 'next_month_application') {
+      // El pago se aplicó al siguiente mes, mantener estado actual
+      logger.info(`Cliente ${clientId}: Pago aplicado al siguiente mes`);
+    }
+    
+  } catch (error) {
+    logger.error(`Error sincronizando sistemas: ${error.message}`);
+  }
+}
+
+/**
+ * Método tradicional como fallback
+ */
+async _processTraditionalPayment(clientId, paymentData) {
+  // Tu lógica existente como backup
+  return await this.reactivateClientAfterPayment(clientId, paymentData.reference);
+}
 }
 
 module.exports = new ClientBillingService();

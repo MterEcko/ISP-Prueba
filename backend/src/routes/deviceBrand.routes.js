@@ -14,14 +14,14 @@ module.exports = function(app) {
   // Obtener todas las marcas de dispositivos
   app.get(
     "/api/device-brands",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     deviceBrandController.findAll
   );
 
   // Obtener una marca específica por ID
   app.get(
     "/api/device-brands/:id",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     deviceBrandController.findOne
   );
 
@@ -35,42 +35,42 @@ module.exports = function(app) {
   // Actualizar marca de dispositivo
   app.put(
     "/api/device-brands/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     deviceBrandController.update
   );
 
   // Activar/desactivar marca
   app.patch(
     "/api/device-brands/:id/toggle",
-    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     deviceBrandController.toggleActive
   );
 
   // Eliminar marca (soft delete - marcar como inactiva)
   app.delete(
     "/api/device-brands/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     deviceBrandController.delete
   );
 
   // Obtener familias de una marca específica
   app.get(
     "/api/device-brands/:id/families",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     deviceBrandController.getFamilies
   );
 
   // Obtener comandos implementados por una marca
   app.get(
     "/api/device-brands/:id/commands",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     deviceBrandController.getCommands
   );
 
   // Obtener OIDs SNMP de una marca
   app.get(
     "/api/device-brands/:id/snmp-oids",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     deviceBrandController.getSnmpOids
   );
 };

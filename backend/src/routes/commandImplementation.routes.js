@@ -14,42 +14,42 @@ module.exports = function(app) {
   // Obtener todas las implementaciones de comandos
   app.get(
     "/api/command-implementations",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     commandImplementationController.findAll
   );
 
   // Obtener implementaciones por marca
   app.get(
     "/api/command-implementations/brand/:brandId",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     commandImplementationController.findByBrand
   );
 
   // Obtener implementaciones por familia
   app.get(
     "/api/command-implementations/family/:familyId",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     commandImplementationController.findByFamily
   );
 
   // Obtener implementaciones por comando común
   app.get(
     "/api/command-implementations/command/:commonCommandId",
-    [authJwt.verifyToken],  
+    //[authJwt.verifyToken],  
     commandImplementationController.findByCommand
   );
 
   // Obtener una implementación específica por ID
   app.get(
     "/api/command-implementations/:id",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     commandImplementationController.findOne
   );
 
   // Crear nueva implementación de comando
   app.post(
     "/api/command-implementations",
-    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     commandImplementationController.create
   );
 
@@ -77,7 +77,7 @@ module.exports = function(app) {
   // Obtener parámetros de una implementación
   app.get(
     "/api/command-implementations/:id/parameters",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     commandImplementationController.getParameters
   );
 
@@ -98,7 +98,7 @@ module.exports = function(app) {
   // Buscar implementaciones disponibles para un dispositivo específico
   app.get(
     "/api/devices/:deviceId/available-implementations",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     commandImplementationController.getAvailableForDevice
   );
 };

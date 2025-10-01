@@ -288,13 +288,13 @@ exports.getBackupsList = async (type = 'all') => {
     
     if (type !== 'all') {
       whereClause = {
-        key: {
+        configKey: {
           [db.Sequelize.Op.like]: `${type}_backup_%`
         }
       };
     } else {
       whereClause = {
-        key: {
+        configKey: {
           [db.Sequelize.Op.or]: [
             { [db.Sequelize.Op.like]: 'db_backup_%' },
             { [db.Sequelize.Op.like]: 'config_backup_%' },
@@ -319,7 +319,7 @@ exports.getBackupsList = async (type = 'all') => {
       
       return {
         id: backup.id,
-        key: backup.key,
+        key: backup.configKey,
         path: backup.value,
         description: backup.description,
         type: metadata.type || 'unknown',
@@ -554,13 +554,13 @@ exports.cleanupOldBackups = async (options = {}) => {
     
     if (type !== 'all') {
       whereClause = {
-        key: {
+        configKey: {
           [db.Sequelize.Op.like]: `${type}_backup_%`
         }
       };
     } else {
       whereClause = {
-        key: {
+        configKey: {
           [db.Sequelize.Op.or]: [
             { [db.Sequelize.Op.like]: 'db_backup_%' },
             { [db.Sequelize.Op.like]: 'config_backup_%' },

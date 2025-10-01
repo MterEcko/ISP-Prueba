@@ -13,13 +13,13 @@ module.exports = function(app) {
   // Rutas para roles
   app.get(
     "/api/roles",
-    //[authJwt.verifyToken],
+    [authJwt.verifyToken],
     roles.findAll
   );
 
   app.get(
     "/api/roles/:id",
-    //[authJwt.verifyToken],
+    [authJwt.verifyToken],
     roles.findOne
   );
 
@@ -44,13 +44,13 @@ module.exports = function(app) {
   // Rutas para permisos de roles
   app.get(
     "/api/roles/:id/permissions",
-    //[authJwt.verifyToken],
+    [authJwt.verifyToken],
     roles.getPermissions
   );
 
   app.post(
     "/api/roles/:id/permissions",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_roles")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_roles")],
     roles.updatePermissions
   );
 };

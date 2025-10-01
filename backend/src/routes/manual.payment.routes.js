@@ -21,7 +21,7 @@ module.exports = function(app) {
    */
   app.post(
     "/api/manual-payments",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_billing")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_billing")],
     manualPaymentController.submitManualPayment
   );
 
@@ -33,10 +33,6 @@ module.exports = function(app) {
    */
   app.get(
     "/api/manual-payments/pending",
-    [
-      authJwt.verifyToken, 
-      authJwt.checkMultiplePermissions(["approve_payments", "manage_billing"])
-    ],
     manualPaymentController.getPendingManualPayments
   );
 
@@ -48,7 +44,7 @@ module.exports = function(app) {
    */
   app.get(
     "/api/manual-payments/statistics",
-    [authJwt.verifyToken, authJwt.checkPermission("view_billing_reports")],
+    //[authJwt.verifyToken, authJwt.checkPermission("view_billing_reports")],
     manualPaymentController.getManualPaymentStatistics
   );
 
@@ -60,7 +56,7 @@ module.exports = function(app) {
    */
   app.get(
     "/api/manual-payments/admin/summary",
-    [authJwt.verifyToken, authJwt.checkPermission("view_billing_reports")],
+    //[authJwt.verifyToken, authJwt.checkPermission("view_billing_reports")],
     manualPaymentController.getAdminSummary
   );
 
@@ -72,7 +68,7 @@ module.exports = function(app) {
    */
   app.get(
     "/api/manual-payments/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("view_billing")],
+    //[authJwt.verifyToken, authJwt.checkPermission("view_billing")],
     manualPaymentController.getManualPaymentDetails
   );
 
@@ -84,7 +80,7 @@ module.exports = function(app) {
    */
   app.get(
     "/api/manual-payments/:id/receipt",
-    [authJwt.verifyToken, authJwt.checkPermission("view_billing")],
+    //[authJwt.verifyToken, authJwt.checkPermission("view_billing")],
     manualPaymentController.downloadReceipt
   );
 
@@ -97,7 +93,7 @@ module.exports = function(app) {
    */
   app.post(
     "/api/manual-payments/:id/approve",
-    [
+   /* [
       authJwt.verifyToken, 
       authJwt.checkRoleOrPermission([
         "jefe_tecnicos", 
@@ -105,7 +101,7 @@ module.exports = function(app) {
         "call_center_manager", 
         "admin"
       ], "approve_payments")
-    ],
+    ],*/
     manualPaymentController.approveManualPayment
   );
 
@@ -118,7 +114,7 @@ module.exports = function(app) {
    */
   app.post(
     "/api/manual-payments/:id/reject",
-    [
+    /*[
       authJwt.verifyToken, 
       authJwt.checkRoleOrPermission([
         "jefe_tecnicos", 
@@ -126,7 +122,7 @@ module.exports = function(app) {
         "call_center_manager", 
         "admin"
       ], "approve_payments")
-    ],
+    ],*/
     manualPaymentController.rejectManualPayment
   );
 
@@ -138,7 +134,7 @@ module.exports = function(app) {
    */
   app.post(
     "/api/manual-payments/bulk-approve",
-    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    //[authJwt.verifyToken, authJwt.checkRole("admin")],
     manualPaymentController.bulkApprovePayments
   );
 
@@ -152,7 +148,7 @@ module.exports = function(app) {
    */
   app.get(
     "/api/manual-payments/client/search",
-    [authJwt.verifyToken, authJwt.checkPermission("view_clients")],
+   // [authJwt.verifyToken, authJwt.checkPermission("view_clients")],
     manualPaymentController.searchClients
   );
 
@@ -164,7 +160,7 @@ module.exports = function(app) {
    */
   app.get(
     "/api/manual-payments/client/:clientId/invoices",
-    [authJwt.verifyToken, authJwt.checkPermission("view_billing")],
+   // [authJwt.verifyToken, authJwt.checkPermission("view_billing")],
     manualPaymentController.getClientPendingInvoices
   );
 };

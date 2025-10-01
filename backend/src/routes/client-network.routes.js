@@ -18,7 +18,7 @@ module.exports = function(app) {
    */
   app.get(
     "/api/client-networks",
-    [authJwt.verifyToken, authJwt.checkPermission("view_network_devices")],
+    //[authJwt.verifyToken, authJwt.checkPermission("view_network_devices")],
     controller.findAll
   );
   

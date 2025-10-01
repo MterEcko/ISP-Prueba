@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
 class MikrotikSyncService {
   constructor() {
     this.configPath = path.join(__dirname, '../config/mikrotik-sync.json');
-    this.mikrotikService = new MikrotikService();
+    
     this.defaultConfig = {
       syncIntervals: {
         ipPools: 24, // horas
@@ -128,7 +128,7 @@ class MikrotikSyncService {
           logger.info(`Sincronizando pools del router: ${router.name}`);
           
           // Obtener pools desde RouterOS usando IDs
-          const routerOsPools = await this.mikrotikService.getIPPools(
+          const routerOsPools = await MikrotikService.getIPPools(
             router.device.ipAddress,
             router.apiPort,
             router.username,
@@ -251,7 +251,7 @@ async syncPppoeProfiles() {
         logger.info(`🔧 Sincronizando perfiles del router: ${router.name} (${router.device.ipAddress})`);
         
         // Obtener perfiles desde RouterOS
-        const rosProfiles = await this.mikrotikService.getPPPoEProfiles(
+        const rosProfiles = await MikrotikService.getPPPoEProfiles(
           router.device.ipAddress,
           router.apiPort,
           router.username,
@@ -507,7 +507,7 @@ generateSyncSummary(results) {
           logger.info(`Sincronizando usuarios del router: ${router.name}`);
           
           // Obtener usuarios desde RouterOS
-          const rosUsers = await this.mikrotikService.getPPPoEUsers(
+          const rosUsers = await MikrotikService.getPPPoEUsers(
             router.device.ipAddress,
             router.apiPort,
             router.username,
@@ -540,7 +540,7 @@ generateSyncSummary(results) {
   }
 
   /**
-   * Sincronizar IPs de pools (cada 24 horas)
+   * Sincronizar IPs de pools (cada 24 horas) - ✅ CORREGIDO
    */
   async syncPoolIPs() {
     logger.info('🔄 Iniciando sincronización de IPs de pools...');
@@ -564,7 +564,7 @@ generateSyncSummary(results) {
           const router = pool.MikrotikRouter;
           
           // Obtener IPs disponibles/ocupadas desde RouterOS usando poolId
-          const poolData = await this.mikrotikService.getPoolAvailableIPs(
+          const poolData = await MikrotikService.getPoolAvailableIPs(
             router.device.ipAddress,
             router.apiPort,
             router.username,
@@ -572,8 +572,23 @@ generateSyncSummary(results) {
             pool.poolId // Usar poolId en lugar de poolName
           );
 
-          // Sincronizar IPs del pool
-          const syncResult = await this.syncPoolIpAddresses(pool, poolData.data);
+          console.log('DEBUG poolData structure:', JSON.stringify(poolData, null, 2));
+
+          // ✅ CORREGIDO: Validación y llamada al método
+          let syncResult;
+          if (poolData && poolData.availableIPs) {
+            syncResult = await this.syncPoolIpAddresses(pool, poolData);
+          } else {
+            console.log('poolData es inválido para pool', pool.poolName, ':', poolData);
+            syncResult = {
+              pool: pool.poolName,
+              poolId: pool.poolId,
+              router: pool.MikrotikRouter.name,
+              status: 'error',
+              error: 'poolData undefined o sin availableIPs'
+            };
+          }
+
           results.push(syncResult);
 
         } catch (poolError) {
@@ -598,15 +613,28 @@ generateSyncSummary(results) {
   }
 
   /**
-   * Sincronizar IPs de un pool específico
+   * Sincronizar IPs de un pool específico - ✅ CORREGIDO
    */
   async syncPoolIpAddresses(pool, poolData) {
     try {
-      const { availableIPs, occupiedIPs, totalIPsInPool } = poolData;
+      // ✅ DEBUG: Verificar qué llega al método
+      console.log('=== DEBUG syncPoolIpAddresses ===');
+      console.log('pool:', pool ? pool.poolName : 'undefined');
+      console.log('poolData recibido:', poolData);
+      console.log('poolData type:', typeof poolData);
+      console.log('poolData.availableIPs:', poolData ? poolData.availableIPs : 'poolData is undefined');
+      console.log('==============================');
+
+      // ✅ CORREGIDO: Usar nombres correctos de propiedades
+      const availableIPs = poolData.availableIPs || [];
+      const occupiedIPs = poolData.usedIPs || [];
+      const totalIPsInPool = poolData.totalAvailable || 0;
       
       let created = 0;
       let updated = 0;
       let freed = 0;
+
+      console.log(`Procesando ${availableIPs.length} IPs disponibles y ${occupiedIPs.length} IPs ocupadas`);
 
       // 1. Procesar IPs ocupadas (marcar como assigned)
       for (const occupiedIp of occupiedIPs) {
@@ -668,6 +696,8 @@ generateSyncSummary(results) {
           logger.warn(`IP ${dbIp.ipAddress} no encontrada en RouterOS, marcada como bloqueada`);
         }
       }
+
+      logger.info(`Pool ${pool.poolName}: ${created} creadas, ${updated} actualizadas, ${freed} liberadas`);
 
       return {
         pool: pool.poolName,
@@ -901,7 +931,7 @@ generateSyncSummary(results) {
     // Implementar lógica para obtener últimos tiempos desde DB o archivo
     // Por simplicidad, usar configuración del sistema
     const config = await db.SystemConfiguration.findOne({
-      where: { key: 'mikrotik_sync_times' }
+      where: { configKey: 'mikrotik_sync_times' }
     });
 
     if (config && config.value) {
@@ -924,7 +954,7 @@ generateSyncSummary(results) {
     times[type] = new Date();
 
     await db.SystemConfiguration.upsert({
-      key: 'mikrotik_sync_times',
+      configKey: 'mikrotik_sync_times',
       value: JSON.stringify(times)
     });
   }
@@ -949,7 +979,7 @@ generateSyncSummary(results) {
       const router = pppoeUser.MikrotikRouter;
 
       // Obtener usuarios desde RouterOS
-      const rosUsers = await this.mikrotikService.getPPPoEUsers(
+      const rosUsers = await MikrotikService.getPPPoEUsers(
         router.device.ipAddress,
         router.apiPort,
         router.username,
@@ -981,7 +1011,7 @@ generateSyncSummary(results) {
   }
 
   /**
-   * ✅ NUEVO: Sincronizar pool específico manualmente
+   * ✅ NUEVO: Sincronizar pool específico manualmente - CORREGIDO
    */
   async syncSpecificPool(poolId) {
     try {
@@ -1001,7 +1031,7 @@ generateSyncSummary(results) {
       const router = pool.MikrotikRouter;
 
       // Obtener datos del pool desde RouterOS
-      const poolData = await this.mikrotikService.getPoolAvailableIPs(
+      const poolData = await MikrotikService.getPoolAvailableIPs(
         router.device.ipAddress,
         router.apiPort,
         router.username,
@@ -1009,7 +1039,20 @@ generateSyncSummary(results) {
         pool.poolId
       );
 
-      const syncResult = await this.syncPoolIpAddresses(pool, poolData.data);
+      // ✅ CORREGIDO: Validación y llamada al método
+      let syncResult;
+      if (poolData && poolData.availableIPs) {
+        syncResult = await this.syncPoolIpAddresses(pool, poolData);
+      } else {
+        console.log('poolData es inválido:', poolData);
+        syncResult = {
+          pool: pool.poolName,
+          poolId: pool.poolId,
+          router: pool.MikrotikRouter.name,
+          status: 'error',
+          error: 'poolData undefined o sin availableIPs'
+        };
+      }
 
       return {
         success: true,

@@ -337,7 +337,7 @@ const MikrotikService = {
       await api.connect();
       
       // Obtener información del pool específico
-      const pools = await api.write('/ip/pool/print', [`?name=${poolName}`]);
+      const pools = await api.write('/ip/pool/print', [`?.id=${poolName}`]);
       
       if (pools.length === 0) {
         throw new Error(`Pool ${poolName} no encontrado`);
@@ -346,7 +346,7 @@ const MikrotikService = {
       const pool = pools[0];
       
       // Obtener IPs usadas del pool
-      const usedIPs = await api.write('/ppp/secret/print', [`?pool=${poolName}`]);
+      const usedIPs = await api.write('/ppp/secret/print', [`?.remote-address=${poolName}`]);
       const usedIPAddresses = usedIPs.map(ip => ip.address);
       
       // Parsear el rango de IPs del pool
@@ -680,6 +680,95 @@ const MikrotikService = {
     }
   },
   
+  
+  // Añadir este método al final de mikrotik.service.js, justo antes de module.exports = MikrotikService;
+
+/**
+ * Actualizar IP estática de un usuario PPPoE
+ * @param {string} routerIP - IP del router Mikrotik
+ * @param {number} apiPort - Puerto de la API (default 8728)
+ * @param {string} username - Usuario para conectar al router
+ * @param {string} password - Contraseña para conectar al router
+ * @param {string} pppoeUsername - Nombre del usuario PPPoE a actualizar
+ * @param {string} staticIP - IP estática a asignar
+ * @returns {boolean} true si la actualización fue exitosa
+ */
+updatePPPoEUserIP: async (routerIP, apiPort = 8728, username, password, pppoeUsername, staticIP) => {
+  let api = null;
+  try {
+    logger.info(`Asignando IP estática ${staticIP} al usuario PPPoE ${pppoeUsername} en ${routerIP}`);
+    
+    // Crear la conexión
+    api = new RouterOSAPI({
+      host: routerIP,
+      port: apiPort,
+      user: username,
+      password: password,
+      timeout: 10000,
+    });
+
+    // Conectar
+    await api.connect();
+
+    // Buscar el secret por nombre
+    const secrets = await api.write('/ppp/secret/print', [
+      `?name=${pppoeUsername}`
+    ]);
+
+    if (secrets.length === 0) {
+      throw new Error(`Usuario PPPoE ${pppoeUsername} no encontrado en Mikrotik`);
+    }
+
+    const secret = secrets[0];
+    const secretId = secret['.id'];
+
+    logger.info(`Usuario PPPoE encontrado: ${pppoeUsername} (ID: ${secretId})`);
+
+    // Actualizar el secret con la IP estática en remote-address
+    await api.write('/ppp/secret/set', [
+      `=.id=${secretId}`,
+      `=remote-address=${staticIP}`
+    ]);
+
+    logger.info(`IP estática ${staticIP} asignada exitosamente al usuario ${pppoeUsername} en Mikrotik ${routerIP}`);
+    
+    // Verificar que la actualización fue exitosa
+    const updatedSecrets = await api.write('/ppp/secret/print', [
+      `?.id=${secretId}`
+    ]);
+
+    if (updatedSecrets.length > 0) {
+      const updatedSecret = updatedSecrets[0];
+      logger.info(`Verificación exitosa: remote-address ahora es "${updatedSecret['remote-address']}"`);
+      
+      return {
+        success: true,
+        secretId: secretId,
+        username: pppoeUsername,
+        previousRemoteAddress: secret['remote-address'] || 'ninguna',
+        newRemoteAddress: updatedSecret['remote-address'],
+        timestamp: new Date()
+      };
+    }
+
+    return {
+      success: true,
+      secretId: secretId,
+      username: pppoeUsername,
+      newRemoteAddress: staticIP,
+      timestamp: new Date()
+    };
+
+  } catch (error) {
+    logger.error(`Error asignando IP estática en Mikrotik ${routerIP}: ${error.message}`);
+    throw new Error(`Error actualizando IP en Mikrotik: ${error.message}`);
+  } finally {
+    // Cerrar conexión si se estableció
+    if (api && api.connected) {
+      api.close();
+    }
+  }
+},
   // Eliminar un usuario PPPoE
   deletePPPoEUser: async (ipAddress, apiPort = 8728, username, password, mikrotikUserId) => {
     if (!mikrotikUserId) {

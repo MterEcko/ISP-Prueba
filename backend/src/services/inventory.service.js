@@ -102,7 +102,7 @@ class InventoryService {
             db.sequelize.literal("CASE WHEN items.status = 'available' THEN 1 ELSE 0 END")
           ), 'available_items'],
           [db.sequelize.fn('SUM', 
-            db.sequelize.literal("CASE WHEN items.status = 'in_use' THEN 1 ELSE 0 END")
+            db.sequelize.literal("CASE WHEN items.status = 'inUse' THEN 1 ELSE 0 END")
           ), 'in_use_items'],
           [db.sequelize.fn('SUM', 
             db.sequelize.literal("CASE WHEN items.status = 'defective' THEN 1 ELSE 0 END")
@@ -203,7 +203,7 @@ class InventoryService {
             // Items antiguos (más de 2 años) que están en uso
             {
               [Op.and]: [
-                { status: 'in_use' },
+                { status: 'inUse' },
                 { purchaseDate: { [Op.lt]: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000) } }
               ]
             }
@@ -329,7 +329,7 @@ class InventoryService {
             db.sequelize.literal("CASE WHEN status = 'available' THEN 1 ELSE 0 END")
           ), 'available_items'],
           [db.sequelize.fn('SUM', 
-            db.sequelize.literal("CASE WHEN status = 'in_use' THEN 1 ELSE 0 END")
+            db.sequelize.literal("CASE WHEN status = 'inUse' THEN 1 ELSE 0 END")
           ), 'in_use_items'],
           [db.sequelize.fn('SUM', 
             db.sequelize.literal("CASE WHEN status = 'defective' THEN 1 ELSE 0 END")
@@ -467,7 +467,7 @@ class InventoryService {
     const purchaseDate = new Date(item.purchaseDate);
     const twoYearsAgo = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000);
     
-    if (purchaseDate < twoYearsAgo && item.status === 'in_use') {
+    if (purchaseDate < twoYearsAgo && item.status === 'inUse') {
       return 'OLD_EQUIPMENT';
     }
     

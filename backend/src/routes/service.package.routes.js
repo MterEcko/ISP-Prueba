@@ -1,3 +1,4 @@
+// backend/src/routes/service.package.routes.js
 const { authJwt } = require("../middleware");
 const ServicePackage = require("../controllers/service.package.controller");
 
@@ -47,14 +48,14 @@ module.exports = function(app) {
   // Update a service package
   app.put(
     "/api/service-packages/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manageServicePackages")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageServicePackages")],
     ServicePackage.updateServicePackage
   );
 
   // Delete a service package
   app.delete(
     "/api/service-packages/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manageServicePackages")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageServicePackages")],
     ServicePackage.deleteServicePackage
   );
 

@@ -14,42 +14,44 @@ module.exports = function(app) {
   // Obtener métricas de dispositivos
   app.get(
     "/api/device-metrics",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     deviceMetricController.findAll
   );
 
   // Obtener métricas para un dispositivo específico
   app.get(
     "/api/devices/:deviceId/metrics",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     deviceMetricController.findByDevice
+  );
+
+  // Exportar métricas (por período, tipo)
+  app.get(
+    "/api/device-metrics/export",
+    //[authJwt.verifyToken, authJwt.checkPermission("view_network")],
+    deviceMetricController.exportMetrics
   );
 
   // Obtener métricas por ID
   app.get(
     "/api/device-metrics/:id",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     deviceMetricController.findOne
   );
 
   // Crear métricas manualmente (para testing/admin)
   app.post(
     "/api/device-metrics",
-    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     deviceMetricController.create
   );
 
   // Eliminar registro de métricas
   app.delete(
     "/api/device-metrics/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     deviceMetricController.delete
   );
 
-  // Exportar métricas (por período, tipo)
-  app.get(
-    "/api/device-metrics/export",
-    [authJwt.verifyToken, authJwt.checkPermission("view_network")],
-    deviceMetricController.exportMetrics
-  );
+
 };

@@ -17,49 +17,49 @@ module.exports = function(app) {
   // Obtener todas las reglas
   app.get(
     "/api/notification-rules",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     notificationController.getAllRules
   );
 
   // Obtener regla por ID
   app.get(
     "/api/notification-rules/:id",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     notificationController.getRuleById
   );
 
   // Crear nueva regla
   app.post(
     "/api/notification-rules",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
     notificationController.createRule
   );
 
   // Actualizar regla
   app.put(
     "/api/notification-rules/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
     notificationController.updateRule
   );
 
   // Eliminar regla
   app.delete(
     "/api/notification-rules/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
     notificationController.deleteRule
   );
 
   // Activar/desactivar regla
   app.post(
     "/api/notification-rules/:id/toggle",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
     notificationController.toggleRule
   );
 
   // Probar regla
   app.post(
     "/api/notification-rules/:id/test",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
     notificationController.testRule
   );
 
@@ -68,21 +68,21 @@ module.exports = function(app) {
   // Obtener eventos
   app.get(
     "/api/communication-events",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     notificationController.getEvents
   );
 
   // Crear evento manual
   app.post(
     "/api/communication-events",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
     notificationController.createEvent
   );
 
   // Procesar eventos pendientes
   app.post(
     "/api/communication-events/process",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
     notificationController.processEvents
   );
 
@@ -91,42 +91,42 @@ module.exports = function(app) {
   // Obtener contactos de cliente
   app.get(
     "/api/clients/:clientId/contacts",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     notificationController.getClientContacts
   );
 
   // Crear contacto para cliente
   app.post(
     "/api/clients/:clientId/contacts",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
     notificationController.createClientContact
   );
 
   // Actualizar contacto
   app.put(
     "/api/contacts/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
     notificationController.updateContact
   );
 
   // Eliminar contacto
   app.delete(
     "/api/contacts/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
     notificationController.deleteContact
   );
 
   // Verificar contacto
   app.post(
     "/api/contacts/:id/verify",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
     notificationController.verifyContact
   );
 
   // Actualizar preferencias de contacto
   app.put(
     "/api/contacts/:id/preferences",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     notificationController.updateContactPreferences
   );
 };

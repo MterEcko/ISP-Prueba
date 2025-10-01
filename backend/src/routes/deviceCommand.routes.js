@@ -14,28 +14,28 @@ module.exports = function(app) {
   // Obtener comandos por dispositivo
   app.get(
     "/api/device-commands",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     deviceCommandController.getCommandsByDevice
   );
 
   // Crear nuevo comando (solo admin)
   app.post(
     "/api/device-commands",
-    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     deviceCommandController.create
   );
 
   // Actualizar comando
   app.put(
     "/api/device-commands/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     deviceCommandController.update
   );
 
   // Desactivar comando
   app.patch(
     "/api/device-commands/:id/deactivate",
-    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     deviceCommandController.deactivate
   );
 };

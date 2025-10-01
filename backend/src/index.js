@@ -126,6 +126,17 @@ synchronizeDatabase().then(() => {
   });
 });
 
+// Inicializar sistema de facturación automática
+const BillingJob = require('./jobs/billing-job');
+
+// Solo en producción o si quieres probarlo
+if (process.env.NODE_ENV === 'production' || process.env.ENABLE_BILLING_JOBS === 'true') {
+  BillingJob.initializeJobs();
+  console.log('✅ Sistema de facturación automática activado');
+} else {
+  console.log('⚠️ Sistema de facturación en modo manual');
+}
+
 // Registrar rutas
 // IMPORTANTE: El orden de registro de rutas es crítico
 // Las rutas más específicas deben registrarse antes que las más generales
@@ -156,6 +167,55 @@ try {
   console.log('✅ role.routes registradas');
 } catch (error) {
   console.error('❌ Error en role.routes:', error.message);
+}
+
+try {
+  console.log('Registrando permission.routes...');
+  require('./routes/permission.routes')(app);
+  console.log('✅ permission.routes registradas');
+} catch (error) {
+  console.error('❌ Error en permission.routes:', error.message);
+}
+
+
+try {
+  console.log('Registrando backup.routes...');
+  require('./routes/backup.routes')(app);
+  console.log('✅ backup.routes registradas');
+} catch (error) {
+  console.error('❌ Error en backup.routes:', error.message);
+}
+
+try {
+  console.log('Registrando notification.routes...');
+  require('./routes/notification.routes')(app);
+  console.log('✅ notification.routes registradas');
+} catch (error) {
+  console.error('❌ Error en notification.routes:', error.message);
+}
+
+try {
+  console.log('Registrando commandHistory.routes...');
+  require('./routes/commandHistory.routes')(app);
+  console.log('✅ commandHistory.routes registradas');
+} catch (error) {
+  console.error('❌ Error en commandHistory.routes:', error.message);
+}
+
+try {
+  console.log('Registrando commandImplementation.routes...');
+  require('./routes/commandImplementation.routes')(app);
+  console.log('✅ commandImplementation.routes registradas');
+} catch (error) {
+  console.error('❌ Error en commandImplementation.routes:', error.message);
+}
+
+try {
+  console.log('Registrando commonCommand.routes...');
+  require('./routes/commonCommand.routes')(app);
+  console.log('✅ commonCommand.routes registradas');
+} catch (error) {
+  console.error('❌ Error en commonCommand.routes:', error.message);
 }
 
 // Rutas de sistema y configuración
@@ -223,6 +283,31 @@ try {
 try {
   console.log('Registrando client.billing.routes...');
   require('./routes/client.billing.routes')(app);
+  console.log('✅ client.billing.routes registradas');
+} catch (error) {
+  console.error('❌ Error en client.billing.routes:', error.message);
+}
+
+try {
+  console.log('Registrando payment.routes...');
+  require('./routes/payment.routes')(app);
+  console.log('✅ payment.routes registradas');
+} catch (error) {
+  console.error('❌ Error en payment.routes:', error.message);
+}
+
+/*
+try {
+  console.log('Registrando client-networks.routes...');
+  require('./routes/client-network.routes')(app);
+  console.log('✅ client-networks.routes registradas');
+} catch (error) {
+  console.error('❌ Error en client-networks.routes:', error.message);
+}
+*/
+try {
+  console.log('Registrando client.billing.routes...');
+  require('./routes/invoice.routes')(app);
   console.log('✅ client.billing.routes registradas');
 } catch (error) {
   console.error('❌ Error en client.billing.routes:', error.message);
@@ -306,11 +391,51 @@ try {
 }
 
 try {
+  console.log('Registrando snmpOid.routes...');
+  require('./routes/snmpOid.routes')(app);
+  console.log('✅ snmpOid.routes.routes registradas');
+} catch (error) {
+  console.error('❌ Error en snmpOid.routes:', error.message);
+}
+
+try {
+  console.log('Registrando deviceMetric.routes...');
+  require('./routes/deviceMetric.routes')(app);
+  console.log('✅ deviceMetric.routes.routes registradas');
+} catch (error) {
+  console.error('❌ Error en deviceMetric.routes:', error.message);
+}
+
+try {
+  console.log('Registrando deviceCommand.routes...');
+  require('./routes/deviceCommand.routes')(app);
+  console.log('✅ deviceCommand.routes.routes registradas');
+} catch (error) {
+  console.error('❌ Error en deviceCommand.routes:', error.message);
+}
+
+try {
   console.log('Registrando deviceCredential.routes...');
   require('./routes/deviceCredential.routes')(app);
   console.log('✅ deviceCredential.routes registradas');
 } catch (error) {
   console.error('❌ Error en deviceCredential.routes:', error.message);
+}
+
+try {
+  console.log('Registrando deviceFamily.routes...');
+  require('./routes/deviceFamily.routes')(app);
+  console.log('✅ deviceFamily.routes registradas');
+} catch (error) {
+  console.error('❌ Error en deviceFamily.routes.routes:', error.message);
+}
+
+try {
+  console.log('Registrando deviceBrand.routes...');
+  require('./routes/deviceBrand.routes')(app);
+  console.log('✅ deviceBrand.routes registradas');
+} catch (error) {
+  console.error('❌ Error en deviceBrand.routes:', error.message);
 }
 
 // ==================== NUEVAS RUTAS DE COMUNICACIÓN ====================
@@ -320,6 +445,14 @@ try {
   console.log('✅ communicationPlugin.routes registradas');
 } catch (error) {
   console.error('❌ Error en communicationPlugin.routes:', error.message);
+  console.error('Stack completo:', error.stack);
+}
+try {
+  console.log('Registrando template.routes...');
+  require('./routes/template.routes')(app);
+  console.log('✅ template.routes registradas');
+} catch (error) {
+  console.error('❌ Error en template.routes:', error.message);
   console.error('Stack completo:', error.stack);
 }
 

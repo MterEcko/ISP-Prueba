@@ -25,6 +25,13 @@ module.exports = function(app) {
     deviceCredentialController.findByDevice
   );
 
+  // Probar conexión con las credenciales
+  app.post(
+    "/api/device-credentials/test-connection",
+    //[authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    deviceCredentialController.testConnection
+  );
+
   // Actualizar credenciales
   app.put(
     "/api/device-credentials/:id",
@@ -42,14 +49,9 @@ module.exports = function(app) {
   // Eliminar credenciales
   app.delete(
     "/api/device-credentials/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     deviceCredentialController.delete
   );
 
-  // Probar conexión con las credenciales
-  app.post(
-    "/api/device-credentials/test-connection",
-    [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
-    deviceCredentialController.testConnection
-  );
+
 };

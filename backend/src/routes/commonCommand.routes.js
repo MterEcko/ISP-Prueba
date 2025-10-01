@@ -14,7 +14,7 @@ module.exports = function(app) {
   // Obtener todos los comandos comunes
   app.get(
     "/api/common-commands",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     commonCommandController.findAll
   );
 

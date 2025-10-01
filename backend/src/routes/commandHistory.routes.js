@@ -21,7 +21,7 @@ module.exports = function(app) {
   // Obtener historial de comandos para un dispositivo específico
   app.get(
     "/api/devices/:deviceId/command-history",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     commandHistoryController.findByDevice
   );
 

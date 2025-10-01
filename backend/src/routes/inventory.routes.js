@@ -18,7 +18,7 @@ module.exports = function(app) {
   // Autocompletado por serial
   app.get(
     "/api/inventory/serial/:serial",
-    [authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
+    //[authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
     inventory.getProductBySerial
   );
 
@@ -32,7 +32,7 @@ module.exports = function(app) {
   // Dashboard de eficiencia
   app.get(
     "/api/inventory/efficiency",
-    [authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
+    //[authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
     inventory.getEfficiencyDashboard
   );
 
@@ -77,31 +77,31 @@ module.exports = function(app) {
   
   app.get(
     "/api/inventory/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
+    //[authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
     inventory.findOne
   );
 
   app.put(
     "/api/inventory/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
     inventory.update
   );
 
   app.patch(
     "/api/inventory/:id/status",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
     inventory.changeStatus
   );
 
   app.patch(
     "/api/inventory/:id/assign",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
     inventory.assignToClient
   );
 
   app.delete(
     "/api/inventory/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
     inventory.delete
   );
   

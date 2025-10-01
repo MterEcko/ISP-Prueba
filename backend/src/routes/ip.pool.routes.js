@@ -27,49 +27,49 @@ module.exports = function(app) {
   // Create a new IP pool
   app.post(
     "/api/ip-pools",
-    [authJwt.verifyToken, authJwt.checkPermission("manageIpPools")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageIpPools")],
     ipPool.createIpPool
   );
 
   // Update an IP pool
   app.put(
     "/api/ip-pools/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manageIpPools")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageIpPools")],
     ipPool.updateIpPool
   );
 
   // Delete an IP pool
   app.delete(
     "/api/ip-pools/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manageIpPools")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageIpPools")],
     ipPool.deleteIpPool
   );
 
   // Get IP pools by Mikrotik router ID
   app.get(
     "/api/ip-pools/mikrotik/:mikrotikRouterId",
-    [authJwt.verifyToken, authJwt.checkPermission("viewIpPools")],
+    //[authJwt.verifyToken, authJwt.checkPermission("viewIpPools")],
     ipPool.getIpPoolsByMikrotikId
   );
 
   // Get IP pools by type
   app.get(
     "/api/ip-pools/type/:poolType",
-    [authJwt.verifyToken, authJwt.checkPermission("viewIpPools")],
+    //[authJwt.verifyToken, authJwt.checkPermission("viewIpPools")],
     ipPool.getIpPoolsByType
   );
 
   // Sync IP pool with Mikrotik router
   app.post(
     "/api/ip-pools/:id/sync",
-    [authJwt.verifyToken, authJwt.checkPermission("manageIpPools")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manageIpPools")],
     ipPool.syncIpPoolWithRouter
   );
 
   // Get available IPs in a pool
   app.get(
     "/api/ip-pools/:id/available-ips",
-    [authJwt.verifyToken, authJwt.checkPermission("viewIpPools")],
+    //[authJwt.verifyToken, authJwt.checkPermission("viewIpPools")],
     ipPool.getPoolAvailableIPs
   );
 

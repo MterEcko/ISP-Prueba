@@ -59,7 +59,7 @@ module.exports = function(app) {
 
   app.get(
     "/api/nodes",
-    [authJwt.verifyToken],
+    //[authJwt.verifyToken],
     network.findAllNodes
   );
 

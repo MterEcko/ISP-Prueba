@@ -13,31 +13,31 @@ module.exports = function(app) {
   // Rutas para movimientos de inventario
   app.post(
     "/api/inventory/movements",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
     movements.create
   );
 
   app.get(
     "/api/inventory/movements",
-    [authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
+    //[authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
     movements.findAll
   );
 
   app.get(
     "/api/inventory/movements/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
+    //[authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
     movements.findOne
   );
 
   app.get(
     "/api/inventory/movements/item/:itemId",
-    [authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
+    //[authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
     movements.findByItem
   );
 
   app.delete(
     "/api/inventory/movements/:id",
-    [authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
     movements.delete
   );
 };
