@@ -49,6 +49,14 @@ module.exports = (sequelize, Sequelize) => {
     conversion: {
       type: Sequelize.STRING,
       allowNull: true // fórmula si requiere conversión
+    },
+    category: {
+      type: Sequelize.STRING,
+      allowNull: true // monitoring, system, network, etc.
+    },
+    active: {
+      type: Sequelize.BOOLEAN,
+      defaultValue: true
     }
   });
 
