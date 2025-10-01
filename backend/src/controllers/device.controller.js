@@ -28,6 +28,7 @@ exports.create = async (req, res) => {
      
      // Campos adicionales del modelo
      macAddress,
+     serialNumber,
      username,
      password,
      apiKey,
@@ -53,6 +54,7 @@ exports.create = async (req, res) => {
      // Relaciones
      nodeId, 
      sectorId,
+     clientId,
      
      // Credenciales (para compatibilidad con versión anterior)
      credentials 
@@ -76,6 +78,8 @@ exports.create = async (req, res) => {
      
      // Campos adicionales (usar valores del frontend o defaults)
      macAddress: macAddress || null,
+     serialNumber: serialNumber || null,
+     clientId: clientId || null,
      username: username || null,
      password: password || null,
      apiKey: apiKey || null,
@@ -100,7 +104,8 @@ exports.create = async (req, res) => {
      
      // Relaciones
      nodeId: nodeId || null,
-     sectorId: sectorId || null
+     sectorId: sectorId || null,
+     clientId: clientId || null
    };
    
    console.log('Datos preparados para crear dispositivo:', deviceData);
@@ -171,7 +176,7 @@ exports.create = async (req, res) => {
 // Obtener todos los dispositivos
 exports.findAll = async (req, res) => {
  try {
-   const { page = 1, size = 10, brand, type, status, nodeId, sectorId } = req.query;
+   const { page = 1, size = 10, brand, type, status, nodeId, sectorId, clientId } = req.query;
    const limit = parseInt(size);
    const offset = (parseInt(page) - 1) * limit;
 
@@ -183,6 +188,11 @@ exports.findAll = async (req, res) => {
    if (nodeId) condition.nodeId = nodeId;
    if (sectorId) condition.sectorId = sectorId;
 
+
+   // ✅ AGREGAR FILTRO POR CLIENTE
+   if (clientId) condition.clientId = clientId;
+  
+  
    // Obtener dispositivos
    const { count, rows: devices } = await Device.findAndCountAll({
      where: condition,

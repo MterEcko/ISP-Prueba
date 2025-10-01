@@ -237,11 +237,11 @@ exports.createPayment = async (req, res) => {
 
     // Crear el pago
     const payment = await Payment.create({
-      invoiceId,
-      clientId,
-      gatewayId,
+      invoiceId: invoice.id,
+      clientId: invoice.clientId,
+      gatewayId: parseInt(gatewayId),
       paymentReference: finalReference,
-      amount: parseFloat(amount),
+      amount: amount ? parseFloat(amount) : invoice.totalAmount,
       paymentMethod,
       status: autoConfirm ? 'completed' : 'pending',
       gatewayResponse: gatewayResponse ? JSON.stringify(gatewayResponse) : null,

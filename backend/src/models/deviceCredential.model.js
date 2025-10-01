@@ -14,8 +14,7 @@ module.exports = (sequelize, Sequelize) => {
       references: {
         model: 'Devices',
         key: 'id'
-      },
-      unique: true
+      }
     },
     connectionType: {
       type: Sequelize.ENUM('ssh', 'snmp', 'api', 'telnet', 'other'),
@@ -94,7 +93,14 @@ module.exports = (sequelize, Sequelize) => {
     }
   }, {
     tableName: 'DeviceCredentials',
-    timestamps: true
+    timestamps: true,
+    // ✅ AGREGAR: Índice único compuesto
+    indexes: [
+      {
+        unique: true,
+        fields: ['deviceId', 'connectionType']
+      }
+    ]
   });
 
   return DeviceCredential;

@@ -23,6 +23,7 @@ exports.getAllTemplates = async (req, res) => {
       include: [
         {
           model: CommunicationChannel,
+          as: 'channel',
           attributes: ['id', 'name', 'channelType'],
           required: false
         }
@@ -57,6 +58,7 @@ exports.getTemplateById = async (req, res) => {
       include: [
         {
           model: CommunicationChannel,
+          as: 'channel',
           attributes: ['id', 'name', 'channelType']
         }
       ]

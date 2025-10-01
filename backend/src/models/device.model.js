@@ -20,6 +20,13 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.ENUM('mikrotik', 'ubiquiti', 'cambium', 'tplink', 'mimosa', 'huawei', 'zte', 'other'),
       allowNull: false
     },
+    familyId: {
+  	  type: Sequelize.INTEGER,
+        references: {
+        model: 'DeviceFamilies',
+        key: 'id'
+        }
+    },
     model: {
       type: Sequelize.STRING
     },

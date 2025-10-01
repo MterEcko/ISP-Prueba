@@ -48,8 +48,8 @@ exports.getClientBillingById = async (req, res) => {
     const clientBilling = await ClientBilling.findByPk(id, {
       include: [
         { model: Client, as: 'client' },
-        { model: servicePackage, as: 'servicePackage' },
-        { model: IpPool, as: 'currentPool' }
+        { model: ServicePackage, as: 'ServicePackage' },
+        { model: IpPool, as: 'IpPool' }
       ]
     });
     
@@ -90,8 +90,8 @@ exports.getClientBillingByClientId = async (req, res) => {
       where: { clientId: clientId },
       include: [
         { model: Client, as: 'client' },
-        { model: servicePackage, as: 'servicePackage' },
-        { model: IpPool, as: 'currentPool' }
+        { model: ServicePackage, as: 'ServicePackage' },
+        { model: IpPool, as: 'IpPool' }
       ]
     });
     
@@ -150,7 +150,7 @@ exports.createClientBilling = async (req, res) => {
     }
     
     // Check if service package exists
-    const servicePackage = await servicePackage.findByPk(servicePackageId);
+    const servicePackage = await ServicePackage.findByPk(servicePackageId);
     if (!servicePackage) {
       return res.status(404).json({
         success: false,
@@ -340,7 +340,7 @@ exports.calculateMonthlyBilling = async (req, res) => {
     const clientBilling = await ClientBilling.findOne({
       where: { clientId: clientId },
       include: [
-        { model: servicePackage, as: 'servicePackage' }
+        { model: ServicePackage, as: 'ServicePackage' }
       ]
     });
     
@@ -355,7 +355,7 @@ exports.calculateMonthlyBilling = async (req, res) => {
     const result = {
       clientId: clientId,
       monthlyFee: clientBilling.monthlyFee,
-      servicePackage: clientBilling.servicePackage.name,
+      servicePackage: clientBilling.ServicePackage.name,
       billingDay: clientBilling.billingDay,
       nextDueDate: clientBilling.nextDueDate,
       paymentMethod: clientBilling.paymentMethod,
@@ -387,7 +387,7 @@ exports.processAllClientsBilling = async (req, res) => {
     const clientBillings = await ClientBilling.findAll({
       include: [
         { model: Client, as: 'client' },
-        { model: servicePackage, as: 'servicePackage' }
+        { model: ServicePackage, as: 'ServicePackage' }
       ]
     });
     
@@ -456,7 +456,7 @@ exports.generateInvoice = async (req, res) => {
       where: { clientId: clientId },
       include: [
         { model: Client, as: 'client' },
-        { model: servicePackage, as: 'servicePackage' }
+        { model: ServicePackage, as: 'ServicePackage' }
       ]
     });
     
@@ -468,13 +468,16 @@ exports.generateInvoice = async (req, res) => {
     }
     
     // Generate invoice
-    const invoice = await db.invoice.create({
+    const invoice = await db.Invoice.create({
       clientId: clientId,
+      subscriptionId: req.body.subscriptionId,      // ✅ Del body
+      invoiceNumber: req.body.invoiceNumber,        // ✅ Del body
+      billingPeriodStart: req.body.billingPeriodStart, // ✅ Del body
+      billingPeriodEnd: req.body.billingPeriodEnd,     // ✅ Del body
       amount: clientBilling.monthlyFee,
-      period,
-      status: 'pending',
-      dueDate: clientBilling.nextDueDate,
-      createdAt: new Date()
+      totalAmount: req.body.totalAmount,            // ✅ Del body
+      dueDate: req.body.dueDate,                    // ✅ Del body
+      status: 'pending'
     });
     
     return res.status(200).json({
@@ -564,8 +567,13 @@ exports.registerPayment = async (req, res) => {
       });
     }
     
+    // Obtener cliente con configuración de billing
     const clientBilling = await ClientBilling.findOne({
-      where: { clientId: clientId }
+      where: { clientId: clientId },
+      include: [
+        { model: Client, as: 'client' },
+        { model: ServicePackage, as: 'ServicePackage' }
+      ]
     });
     
     if (!clientBilling) {
@@ -575,26 +583,117 @@ exports.registerPayment = async (req, res) => {
       });
     }
     
-    // Register payment
-    const payment = await db.payment.create({
+    // Verificar si es un pago tardío
+    const today = new Date();
+    const dueDate = new Date(clientBilling.nextDueDate);
+    const timeDiff = today.getTime() - dueDate.getTime();
+    const overdueDays = Math.max(0, Math.ceil(timeDiff / (1000 * 60 * 60 * 24)));
+    
+    console.log(`📅 Cliente ${clientId}: Días de atraso = ${overdueDays}`);
+    
+    let result;
+    
+    if (overdueDays > 0) {
+      // ===== PAGO TARDÍO - Usar nuevo motor "La Casa Nunca Pierde" =====
+      console.log(`🔄 PAGO TARDÍO detectado (${overdueDays} días) - Usando motor avanzado`);
+      
+      try {
+        // Importar servicio de billing aquí para evitar problemas de importación
+        const clientBillingService = require('../services/client.billing.service');
+        
+        // Preparar datos del pago para el nuevo motor
+        const paymentData = {
+          amount: parseFloat(amount),
+          paymentDate: paymentDate || new Date(),
+          paymentMethod: paymentMethod || 'cash',
+          reference: reference || `PAY-${Date.now()}`
+        };
+        
+        // Procesar con el nuevo motor
+        result = await clientBillingService.processLatePaymentWithNewEngine(clientId, paymentData);
+        
+        if (result.success) {
+          console.log(`✅ Pago tardío procesado exitosamente: ${result.message}`);
+          
+          return res.status(200).json({
+            success: true,
+            data: {
+              paymentType: 'late_payment',
+              overdueDays: overdueDays,
+              action: result.action,
+              message: result.message,
+              details: result
+            },
+            message: `Pago tardío procesado: ${result.message}`
+          });
+        } else {
+          // Si el nuevo motor falla, usar método tradicional como fallback
+          console.log(`⚠️ Motor avanzado falló, usando método tradicional`);
+        }
+        
+      } catch (newEngineError) {
+        console.error(`❌ Error en motor avanzado: ${newEngineError.message}`);
+        console.log(`🔄 Usando método tradicional como fallback`);
+      }
+    }
+    
+    // ===== PAGO NORMAL o FALLBACK - Usar sistema tradicional =====
+    console.log(`✅ Procesando pago ${overdueDays > 0 ? '(fallback)' : '(puntual)'} con sistema tradicional`);
+    
+    // Registrar pago en la base de datos
+    const payment = await Payment.create({
       clientId: clientId,
-      amount,
+      invoiceId: req.body.invoiceId,
+      gatewayId: req.body.gatewayId,
+      paymentReference: reference || `PAY-${Date.now()}`,
+      amount: parseFloat(amount),
       paymentMethod: paymentMethod || 'cash',
-      payment_date: paymentDate || new Date(),
-      reference,
-      status: 'completed'
+      paymentDate: paymentDate || new Date(),
+      status: 'completed',
+      paymentData: {
+        type: overdueDays > 0 ? 'late_traditional' : 'normal',
+        reference: reference,
+        overdueDays: overdueDays,
+        processedAt: new Date().toISOString()
+      }
     });
     
-    // Update client billing
+    // Actualizar configuración de billing
     await clientBilling.update({
-      lastPaymentDate: paymentDate || new Date()
+      lastPaymentDate: paymentDate || new Date(),
+      clientStatus: 'active' // Reactivar cliente
     });
+    
+    // Agregar comentario al cliente
+    const commentText = overdueDays > 0 
+      ? `[PAGO TARDÍO] Pago de $${amount} recibido con ${overdueDays} días de atraso. Servicio reactivado.`
+      : `[PAGO PUNTUAL] Pago de $${amount} recibido. Servicio al corriente.`;
+    
+    // Actualizar notas del cliente
+    const client = await Client.findByPk(clientId);
+    if (client) {
+      const existingNotes = client.notes || '';
+      const newNotes = existingNotes + '\n\n' + `${new Date().toLocaleDateString()} - ${commentText}`;
+      await client.update({ notes: newNotes });
+    }
     
     return res.status(200).json({
       success: true,
-      data: payment,
-      message: 'Payment registered successfully'
+      data: {
+        payment,
+        paymentType: overdueDays > 0 ? 'late_payment_traditional' : 'normal_payment',
+        overdueDays: overdueDays,
+        client: {
+          id: clientBilling.client.id,
+          name: `${clientBilling.client.firstName} ${clientBilling.client.lastName}`,
+          newStatus: 'active'
+        }
+      },
+      message: overdueDays > 0 
+        ? `Pago tardío registrado (${overdueDays} días de atraso) - Cliente reactivado`
+        : 'Pago registrado exitosamente'
     });
+    
   } catch (error) {
     logger.error(`Error registering payment: ${error.message}`);
     return res.status(500).json({
@@ -603,6 +702,7 @@ exports.registerPayment = async (req, res) => {
     });
   }
 };
+
 
 // Get clients with overdue payments
 exports.getOverdueClients = async (req, res) => {
@@ -618,7 +718,7 @@ exports.getOverdueClients = async (req, res) => {
       },
       include: [
         { model: Client, as: 'client' },
-        { model: servicePackage, as: 'servicePackage' }
+        { model: ServicePackage, as: 'ServicePackage' }
       ]
     });
     
@@ -655,7 +755,7 @@ exports.getUpcomingPayments = async (req, res) => {
       },
       include: [
         { model: Client, as: 'client' },
-        { model: servicePackage, as: 'servicePackage' }
+        { model: ServicePackage, as: 'ServicePackage' }
       ]
     });
     
@@ -711,13 +811,22 @@ exports.applyLatePaymentPenalty = async (req, res) => {
       (clientBilling.monthlyFee * 0.05); // Default 5% penalty
     
     // Create penalty invoice
-    const invoice = await db.invoice.create({
+    const invoice = await db.Invoice.create({
       clientId: clientId,
+      subscriptionId: clientBilling.servicePackageId, // Usar servicePackageId como subscriptionId temporal
+      invoiceNumber: `PEN-${Date.now()}`,            // Generar número automático
+      billingPeriodStart: today,                      // Período de la multa
+      billingPeriodEnd: today,                        // Mismo día
       amount: penalty,
-      period: `Late payment penalty - ${today.toISOString().split('T')[0]}`,
+      taxAmount: 0,
+      totalAmount: penalty,
+      dueDate: today,
       status: 'pending',
-      due_date: today,
-      createdAt: today
+      invoiceData: {
+        type: 'penalty',
+        reason: `Late payment penalty - ${today.toISOString().split('T')[0]}`,
+        originalClientBilling: clientBilling.id
+      }
     });
     
     return res.status(200).json({
@@ -759,9 +868,9 @@ exports.getBillingStatistics = async (req, res) => {
     });
     
     // Get payments in period
-    const payments = await db.payment.findAll({
+    const payments = await db.Payment.findAll({
       where: {
-        payment_date: {
+        paymentDate: {
           [db.Sequelize.Op.between]: [start, end]
         },
         status: 'completed'
@@ -772,7 +881,7 @@ exports.getBillingStatistics = async (req, res) => {
     const totalRevenue = payments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
     
     // Get invoices in period
-    const invoices = await db.invoice.findAll({
+    const invoices = await db.Invoice.findAll({
       where: {
         createdAt: {
           [db.Sequelize.Op.between]: [start, end]

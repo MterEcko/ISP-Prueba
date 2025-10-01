@@ -175,6 +175,28 @@ db.Client.belongsTo(db.Sector, {
   foreignKey: 'sectorId',
 });
 
+// Zone -> Client (Cliente pertenece a una zona)
+db.Zone.hasMany(db.Client, {
+  foreignKey: 'zoneId',
+  as: 'clients'
+});
+
+db.Client.belongsTo(db.Zone, {
+  foreignKey: 'zoneId',
+  as: 'Zone'  // ← ClientList espera client.Zone.name
+});
+
+// Node -> Client (Cliente pertenece a un nodo) 
+db.Node.hasMany(db.Client, {
+  foreignKey: 'nodeId',
+  as: 'clients'
+});
+
+db.Client.belongsTo(db.Node, {
+  foreignKey: 'nodeId',
+  as: 'Node'  // ← ClientList espera client.Node.name
+});
+
 db.Client.hasMany(db.ClientDocument, {
   foreignKey: 'clientId',
 });
@@ -191,6 +213,8 @@ db.Client.hasMany(db.Device, {
 db.Device.belongsTo(db.Client, {
   foreignKey: 'clientId',
 });
+
+
 
 db.Node.hasMany(db.Device, {
   foreignKey: 'nodeId',
@@ -540,6 +564,8 @@ db.Zone.hasMany(db.IpPool, {
   foreignKey: 'zoneId'
 });
 
+
+
 db.IpPool.belongsTo(db.Zone, {
   foreignKey: 'zoneId'
 });
@@ -729,6 +755,19 @@ db.Client.hasMany(db.Invoice, {
 db.Invoice.belongsTo(db.Client, {
   foreignKey: 'clientId',
 });
+
+
+// ========== AGREGAR ESTAS RELACIONES FALTANTES ==========
+db.Subscription.hasMany(db.Invoice, {
+  foreignKey: 'subscriptionId',
+  as: 'invoices'
+});
+
+db.Invoice.belongsTo(db.Subscription, {
+  foreignKey: 'subscriptionId',
+  as: 'subscription'
+});
+
 
 db.Invoice.hasMany(db.Payment, {
   foreignKey: 'invoiceId',

@@ -57,7 +57,7 @@ exports.create = async (req, res) => {
         quantity: req.body.quantity || 1,  // ✅ CORREGIR: usar quantity correcta
         reason: 'Ingreso inicial',
         toLocationId: req.body.locationId,
-        movedById: req.userId,  // ✅ CORREGIR: era req.userId no req.userId
+        movedById: req.userId || 1,  // ✅ CORREGIR: era req.userId no req.userId
         notes: req.body.notes
       });
     }
@@ -319,7 +319,7 @@ exports.update = async (req, res) => {
         reason: req.body.moveReason || 'Cambio de ubicación',
         fromLocationId: item.locationId,
         toLocationId: req.body.locationId,
-        movedById: req.userId,
+        movedById: req.userId || 1,
         notes: req.body.moveNotes
       });
     }
@@ -342,7 +342,7 @@ exports.changeStatus = async (req, res) => {
     }
 
     // Validar estado
-    const validStatuses = ['available', 'in_use', 'defective', 'in_repair', 'retired'];
+    const validStatuses = ['available', 'inUse', 'defective', 'inRepair', 'retired'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Estado inválido" });
     }
@@ -362,7 +362,7 @@ exports.changeStatus = async (req, res) => {
       type: 'adjustment',
       quantity: 1,
       reason: reason || `Cambio de estado a ${status}`,
-      movedById: req.userId,
+      movedById: req.userId || 1,
       notes: notes
     });
 
@@ -393,7 +393,7 @@ exports.assignToClient = async (req, res) => {
     const [updated] = await Inventory.update(
       { 
         clientId: clientId,
-        status: 'in_use'
+        status: 'inUse'
       },
       { where: { id: id } }
     );
@@ -408,7 +408,7 @@ exports.assignToClient = async (req, res) => {
       type: 'out',
       quantity: 1,
       reason: reason || `Asignado a cliente ${client.firstName} ${client.lastName}`,
-      movedById: req.userId,
+      movedById: req.userId || 1,
       notes: notes
     });
 

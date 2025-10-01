@@ -47,7 +47,7 @@ exports.getIpsByPool = async (req, res) => {
         },
         {
           model: IpPool,
-          attributes: ['id', 'name', 'network', 'mikrotikRouterId'],
+          attributes: ['id', 'poolName', 'networkAddress', 'mikrotikRouterId'],
           required: true
         }
       ],

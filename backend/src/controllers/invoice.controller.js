@@ -70,9 +70,10 @@ exports.getAllInvoices = async (req, res) => {
         },
         {
           model: Subscription,
+          as: 'subscription',
           include: [
             {
-              model: ServicePackage,
+              model: ServicePackage, as: 'ServicePackage',
               attributes: ['id', 'name', 'price']
             }
           ]
@@ -140,9 +141,10 @@ exports.getInvoiceById = async (req, res) => {
         },
         {
           model: Subscription,
+          as: 'subscription',
           include: [
             {
-              model: ServicePackage,
+              model: ServicePackage, as: 'ServicePackage',
               attributes: ['id', 'name', 'price', 'downloadSpeedMbps', 'uploadSpeedMbps']
             }
           ]
@@ -280,7 +282,8 @@ exports.createInvoice = async (req, res) => {
         },
         {
           model: Subscription,
-          include: [{ model: ServicePackage, attributes: ['name', 'price'] }]
+          as: 'subscription',
+          include: [{ model: ServicePackage, as: 'ServicePackage',attributes: ['name', 'price'] }]
         }
       ]
     });
@@ -402,7 +405,14 @@ exports.updateInvoice = async (req, res) => {
 exports.markAsPaid = async (req, res) => {
   try {
     const { id } = req.params;
-    const { paymentReference, paymentMethod = 'manual', notes } = req.body;
+    const { 
+      paymentReference, 
+      paymentMethod = 'manual', 
+      notes,
+      gatewayId = 1,        // ✅ AGREGAR
+      amount,               // ✅ AGREGAR  
+      paymentDate          // ✅ AGREGAR
+    } = req.body;
 
     if (!id || isNaN(parseInt(id))) {
       return res.status(400).json({
@@ -441,11 +451,12 @@ exports.markAsPaid = async (req, res) => {
       const payment = await Payment.create({
         invoiceId: invoice.id,
         clientId: invoice.clientId,
-        amount: invoice.totalAmount,
+        gatewayId: parseInt(gatewayId),  // ✅ AGREGAR ESTA LÍNEA
+        amount: amount ? parseFloat(amount) : invoice.totalAmount,
         paymentMethod,
         paymentReference: paymentReference || `MANUAL-${Date.now()}`,
         status: 'completed',
-        paymentDate: new Date(),
+        paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
         paymentData: {
           type: 'manual',
           notes: notes || 'Pago registrado manualmente',
@@ -492,6 +503,7 @@ exports.markAsPaid = async (req, res) => {
   }
 };
 
+
 /**
  * Generar PDF de factura
  * GET /api/invoices/:id/pdf
@@ -515,9 +527,10 @@ exports.generatePDF = async (req, res) => {
         },
         {
           model: Subscription,
+          as: 'subscription',
           include: [
             {
-              model: ServicePackage,
+              model: ServicePackage, as: 'ServicePackage',
               attributes: ['name', 'price', 'downloadSpeedMbps', 'uploadSpeedMbps']
             }
           ]
@@ -693,7 +706,7 @@ exports.getInvoiceStatistics = async (req, res) => {
       ],
       where: dateFilter,
       group: ['Invoice.clientId', 'Client.id'],
-      order: [[db.Sequelize.literal('totalBilled'), 'DESC']],
+      order: [[db.Sequelize.col('totalBilled'), 'DESC']],
       limit: 10
     });
 
@@ -762,9 +775,10 @@ exports.getOverdueInvoices = async (req, res) => {
         },
         {
           model: Subscription,
+          as: 'subscription',
           include: [
             {
-              model: ServicePackage,
+              model: ServicePackage, as: 'ServicePackage',
               attributes: ['name', 'price']
             }
           ]
@@ -927,7 +941,7 @@ exports.duplicateInvoice = async (req, res) => {
     const originalInvoice = await Invoice.findByPk(parseInt(id), {
       include: [
         { model: Client },
-        { model: Subscription, include: [{ model: ServicePackage }] }
+        { model: Subscription, as: 'subscription', include: [{ model: ServicePackage }] }
       ]
     });
 
@@ -975,7 +989,7 @@ exports.duplicateInvoice = async (req, res) => {
     const duplicatedWithRelations = await Invoice.findByPk(duplicatedInvoice.id, {
       include: [
         { model: Client, attributes: ['id', 'firstName', 'lastName', 'email'] },
-        { model: Subscription, include: [{ model: ServicePackage }] }
+        { model: Subscription, as: 'subscription', include: [{ model: ServicePackage }] }
       ]
     });
 
@@ -1110,7 +1124,8 @@ exports.getClientInvoices = async (req, res) => {
       include: [
         {
           model: Subscription,
-          include: [{ model: ServicePackage, attributes: ['name', 'price'] }]
+          as: 'subscription',
+          include: [{ model: ServicePackage, as: 'ServicePackage', attributes: ['name', 'price'] }]
         },
         {
           model: Payment,

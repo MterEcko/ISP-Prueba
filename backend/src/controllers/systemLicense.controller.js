@@ -1,5 +1,5 @@
 const db = require('../models');
-const SystemLicense = db.systemLicense;
+const SystemLicense = db.SystemLicense;
 const logger = require('../utils/logger');
 const crypto = require('crypto');
 
@@ -473,10 +473,10 @@ exports.getLicenseUsage = async (req, res) => {
     }
     
     // Get current client count
-    const clientCount = await db.client.count();
+    const clientCount = await db.Client.count();
     
     // Get current device count
-    const deviceCount = await db.device.count();
+    const deviceCount = await db.Device.count(); 
     
     // Calculate usage percentages
     const clientUsagePercent = license.max_clients > 0 ? 

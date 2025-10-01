@@ -30,6 +30,7 @@ exports.getAllRules = async (req, res) => {
       include: [
         {
           model: MessageTemplate,
+          as: 'template', 
           attributes: ['id', 'name', 'templateType'],
           required: false
         }
@@ -64,6 +65,7 @@ exports.getRuleById = async (req, res) => {
       include: [
         {
           model: MessageTemplate,
+          as: 'template',
           attributes: ['id', 'name', 'templateType', 'messageBody']
         }
       ]
@@ -382,6 +384,7 @@ exports.getEvents = async (req, res) => {
       include: [
         {
           model: Client,
+          as: 'client',
           attributes: ['id', 'firstName', 'lastName', 'email'],
           required: false
         }

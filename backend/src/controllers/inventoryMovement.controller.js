@@ -43,7 +43,7 @@ exports.create = async (req, res) => {
       reason: reason || 'Movimiento manual',
       fromLocationId,
       toLocationId,
-      movedById: req.userId,
+      movedById: req.body.movedById || req.userId,
       notes,
       movementDate: req.body.movementDate || new Date()
     });

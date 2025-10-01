@@ -63,7 +63,7 @@ module.exports = (sequelize) => {
     },
     nodeId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: 'Nodes',
         key: 'id'

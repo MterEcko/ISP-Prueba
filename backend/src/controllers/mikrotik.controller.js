@@ -604,7 +604,7 @@ getProfilesFromDatabase: async (req, res) => {
     if (servicePackageIds.length > 0) {
       // Consulta directa a ServicePackages
       servicePackages = await db.sequelize.query(
-        'SELECT id, name, active FROM "servicePackages" WHERE id = ANY($1)',
+        'SELECT id, name, active FROM "ServicePackages" WHERE id = ANY($1)',
         {
           bind: [servicePackageIds],
           type: db.sequelize.QueryTypes.SELECT

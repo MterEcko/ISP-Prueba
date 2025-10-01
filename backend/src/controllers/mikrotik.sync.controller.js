@@ -360,9 +360,10 @@ async resetSyncTimes(req, res) {
       users: null,
       ips: null
     };
+	
 
     await db.SystemConfiguration.upsert({
-      key: 'mikrotik_sync_times',
+      keys: 'mikrotik_sync_times',
       value: JSON.stringify(resetTimes)
     });
 
