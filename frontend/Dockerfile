@@ -1,1 +1,18 @@
-"FROM node:18-alpineWORKDIR /appCOPY package*.json ./RUN npm installCOPY . .EXPOSE 8080CMD [\"npm\", \"run\", \"serve\"]" 
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copiar archivos de dependencias
+COPY package*.json ./
+
+# Instalar dependencias
+RUN npm install
+
+# Copiar código fuente
+COPY . .
+
+# Exponer puerto
+EXPOSE 8080
+
+# Comando de inicio
+CMD ["npm", "run", "serve"]
