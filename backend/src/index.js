@@ -1,11 +1,13 @@
 // backend/src/index.js
 const express = require('express');
+const http = require('http');
 const cors = require('cors');
 const morgan = require("morgan");
 const helmet = require('helmet');
 const dotenv = require("dotenv");
 const configHelper = require('./helpers/configHelper');
 const path = require('path');
+const websocketService = require('./services/websocket.service');
 
 const { setupTPLinkPermissions } = require("./config/permissions-setup");
 
@@ -21,6 +23,7 @@ console.log('DB_NAME:', process.env.DB_NAME);
 console.log('============================');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
 // Middleware CORS - Configuración dinámica para múltiples orígenes
@@ -189,15 +192,19 @@ async function synchronizeDatabase() {
 
 // Sincronizar con la base de datos y arrancar el servidor
 synchronizeDatabase().then(() => {
+  // Inicializar WebSocket Service
+  websocketService.initialize(server);
+
   // Escuchar en todas las interfaces (0.0.0.0) para permitir acceso desde red local
   const HOST = process.env.HOST || '0.0.0.0';
 
-  app.listen(PORT, HOST, () => {
+  server.listen(PORT, HOST, () => {
     console.log(`🚀 Servidor ISP corriendo en http://${HOST}:${PORT}`);
     console.log(`📍 Accesible desde:`);
     console.log(`   - Local: http://localhost:${PORT}`);
     console.log(`   - Red:   http://TU_IP_LOCAL:${PORT}`);
     console.log(`   - API:   http://localhost:${PORT}/api`);
+    console.log(`   - WebSocket: ws://localhost:${PORT}`);
     console.log(`\n🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
     console.log(`💾 Base de datos: ${process.env.DB_DIALECT || 'sqlite'}`);
   });
@@ -327,6 +334,14 @@ try {
   console.log('✅ pluginAudit.routes registradas');
 } catch (error) {
   console.error('❌ Error en pluginAudit.routes:', error.message);
+}
+
+try {
+  console.log('Registrando metrics.routes...');
+  require('./routes/metrics.routes')(app);
+  console.log('✅ metrics.routes registradas');
+} catch (error) {
+  console.error('❌ Error en metrics.routes:', error.message);
 }
 
 try {

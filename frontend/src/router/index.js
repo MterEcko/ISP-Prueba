@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Home from '../views/Home.vue';
 import Login from '../views/Login.vue';
 import Dashboard from '../views/Dashboard.vue';
+import MetricsDashboard from '../views/MetricsDashboard.vue';
 import ClientList from '../views/ClientList.vue';
 import ClientDetail from '../views/ClientDetail.vue';
 import ClientForm from '../views/ClientForm.vue';
@@ -126,6 +127,12 @@ const routes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/metrics-dashboard',
+    name: 'MetricsDashboard',
+    component: MetricsDashboard,
     meta: { requiresAuth: true }
   },
   {
