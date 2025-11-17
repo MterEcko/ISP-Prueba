@@ -1303,6 +1303,15 @@ const routes = [
       title: 'Órdenes del Store'
     }
   },
+  {
+    path: '/plugins/upload',
+    name: 'PluginUpload',
+    component: () => import('@/views/plugins/PluginUploadView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Subir Plugin'
+    }
+  },
 
   // ===============================
   // a??RUTA 404 Y MANEJO DE ERRORES

@@ -84,6 +84,9 @@ app.use('/api/chat', require('./src/routes/chat.routes'));
 // Rutas del Store (Marketplace)
 app.use('/api/store', require('./src/routes/storeCustomer.routes'));
 
+// Rutas de Upload de Plugins
+app.use('/api/plugin-upload', require('./src/routes/pluginUpload.routes'));
+
 
 // Función para crear datos iniciales mínimos si no existen
 async function initial() {
