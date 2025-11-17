@@ -386,9 +386,68 @@ const routes = [
 },
 
   // ===============================
+  // RUTAS DEL PORTAL DEL CLIENTE
+  // ===============================
+
+  // Dashboard principal del portal del cliente
+  {
+    path: '/client-portal/dashboard',
+    name: 'ClientPortalDashboard',
+    component: () => import('../views/ClientPortal/ClientPortalDashboard.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Mi Portal'
+    }
+  },
+
+  // Facturas del cliente
+  {
+    path: '/client-portal/invoices',
+    name: 'ClientPortalInvoices',
+    component: () => import('../views/ClientPortal/ClientPortalInvoices.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Mis Facturas'
+    }
+  },
+
+  // Tickets de soporte del cliente
+  {
+    path: '/client-portal/tickets',
+    name: 'ClientPortalTickets',
+    component: () => import('../views/ClientPortal/ClientPortalTickets.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Mis Tickets'
+    }
+  },
+
+  // Perfil del cliente
+  {
+    path: '/client-portal/profile',
+    name: 'ClientPortalProfile',
+    component: () => import('../views/ClientPortal/ClientPortalProfile.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Mi Perfil'
+    }
+  },
+
+  // Consumo/uso del cliente
+  {
+    path: '/client-portal/usage',
+    name: 'ClientPortalUsage',
+    component: () => import('../views/ClientPortal/ClientPortalUsage.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Mi Consumo'
+    }
+  },
+
+  // ===============================
   // e??? RUTAS PARA SUSCRIPCIONES INTELIGENTES
   // ===============================
-  
+
   // 1. NUEVA SUSCRIPCI?��N (Detecci?3n autom??tica si ya tiene suscripciones)
   {
     path: '/clients/:clientId/subscription/new',
