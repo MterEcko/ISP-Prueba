@@ -62,7 +62,7 @@ class PaymentService {
   // PAGOS MANUALES - RUTAS ESPECÍFICAS IMPLEMENTADAS
   // ===============================
 
-  // POST /api/manual-payments - Registrar pago manual por operador
+ // POST /api/manual-payments - Registrar pago manual por operador
   submitManualPayment(paymentData, receiptFile = null) {
     const formData = new FormData();
     
@@ -75,9 +75,11 @@ class PaymentService {
     
     // Agregar archivo de comprobante si existe
     if (receiptFile) {
+      // El nombre 'receipt' coincide con el que ya tienes en manual.payment.controller.js
       formData.append('receipt', receiptFile);
     }
 
+    // ✅ La URL correcta, que ahora sí existirá en el backend
     return axios.post(`${API_URL}manual-payments`, formData, { 
       headers: {
         ...authHeader(),
@@ -150,7 +152,7 @@ class PaymentService {
 
   // GET /api/manual-payments/client/:clientId/invoices - Facturas pendientes de cliente
   getClientPendingInvoices(clientId) {
-    return axios.get(`${API_URL}manual-payments/client/${clientId}/invoices`, { 
+    return axios.get(`${API_URL}invoices/client/${clientId}`, { 
       headers: authHeader() 
     });
   }

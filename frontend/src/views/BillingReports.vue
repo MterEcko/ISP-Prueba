@@ -496,6 +496,10 @@ import BillingService from '../services/billing.service';
 import InvoiceService from '../services/invoice.service';
 import PaymentService from '../services/payment.service';
 import ClientService from '../services/client.service';
+import ReportsService from '../services/reports.service'; // Asumiendo que este archivo ya fue creado
+import { Chart, registerables } from 'chart.js';
+
+Chart.register(...registerables);
 
 export default {
   name: 'BillingReports',
@@ -510,54 +514,31 @@ export default {
         zoneId: ''
       },
       executiveSummary: {
-        totalRevenue: 0,
-        revenueChange: 0,
-        totalInvoices: 0,
-        invoicedAmount: 0,
-        paidInvoices: 0,
-        collectionRate: 0,
-        overdueAmount: 0,
-        overdueInvoices: 0
+        totalRevenue: 0, revenueChange: 0, totalInvoices: 0,
+        invoicedAmount: 0, paidInvoices: 0, collectionRate: 0,
+        overdueAmount: 0, overdueInvoices: 0
       },
       revenueAnalysis: {
-        averageMonthly: 0,
-        bestMonth: '',
-        bestAmount: 0,
-        yearGrowth: 0
+        averageMonthly: 0, bestMonth: '', bestAmount: 0,
+        yearGrowth: 0, monthlyData: {}
       },
       paymentMethodsData: [],
       portfolioAnalysis: {
-        current: 0,
-        currentPercentage: 0,
-        pastDue30: 0,
-        pastDue30Percentage: 0,
-        pastDue60: 0,
-        pastDue60Percentage: 0,
-        pastDue90: 0,
-        pastDue90Percentage: 0,
-        pastDue90Plus: 0,
-        pastDue90PlusPercentage: 0
+        current: 0, currentPercentage: 0, pastDue30: 0, pastDue30Percentage: 0,
+        pastDue60: 0, pastDue60Percentage: 0, pastDue90: 0, pastDue90Percentage: 0,
+        pastDue90Plus: 0, pastDue90PlusPercentage: 0
       },
       clientAnalysis: {
-        totalClients: 0,
-        activeClients: 0,
-        newClients: 0,
-        churnedClients: 0
+        totalClients: 0, activeClients: 0, newClients: 0, churnedClients: 0
       },
       topClients: [],
       projections: {
-        next30Days: 0,
-        confidence30: 85,
-        next3Months: 0,
-        confidence90: 75,
-        upcomingInvoices: 0,
-        upcomingAmount: 0
+        next30Days: 0, confidence30: 0, next3Months: 0, confidence90: 0,
+        upcomingInvoices: 0, upcomingAmount: 0
       },
       operationalEfficiency: {
-        avgCollectionTime: 0,
-        autoProcessedPercentage: 0,
-        remindersSent: 0,
-        reminderResponseRate: 0
+        avgCollectionTime: 0, autoProcessedPercentage: 0,
+        remindersSent: 0, reminderResponseRate: 0
       },
       activeReportTab: 'invoices',
       reportTabs: [
@@ -570,10 +551,11 @@ export default {
       overdueClients: [],
       showScheduleModal: false,
       scheduleForm: {
-        reportType: 'executive',
-        frequency: 'monthly',
-        recipients: '',
-        format: 'pdf'
+        reportType: 'executive', frequency: 'monthly', recipients: '', format: 'pdf'
+      },
+      charts: {
+        revenueChart: null, paymentMethodsChart: null, portfolioChart: null,
+        projectionsChart: null, efficiencyChart: null,
       }
     };
   },
@@ -582,23 +564,25 @@ export default {
     this.loadZones();
     this.loadAllReports();
   },
+  mounted() {
+    this.setupCharts();
+  },
   methods: {
     initializeDateRange() {
       const now = new Date();
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
       const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      
       this.globalFilters.startDate = firstDay.toISOString().split('T')[0];
       this.globalFilters.endDate = lastDay.toISOString().split('T')[0];
     },
 
     updateDateRange() {
       const now = new Date();
-      
       switch (this.globalFilters.period) {
         case 'today': {
-          this.globalFilters.startDate = now.toISOString().split('T')[0];
-          this.globalFilters.endDate = now.toISOString().split('T')[0];
+          const today = new Date().toISOString().split('T')[0];
+          this.globalFilters.startDate = today;
+          this.globalFilters.endDate = today;
           break;
         }
         case 'week': {
@@ -625,10 +609,7 @@ export default {
           this.globalFilters.endDate = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
           break;
         }
-        default:
-          break;
       }
-      
       if (this.globalFilters.period !== 'custom') {
         this.loadAllReports();
       }
@@ -637,7 +618,7 @@ export default {
     async loadZones() {
       try {
         const response = await ClientService.getZones();
-        this.zones = response.data;
+        this.zones = response.data.data || response.data;
       } catch (error) {
         console.error('Error cargando zonas:', error);
       }
@@ -646,18 +627,19 @@ export default {
     async loadAllReports() {
       this.loading = true;
       try {
+        // Ejecutamos las cargas de datos principales en paralelo
         await Promise.all([
           this.loadExecutiveSummary(),
-          this.loadRevenueAnalysis(),
-          this.loadPaymentMethodsData(),
-          this.loadPortfolioAnalysis(),
           this.loadClientAnalysis(),
+          this.loadDetailedReports(),
+          this.loadPortfolioAnalysis(),
           this.loadProjections(),
-          this.loadOperationalEfficiency(),
-          this.loadDetailedReports()
+          this.loadOperationalEfficiency()
         ]);
+        // Una vez que todos los datos están listos, actualizamos las gráficas
+        this.updateCharts();
       } catch (error) {
-        console.error('Error cargando reportes:', error);
+        console.error('Error cargando los reportes:', error);
       } finally {
         this.loading = false;
       }
@@ -668,162 +650,176 @@ export default {
         const params = {
           startDate: this.globalFilters.startDate,
           endDate: this.globalFilters.endDate,
-          zoneId: this.globalFilters.zoneId
+          zoneId: this.globalFilters.zoneId || undefined
         };
-
-        const [billingStats, invoiceStats, paymentStats] = await Promise.all([
-          BillingService.getBillingStatistics(params),
-          InvoiceService.getInvoiceStatistics(params),
-          PaymentService.getPaymentStatistics(params)
-        ]);
-
-        this.executiveSummary = {
-          totalRevenue: paymentStats.data.totalCompleted || 0,
-          revenueChange: paymentStats.data.changePercentage || 0,
-          totalInvoices: invoiceStats.data.totalCount || 0,
-          invoicedAmount: invoiceStats.data.totalAmount || 0,
-          paidInvoices: invoiceStats.data.paidCount || 0,
-          collectionRate: invoiceStats.data.totalCount > 0 
-            ? (invoiceStats.data.paidCount / invoiceStats.data.totalCount) * 100 
-            : 0,
-          overdueAmount: invoiceStats.data.overdueAmount || 0,
-          overdueInvoices: invoiceStats.data.overdueCount || 0
-        };
+        // TODO: Este endpoint debe ser creado en el backend
+        const response = await ReportsService.getExecutiveSummary(params);
+        this.executiveSummary = response.data.data;
       } catch (error) {
-        console.error('Error cargando resumen ejecutivo:', error);
+        console.error('Error cargando resumen ejecutivo (puede que el endpoint no exista aún):', error);
       }
     },
-
-    async loadRevenueAnalysis() {
-      try {
-        // Simular datos de análisis de ingresos
-        this.revenueAnalysis = {
-          averageMonthly: 45000,
-          bestMonth: 'Diciembre 2024',
-          bestAmount: 65000,
-          yearGrowth: 12.5
-        };
-      } catch (error) {
-        console.error('Error cargando análisis de ingresos:', error);
-      }
-    },
-
-    async loadPaymentMethodsData() {
-      try {
-        // Simular datos de métodos de pago
-        this.paymentMethodsData = [
-          { method: 'transfer', count: 45, amount: 22500, percentage: 45 },
-          { method: 'cash', count: 30, amount: 15000, percentage: 30 },
-          { method: 'card', count: 15, amount: 7500, percentage: 15 },
-          { method: 'online', count: 10, amount: 5000, percentage: 10 }
-        ];
-      } catch (error) {
-        console.error('Error cargando métodos de pago:', error);
-      }
+    
+    async loadClientAnalysis() {
+        try {
+            const params = { 
+                startDate: this.globalFilters.startDate, 
+                endDate: this.globalFilters.endDate,
+                zoneId: this.globalFilters.zoneId || undefined 
+            };
+            const [clientStatsRes, invoiceStatsRes] = await Promise.all([
+                ClientService.getClientStatistics(params),
+                InvoiceService.getInvoiceStatistics(params)
+            ]);
+            this.clientAnalysis = clientStatsRes.data.data;
+            this.topClients = (invoiceStatsRes.data.data.topClients || []).map(c => ({
+                id: c.clientId,
+                name: c.clientName,
+                revenue: c.totalBilled
+            }));
+        } catch (error) {
+            console.error('Error cargando análisis de clientes:', error);
+        }
     },
 
     async loadPortfolioAnalysis() {
       try {
-        // Simular análisis de cartera
-        this.portfolioAnalysis = {
-          current: 75000,
-          currentPercentage: 75,
-          pastDue30: 15000,
-          pastDue30Percentage: 15,
-          pastDue60: 6000,
-          pastDue60Percentage: 6,
-          pastDue90: 3000,
-          pastDue90Percentage: 3,
-          pastDue90Plus: 1000,
-          pastDue90PlusPercentage: 1
-        };
+        const params = { /* ... */ };
+        // TODO: Este endpoint debe ser creado en el backend
+        const response = await ReportsService.getPortfolioAnalysis(params);
+        this.portfolioAnalysis = response.data.data;
       } catch (error) {
-        console.error('Error cargando análisis de cartera:', error);
+        console.error('Error cargando análisis de cartera (puede que el endpoint no exista aún):', error);
       }
     },
-
-    async loadClientAnalysis() {
-      try {
-        const response = await ClientService.getClientStatistics({
-          zoneId: this.globalFilters.zoneId,
-          period: this.globalFilters.period
-        });
-
-        this.clientAnalysis = {
-          totalClients: response.data.totalClients || 0,
-          activeClients: response.data.activeClients || 0,
-          newClients: response.data.newClients || 0,
-          churnedClients: response.data.churnedClients || 0
-        };
-
-        // Simular top clientes
-        this.topClients = [
-          { id: 1, name: 'Empresa ABC S.A.', revenue: 5400 },
-          { id: 2, name: 'Hotel Plaza', revenue: 4200 },
-          { id: 3, name: 'Restaurante El Dorado', revenue: 3800 },
-          { id: 4, name: 'Oficinas Centro', revenue: 3200 },
-          { id: 5, name: 'Farmacia San José', revenue: 2800 }
-        ];
-      } catch (error) {
-        console.error('Error cargando análisis de clientes:', error);
-      }
-    },
-
+    
     async loadProjections() {
       try {
-        // Simular proyecciones
-        this.projections = {
-          next30Days: 48000,
-          confidence30: 85,
-          next3Months: 145000,
-          confidence90: 75,
-          upcomingInvoices: 25,
-          upcomingAmount: 12500
-        };
+        const params = { /* ... */ };
+        // TODO: Este endpoint debe ser creado en el backend
+        const response = await ReportsService.getProjections(params);
+        this.projections = response.data.data;
       } catch (error) {
-        console.error('Error cargando proyecciones:', error);
+        console.error('Error cargando proyecciones (puede que el endpoint no exista aún):', error);
       }
     },
-
+    
     async loadOperationalEfficiency() {
       try {
-        // Simular eficiencia operativa
-        this.operationalEfficiency = {
-          avgCollectionTime: 18,
-          autoProcessedPercentage: 75,
-          remindersSent: 145,
-          reminderResponseRate: 68
-        };
+        const params = { /* ... */ };
+        // TODO: Este endpoint debe ser creado en el backend
+        const response = await ReportsService.getOperationalEfficiency(params);
+        this.operationalEfficiency = response.data.data;
       } catch (error) {
-        console.error('Error cargando eficiencia operativa:', error);
+        console.error('Error cargando eficiencia operativa (puede que el endpoint no exista aún):', error);
       }
     },
 
     async loadDetailedReports() {
-      try {
-        // Simular reportes detallados
-        this.invoicesByStatus = [
-          { status: 'paid', count: 85, totalAmount: 42500, averageAmount: 500, percentage: 70 },
-          { status: 'pending', count: 20, totalAmount: 10000, averageAmount: 500, percentage: 16.5 },
-          { status: 'overdue', count: 15, totalAmount: 7500, averageAmount: 500, percentage: 12.4 },
-          { status: 'cancelled', count: 2, totalAmount: 1000, averageAmount: 500, percentage: 1.1 }
-        ];
+        try {
+            const params = {
+                startDate: this.globalFilters.startDate,
+                endDate: this.globalFilters.endDate,
+                zoneId: this.globalFilters.zoneId || undefined
+            };
+            const [invoiceStatsRes, paymentStatsRes, overdueClientsRes] = await Promise.all([
+                InvoiceService.getInvoiceStatistics(params),
+                PaymentService.getPaymentStatistics(params),
+                BillingService.getOverdueClients({ ...params, days: 120 }) // Trae morosos de hasta 120 días
+            ]);
 
-        this.paymentsByGateway = [
-          { name: 'Manual', count: 65, totalAmount: 32500, fees: 0, netAmount: 32500, successRate: 100 },
-          { name: 'MercadoPago', count: 15, totalAmount: 7500, fees: 225, netAmount: 7275, successRate: 95 },
-          { name: 'PayPal', count: 8, totalAmount: 4000, fees: 160, netAmount: 3840, successRate: 92 },
-          { name: 'Stripe', count: 12, totalAmount: 6000, fees: 180, netAmount: 5820, successRate: 98 }
-        ];
+            const invoiceData = invoiceStatsRes.data.data;
+            this.invoicesByStatus = Object.entries(invoiceData.byStatus || {}).map(([status, count]) => ({
+                status, count,
+                totalAmount: invoiceData.amountByStatus ? (invoiceData.amountByStatus[status] || 0) : 0,
+                averageAmount: count > 0 && invoiceData.amountByStatus ? ((invoiceData.amountByStatus[status] || 0) / count) : 0,
+                percentage: invoiceData.summary.totalInvoices > 0 ? (count / invoiceData.summary.totalInvoices) * 100 : 0
+            }));
 
-        this.overdueClients = [
-          { id: 1, name: 'Cliente Moroso 1', phone: '555-0001', overdueInvoices: 3, overdueAmount: 1500, averageOverdueDays: 45, lastCommunication: '2024-01-15' },
-          { id: 2, name: 'Cliente Moroso 2', phone: '555-0002', overdueInvoices: 2, overdueAmount: 1000, averageOverdueDays: 30, lastCommunication: '2024-01-20' },
-          { id: 3, name: 'Cliente Moroso 3', phone: '555-0003', overdueInvoices: 1, overdueAmount: 500, averageOverdueDays: 60, lastCommunication: '2024-01-10' }
-        ];
-      } catch (error) {
-        console.error('Error cargando reportes detallados:', error);
-      }
+            const paymentData = paymentStatsRes.data.data;
+            const totalPaymentAmount = paymentData.summary.totalAmount;
+            this.paymentMethodsData = Object.entries(paymentData.paymentMethods || {}).map(([method, data]) => ({
+                method, count: data.count, amount: data.amount,
+                percentage: totalPaymentAmount > 0 ? (data.amount / totalPaymentAmount) * 100 : 0
+            }));
+
+            this.overdueClients = overdueClientsRes.data.data.clients || [];
+            this.revenueAnalysis.monthlyData = paymentData.dailyStats;
+
+        } catch (error) {
+            console.error('Error cargando reportes detallados:', error);
+        }
+    },
+
+    setupCharts() {
+      const refs = ['revenueChart', 'paymentMethodsChart', 'portfolioChart'];
+      refs.forEach(ref => {
+        const ctx = this.$refs[ref]?.getContext('2d');
+        if (ctx) {
+          let type = 'bar';
+          if (ref === 'paymentMethodsChart' || ref === 'portfolioChart') type = 'doughnut';
+          if (ref === 'revenueChart') type = 'line';
+          
+          this.charts[ref] = new Chart(ctx, {
+            type: type,
+            data: { labels: [], datasets: [] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: ref !== 'revenueChart' } } }
+          });
+        }
+      });
+    },
+    
+    updateCharts() {
+      this.updateRevenueChart();
+      this.updatePaymentMethodsChart();
+      this.updatePortfolioChart();
+    },
+    
+    updateRevenueChart() {
+      const chart = this.charts.revenueChart;
+      if (!chart || !this.revenueAnalysis.monthlyData) return;
+      
+      const labels = Object.keys(this.revenueAnalysis.monthlyData);
+      const data = Object.values(this.revenueAnalysis.monthlyData).map(d => d.amount);
+      
+      chart.data.labels = labels;
+      chart.data.datasets = [{
+        label: 'Ingresos por Día', data, borderColor: '#4CAF50',
+        backgroundColor: 'rgba(76, 175, 80, 0.1)', fill: true, tension: 0.1
+      }];
+      chart.update();
+    },
+    
+    updatePaymentMethodsChart() {
+      const chart = this.charts.paymentMethodsChart;
+      if (!chart || !this.paymentMethodsData) return;
+
+      const labels = this.paymentMethodsData.map(d => this.formatPaymentMethod(d.method));
+      const data = this.paymentMethodsData.map(d => d.amount);
+
+      chart.data.labels = labels;
+      chart.data.datasets = [{
+        label: 'Monto por Método', data,
+        backgroundColor: ['#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#F44336'],
+      }];
+      chart.update();
+    },
+
+    updatePortfolioChart() {
+      const chart = this.charts.portfolioChart;
+      if (!chart || !this.portfolioAnalysis) return;
+      
+      chart.data.labels = ['Al Día', '1-30 días', '31-60 días', '61-90 días', '+90 días'];
+      chart.data.datasets = [{
+        label: 'Estado de Cartera',
+        data: [
+          this.portfolioAnalysis.current, this.portfolioAnalysis.pastDue30,
+          this.portfolioAnalysis.pastDue60, this.portfolioAnalysis.pastDue90,
+          this.portfolioAnalysis.pastDue90Plus,
+        ],
+        backgroundColor: ['#4CAF50', '#FFC107', '#FF9800', '#F57C00', '#F44336'],
+      }];
+      chart.update();
     },
 
     setActiveReportTab(tabId) {
@@ -832,7 +828,6 @@ export default {
 
     async sendReminder(clientId) {
       try {
-        // Implementar envío de recordatorio
         console.log('Enviando recordatorio a cliente:', clientId);
         alert('Recordatorio enviado exitosamente');
       } catch (error) {
@@ -862,12 +857,7 @@ export default {
 
     closeScheduleModal() {
       this.showScheduleModal = false;
-      this.scheduleForm = {
-        reportType: 'executive',
-        frequency: 'monthly',
-        recipients: '',
-        format: 'pdf'
-      };
+      this.scheduleForm = { reportType: 'executive', frequency: 'monthly', recipients: '', format: 'pdf' };
     },
 
     async saveSchedule() {
@@ -882,7 +872,7 @@ export default {
     },
 
     formatNumber(value) {
-      if (!value) return '0.00';
+      if (value === null || value === undefined) return '0.00';
       return parseFloat(value).toLocaleString('es-MX', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
@@ -895,32 +885,17 @@ export default {
     },
 
     formatPaymentMethod(method) {
-      const methods = {
-        'cash': 'Efectivo',
-        'transfer': 'Transferencia',
-        'card': 'Tarjeta',
-        'online': 'Pago en Línea'
-      };
+      const methods = { 'cash': 'Efectivo', 'transfer': 'Transferencia', 'card': 'Tarjeta', 'online': 'En Línea' };
       return methods[method] || method;
     },
 
     formatInvoiceStatus(status) {
-      const statuses = {
-        'paid': 'Pagada',
-        'pending': 'Pendiente',
-        'overdue': 'Vencida',
-        'cancelled': 'Cancelada'
-      };
+      const statuses = { 'paid': 'Pagada', 'pending': 'Pendiente', 'overdue': 'Vencida', 'cancelled': 'Cancelada' };
       return statuses[status] || status;
     },
 
     getStatusClass(status) {
-      const classes = {
-        'paid': 'status-paid',
-        'pending': 'status-pending',
-        'overdue': 'status-overdue',
-        'cancelled': 'status-cancelled'
-      };
+      const classes = { 'paid': 'status-paid', 'pending': 'status-pending', 'overdue': 'status-overdue', 'cancelled': 'status-cancelled' };
       return classes[status] || 'status-unknown';
     }
   }
