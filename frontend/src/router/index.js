@@ -90,6 +90,7 @@ import ClientBillingConfig from '../views/ClientBillingConfig.vue';
 import BillingReports from '../views/BillingReports.vue';
 import OverdueInvoices from '../views/OverdueInvoices.vue';
 import PaymentGateways from '../views/PaymentGateways.vue';
+import ReportsExport from '../views/ReportsExport.vue';
 // ===== IMPORTACIONES PARA SUSCRIPCIONES =====
 import SubscriptionForm from '../components/SubscriptionForm.vue';
 import SubscriptionFormIntelligent from '../components/SubscriptionFormIntelligent.vue';
@@ -386,9 +387,20 @@ const routes = [
   path: '/billing/gateways',
   name: 'PaymentGateways',
   component: PaymentGateways,
-  meta: { 
+  meta: {
     requiresAuth: true,
     title: 'Pasarelas de Pago'
+  }
+},
+
+// Exportar reportes (PDF/Excel)
+{
+  path: '/reports/export',
+  name: 'ReportsExport',
+  component: ReportsExport,
+  meta: {
+    requiresAuth: true,
+    title: 'Exportar Reportes'
   }
 },
 
