@@ -189,8 +189,17 @@ async function synchronizeDatabase() {
 
 // Sincronizar con la base de datos y arrancar el servidor
 synchronizeDatabase().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT} desde src/index`);
+  // Escuchar en todas las interfaces (0.0.0.0) para permitir acceso desde red local
+  const HOST = process.env.HOST || '0.0.0.0';
+
+  app.listen(PORT, HOST, () => {
+    console.log(`🚀 Servidor ISP corriendo en http://${HOST}:${PORT}`);
+    console.log(`📍 Accesible desde:`);
+    console.log(`   - Local: http://localhost:${PORT}`);
+    console.log(`   - Red:   http://TU_IP_LOCAL:${PORT}`);
+    console.log(`   - API:   http://localhost:${PORT}/api`);
+    console.log(`\n🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`💾 Base de datos: ${process.env.DB_DIALECT || 'sqlite'}`);
   });
 });
 
