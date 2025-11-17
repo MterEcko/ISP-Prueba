@@ -91,6 +91,7 @@ import BillingReports from '../views/BillingReports.vue';
 import OverdueInvoices from '../views/OverdueInvoices.vue';
 import PaymentGateways from '../views/PaymentGateways.vue';
 import ReportsExport from '../views/ReportsExport.vue';
+import CoverageMap from '../views/CoverageMap.vue';
 // ===== IMPORTACIONES PARA SUSCRIPCIONES =====
 import SubscriptionForm from '../components/SubscriptionForm.vue';
 import SubscriptionFormIntelligent from '../components/SubscriptionFormIntelligent.vue';
@@ -401,6 +402,17 @@ const routes = [
   meta: {
     requiresAuth: true,
     title: 'Exportar Reportes'
+  }
+},
+
+// Mapa de cobertura geográfica
+{
+  path: '/coverage-map',
+  name: 'CoverageMap',
+  component: CoverageMap,
+  meta: {
+    requiresAuth: true,
+    title: 'Mapa de Cobertura'
   }
 },
 
