@@ -1,24 +1,17 @@
-const express = require('express');
-const router = express.Router();
 const n8nController = require('../controllers/n8n.controller');
-const { authenticate } = require('../middleware/auth.middleware');
+const authJwt = require('../middleware/auth.jwt');
 
-// Webhook endpoint - NO requiere autenticación (usa API key en header)
-router.post('/webhook', n8nController.webhook);
-
-// Rutas protegidas
-router.use(authenticate);
-
-// Workflows CRUD
-router.get('/workflows', n8nController.getWorkflows);
-router.post('/workflows', n8nController.createWorkflow);
-router.put('/workflows/:id', n8nController.updateWorkflow);
-router.delete('/workflows/:id', n8nController.deleteWorkflow);
-
-// Test connection
-router.get('/test-connection', n8nController.testConnection);
-
-// Trigger workflow manually
-router.post('/trigger', n8nController.triggerWorkflow);
-
-module.exports = router;
+module.exports = function(app) {
+  // === N8N WORKFLOWS ===
+  app.get('/api/n8n/workflows', [authJwt.verifyToken], n8nController.getWorkflows);
+  app.post('/api/n8n/workflows', [authJwt.verifyToken], n8nController.createWorkflow);
+  app.put('/api/n8n/workflows/:id', [authJwt.verifyToken], n8nController.updateWorkflow);
+  app.delete('/api/n8n/workflows/:id', [authJwt.verifyToken], n8nController.deleteWorkflow);
+  app.post('/api/n8n/workflows/:id/trigger', [authJwt.verifyToken], n8nController.triggerWorkflow);
+  
+  // === N8N WEBHOOK (sin autenticación para que n8n pueda llamarlo) ===
+  app.post('/api/n8n/webhook', n8nController.webhook);
+  
+  // === N8N TEST ===
+  app.get('/api/n8n/test-connection', [authJwt.verifyToken], n8nController.testConnection);
+};

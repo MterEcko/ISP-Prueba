@@ -1,4 +1,5 @@
-import api from './api';
+import axios from 'axios';
+import { API_URL } from './frontend_apiConfig';
 
 const pluginUploadService = {
   /**
@@ -16,7 +17,7 @@ const pluginUploadService = {
       formData.append('update', 'true');
     }
 
-    const response = await api.post('/plugin-upload/upload', formData, {
+    const response = await axios.post(API_URL + 'plugin-upload/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -34,7 +35,7 @@ const pluginUploadService = {
     if (filters.category) params.append('category', filters.category);
     if (filters.isActive !== undefined) params.append('isActive', filters.isActive);
 
-    const response = await api.get(`/plugin-upload?${params.toString()}`);
+    const response = await axios.get(`${API_URL}plugin-upload?${params.toString()}`);
     return response.data;
   },
 
@@ -42,7 +43,7 @@ const pluginUploadService = {
    * Get plugin by ID
    */
   async getPluginById(pluginId) {
-    const response = await api.get(`/plugin-upload/${pluginId}`);
+    const response = await axios.get(`${API_URL}plugin-upload/${pluginId}`);
     return response.data;
   },
 
@@ -50,7 +51,7 @@ const pluginUploadService = {
    * Update plugin status (publish/unpublish)
    */
   async updatePluginStatus(pluginId, isActive) {
-    const response = await api.put(`/plugin-upload/${pluginId}/status`, {
+    const response = await axios.put(`${API_URL}plugin-upload/${pluginId}/status`, {
       isActive
     });
     return response.data;
@@ -60,7 +61,7 @@ const pluginUploadService = {
    * Delete plugin
    */
   async deletePlugin(pluginId) {
-    const response = await api.delete(`/plugin-upload/${pluginId}`);
+    const response = await axios.delete(`${API_URL}plugin-upload/${pluginId}`);
     return response.data;
   },
 
@@ -68,7 +69,7 @@ const pluginUploadService = {
    * Validate manifest JSON
    */
   async validateManifest(manifest) {
-    const response = await api.post('/plugin-upload/validate-manifest', manifest);
+    const response = await axios.post(API_URL + 'plugin-upload/validate-manifest', manifest);
     return response.data;
   },
 

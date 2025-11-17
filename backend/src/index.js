@@ -556,6 +556,47 @@ try {
   console.error('Stack completo:', error.stack);
 }
 
+// Nuevas rutas para las 6 funcionalidades
+try {
+  console.log('Registrando calendar.routes...');
+  require('./routes/calendar.routes')(app);
+  console.log('✅ calendar.routes registradas');
+} catch (error) {
+  console.error('❌ Error en calendar.routes:', error.message);
+}
+
+try {
+  console.log('Registrando chat.routes...');
+  require('./routes/chat.routes')(app);
+  console.log('✅ chat.routes registradas');
+} catch (error) {
+  console.error('❌ Error en chat.routes:', error.message);
+}
+
+try {
+  console.log('Registrando storeCustomer.routes...');
+  require('./routes/storeCustomer.routes')(app);
+  console.log('✅ storeCustomer.routes registradas');
+} catch (error) {
+  console.error('❌ Error en storeCustomer.routes:', error.message);
+}
+
+try {
+  console.log('Registrando pluginUpload.routes...');
+  require('./routes/pluginUpload.routes')(app);
+  console.log('✅ pluginUpload.routes registradas');
+} catch (error) {
+  console.error('❌ Error en pluginUpload.routes:', error.message);
+}
+
+try {
+  console.log('Registrando n8n.routes...');
+  require('./routes/n8n.routes')(app);
+  console.log('✅ n8n.routes registradas');
+} catch (error) {
+  console.error('❌ Error en n8n.routes:', error.message);
+}
+
 console.log('\n=== FIN REGISTRO DE RUTAS ===');
 console.log("Todas las rutas han sido procesadas");
 

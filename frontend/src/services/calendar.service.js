@@ -1,4 +1,5 @@
-import api from '@/api';
+import axios from 'axios';
+import { API_URL } from './frontend_apiConfig';
 
 class CalendarService {
   /**
@@ -6,7 +7,7 @@ class CalendarService {
    */
   async getEvents(filters = {}) {
     try {
-      const response = await api.get('/calendar/events', { params: filters });
+      const response = await axios.get(API_URL + 'calendar/events', { params: filters });
       return response.data;
     } catch (error) {
       console.error('Error getting events:', error);
@@ -19,7 +20,7 @@ class CalendarService {
    */
   async getEventById(id) {
     try {
-      const response = await api.get(`/calendar/events/${id}`);
+      const response = await axios.get(API_URL + `calendar/events/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error getting event:', error);
@@ -32,7 +33,7 @@ class CalendarService {
    */
   async createEvent(eventData) {
     try {
-      const response = await api.post('/calendar/events', eventData);
+      const response = await axios.post(API_URL + 'calendar/events', eventData);
       return response.data;
     } catch (error) {
       console.error('Error creating event:', error);
@@ -45,7 +46,7 @@ class CalendarService {
    */
   async updateEvent(id, eventData) {
     try {
-      const response = await api.put(`/calendar/events/${id}`, eventData);
+      const response = await axios.put(API_URL + `calendar/events/${id}`, eventData);
       return response.data;
     } catch (error) {
       console.error('Error updating event:', error);
@@ -58,7 +59,7 @@ class CalendarService {
    */
   async deleteEvent(id) {
     try {
-      const response = await api.delete(`/calendar/events/${id}`);
+      const response = await axios.delete(API_URL + `calendar/events/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting event:', error);
@@ -73,7 +74,7 @@ class CalendarService {
    */
   async getGoogleAuthUrl() {
     try {
-      const response = await api.get('/calendar/google/auth-url');
+      const response = await axios.get(API_URL + 'calendar/google/auth-url');
       return response.data;
     } catch (error) {
       console.error('Error getting Google auth URL:', error);
@@ -86,7 +87,7 @@ class CalendarService {
    */
   async getGoogleCalendars() {
     try {
-      const response = await api.get('/calendar/google/calendars');
+      const response = await axios.get(API_URL + 'calendar/google/calendars');
       return response.data;
     } catch (error) {
       console.error('Error getting Google calendars:', error);
@@ -101,7 +102,7 @@ class CalendarService {
    */
   async getMicrosoftAuthUrl() {
     try {
-      const response = await api.get('/calendar/microsoft/auth-url');
+      const response = await axios.get(API_URL + 'calendar/microsoft/auth-url');
       return response.data;
     } catch (error) {
       console.error('Error getting Microsoft auth URL:', error);
@@ -114,7 +115,7 @@ class CalendarService {
    */
   async getMicrosoftCalendars() {
     try {
-      const response = await api.get('/calendar/microsoft/calendars');
+      const response = await axios.get(API_URL + 'calendar/microsoft/calendars');
       return response.data;
     } catch (error) {
       console.error('Error getting Microsoft calendars:', error);
@@ -129,7 +130,7 @@ class CalendarService {
    */
   async getIntegrations() {
     try {
-      const response = await api.get('/calendar/integrations');
+      const response = await axios.get(API_URL + 'calendar/integrations');
       return response.data;
     } catch (error) {
       console.error('Error getting integrations:', error);
@@ -142,7 +143,7 @@ class CalendarService {
    */
   async disconnectIntegration(id) {
     try {
-      const response = await api.delete(`/calendar/integrations/${id}`);
+      const response = await axios.delete(API_URL + `calendar/integrations/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error disconnecting integration:', error);
@@ -155,7 +156,7 @@ class CalendarService {
    */
   async syncFromExternal(startDate, endDate) {
     try {
-      const response = await api.post('/calendar/sync', {
+      const response = await axios.post(API_URL + 'calendar/sync', {
         params: { startDate, endDate }
       });
       return response.data;

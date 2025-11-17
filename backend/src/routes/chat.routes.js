@@ -1,21 +1,16 @@
-const express = require('express');
-const router = express.Router();
 const chatController = require('../controllers/chat.controller');
-const { authenticate } = require('../middleware/auth.middleware');
+const authJwt = require('../middleware/auth.jwt');
 
-// Todas las rutas requieren autenticación
-router.use(authenticate);
-
-// Conversaciones
-router.get('/conversations', chatController.getConversations);
-router.post('/conversations', chatController.createConversation);
-
-// Mensajes
-router.get('/conversations/:conversationId/messages', chatController.getMessages);
-router.post('/messages', chatController.sendMessage);
-router.put('/conversations/:conversationId/read', chatController.markAsRead);
-
-// Telegram
-router.get('/telegram/status', chatController.getTelegramStatus);
-
-module.exports = router;
+module.exports = function(app) {
+  // === CONVERSACIONES ===
+  app.get('/api/chat/conversations', [authJwt.verifyToken], chatController.getConversations);
+  app.post('/api/chat/conversations', [authJwt.verifyToken], chatController.createConversation);
+  app.get('/api/chat/conversations/:id/messages', [authJwt.verifyToken], chatController.getMessages);
+  
+  // === MENSAJES ===
+  app.post('/api/chat/messages', [authJwt.verifyToken], chatController.sendMessage);
+  app.put('/api/chat/conversations/:id/read', [authJwt.verifyToken], chatController.markAsRead);
+  
+  // === TELEGRAM ===
+  app.get('/api/chat/telegram/status', [authJwt.verifyToken], chatController.getTelegramStatus);
+};

@@ -1,4 +1,5 @@
-import api from './api';
+import axios from 'axios';
+import { API_URL } from './frontend_apiConfig';
 
 const storeCustomerService = {
   // ===== CUSTOMERS =====
@@ -16,7 +17,7 @@ const storeCustomerService = {
     if (filters.limit) params.append('limit', filters.limit);
     if (filters.offset) params.append('offset', filters.offset);
 
-    const response = await api.get(`/store/customers?${params.toString()}`);
+    const response = await axios.get(`${API_URL}store/customers?${params.toString()}`);
     return response.data;
   },
 
@@ -24,7 +25,7 @@ const storeCustomerService = {
    * Get customer by ID
    */
   async getCustomerById(customerId) {
-    const response = await api.get(`/store/customers/${customerId}`);
+    const response = await axios.get(`${API_URL}store/customers/${customerId}`);
     return response.data;
   },
 
@@ -32,7 +33,7 @@ const storeCustomerService = {
    * Create new customer
    */
   async createCustomer(customerData) {
-    const response = await api.post('/store/customers', customerData);
+    const response = await axios.post(API_URL + 'store/customers', customerData);
     return response.data;
   },
 
@@ -40,7 +41,7 @@ const storeCustomerService = {
    * Update customer
    */
   async updateCustomer(customerId, updates) {
-    const response = await api.put(`/store/customers/${customerId}`, updates);
+    const response = await axios.put(`${API_URL}store/customers/${customerId}`, updates);
     return response.data;
   },
 
@@ -48,7 +49,7 @@ const storeCustomerService = {
    * Delete customer
    */
   async deleteCustomer(customerId) {
-    const response = await api.delete(`/store/customers/${customerId}`);
+    const response = await axios.delete(`${API_URL}store/customers/${customerId}`);
     return response.data;
   },
 
@@ -64,7 +65,7 @@ const storeCustomerService = {
     if (filters.limit) params.append('limit', filters.limit);
     if (filters.offset) params.append('offset', filters.offset);
 
-    const response = await api.get(`/store/customers/${customerId}/purchases?${params.toString()}`);
+    const response = await axios.get(`${API_URL}store/customers/${customerId}/purchases?${params.toString()}`);
     return response.data;
   },
 
@@ -72,7 +73,7 @@ const storeCustomerService = {
    * Get customer statistics
    */
   async getCustomerStats(customerId) {
-    const response = await api.get(`/store/customers/${customerId}/stats`);
+    const response = await axios.get(`${API_URL}store/customers/${customerId}/stats`);
     return response.data;
   },
 
@@ -80,7 +81,7 @@ const storeCustomerService = {
    * Get top customers
    */
   async getTopCustomers(limit = 10) {
-    const response = await api.get(`/store/customers/top?limit=${limit}`);
+    const response = await axios.get(`${API_URL}store/customers/top?limit=${limit}`);
     return response.data;
   },
 
@@ -101,7 +102,7 @@ const storeCustomerService = {
     if (filters.limit) params.append('limit', filters.limit);
     if (filters.offset) params.append('offset', filters.offset);
 
-    const response = await api.get(`/store/orders?${params.toString()}`);
+    const response = await axios.get(`${API_URL}store/orders?${params.toString()}`);
     return response.data;
   },
 
@@ -109,7 +110,7 @@ const storeCustomerService = {
    * Get order by ID
    */
   async getOrderById(orderId) {
-    const response = await api.get(`/store/orders/${orderId}`);
+    const response = await axios.get(`${API_URL}store/orders/${orderId}`);
     return response.data;
   },
 
@@ -117,7 +118,7 @@ const storeCustomerService = {
    * Create new order
    */
   async createOrder(customerId, orderData) {
-    const response = await api.post('/store/orders', {
+    const response = await axios.post(API_URL + 'store/orders', {
       customerId,
       ...orderData
     });
@@ -128,7 +129,7 @@ const storeCustomerService = {
    * Update order status
    */
   async updateOrderStatus(orderId, status, updates = {}) {
-    const response = await api.put(`/store/orders/${orderId}/status`, {
+    const response = await axios.put(`${API_URL}store/orders/${orderId}/status`, {
       status,
       ...updates
     });
@@ -139,7 +140,7 @@ const storeCustomerService = {
    * Process payment
    */
   async processPayment(orderId, paymentData) {
-    const response = await api.post(`/store/orders/${orderId}/payment`, paymentData);
+    const response = await axios.post(`${API_URL}store/orders/${orderId}/payment`, paymentData);
     return response.data;
   },
 
@@ -147,7 +148,7 @@ const storeCustomerService = {
    * Cancel order
    */
   async cancelOrder(orderId, reason) {
-    const response = await api.post(`/store/orders/${orderId}/cancel`, { reason });
+    const response = await axios.post(`${API_URL}store/orders/${orderId}/cancel`, { reason });
     return response.data;
   },
 
@@ -155,7 +156,7 @@ const storeCustomerService = {
    * Refund order
    */
   async refundOrder(orderId, reason) {
-    const response = await api.post(`/store/orders/${orderId}/refund`, { reason });
+    const response = await axios.post(`${API_URL}store/orders/${orderId}/refund`, { reason });
     return response.data;
   },
 
@@ -168,7 +169,7 @@ const storeCustomerService = {
     if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
     if (filters.dateTo) params.append('dateTo', filters.dateTo);
 
-    const response = await api.get(`/store/sales/stats?${params.toString()}`);
+    const response = await axios.get(`${API_URL}store/sales/stats?${params.toString()}`);
     return response.data;
   },
 

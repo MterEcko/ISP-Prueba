@@ -1,35 +1,26 @@
-const express = require('express');
-const router = express.Router();
 const storeCustomerController = require('../controllers/storeCustomer.controller');
-const { authenticate } = require('../middleware/auth.middleware');
+const authJwt = require('../middleware/auth.jwt');
 
-// Todas las rutas requieren autenticación (admin del Store)
-router.use(authenticate);
-
-// ===== CUSTOMERS =====
-router.get('/customers', storeCustomerController.getCustomers);
-router.get('/customers/top', storeCustomerController.getTopCustomers);
-router.get('/customers/:id', storeCustomerController.getCustomerById);
-router.post('/customers', storeCustomerController.createCustomer);
-router.put('/customers/:id', storeCustomerController.updateCustomer);
-router.delete('/customers/:id', storeCustomerController.deleteCustomer);
-
-// Historial y estadísticas de clientes
-router.get('/customers/:id/purchases', storeCustomerController.getCustomerPurchases);
-router.get('/customers/:id/stats', storeCustomerController.getCustomerStats);
-
-// ===== ORDERS =====
-router.get('/orders', storeCustomerController.getOrders);
-router.get('/orders/:id', storeCustomerController.getOrderById);
-router.post('/orders', storeCustomerController.createOrder);
-router.put('/orders/:id/status', storeCustomerController.updateOrderStatus);
-
-// Procesamiento de pagos y reembolsos
-router.post('/orders/:id/payment', storeCustomerController.processPayment);
-router.post('/orders/:id/cancel', storeCustomerController.cancelOrder);
-router.post('/orders/:id/refund', storeCustomerController.refundOrder);
-
-// Estadísticas de ventas
-router.get('/sales/stats', storeCustomerController.getSalesStats);
-
-module.exports = router;
+module.exports = function(app) {
+  // === CUSTOMERS ===
+  app.get('/api/store/customers', [authJwt.verifyToken], storeCustomerController.getCustomers);
+  app.get('/api/store/customers/top', [authJwt.verifyToken], storeCustomerController.getTopCustomers);
+  app.get('/api/store/customers/:id', [authJwt.verifyToken], storeCustomerController.getCustomerById);
+  app.post('/api/store/customers', [authJwt.verifyToken], storeCustomerController.createCustomer);
+  app.put('/api/store/customers/:id', [authJwt.verifyToken], storeCustomerController.updateCustomer);
+  app.delete('/api/store/customers/:id', [authJwt.verifyToken], storeCustomerController.deleteCustomer);
+  app.get('/api/store/customers/:id/purchases', [authJwt.verifyToken], storeCustomerController.getCustomerPurchases);
+  app.get('/api/store/customers/:id/stats', [authJwt.verifyToken], storeCustomerController.getCustomerStats);
+  
+  // === ORDERS ===
+  app.get('/api/store/orders', [authJwt.verifyToken], storeCustomerController.getOrders);
+  app.get('/api/store/orders/:id', [authJwt.verifyToken], storeCustomerController.getOrderById);
+  app.post('/api/store/orders', [authJwt.verifyToken], storeCustomerController.createOrder);
+  app.put('/api/store/orders/:id/status', [authJwt.verifyToken], storeCustomerController.updateOrderStatus);
+  app.post('/api/store/orders/:id/payment', [authJwt.verifyToken], storeCustomerController.processPayment);
+  app.post('/api/store/orders/:id/cancel', [authJwt.verifyToken], storeCustomerController.cancelOrder);
+  app.post('/api/store/orders/:id/refund', [authJwt.verifyToken], storeCustomerController.refundOrder);
+  
+  // === SALES ===
+  app.get('/api/store/sales/stats', [authJwt.verifyToken], storeCustomerController.getSalesStats);
+};

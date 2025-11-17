@@ -1,31 +1,26 @@
-const express = require('express');
-const router = express.Router();
 const calendarController = require('../controllers/calendar.controller');
-const { authenticate } = require('../middleware/auth.middleware');
+const authJwt = require('../middleware/auth.jwt');
 
-// Todas las rutas requieren autenticación
-router.use(authenticate);
+module.exports = function(app) {
+  // === EVENTOS ===
+  app.post('/api/calendar/events', [authJwt.verifyToken], calendarController.createEvent);
+  app.get('/api/calendar/events', [authJwt.verifyToken], calendarController.getEvents);
+  app.get('/api/calendar/events/:id', [authJwt.verifyToken], calendarController.getEventById);
+  app.put('/api/calendar/events/:id', [authJwt.verifyToken], calendarController.updateEvent);
+  app.delete('/api/calendar/events/:id', [authJwt.verifyToken], calendarController.deleteEvent);
 
-// === EVENTOS ===
-router.post('/events', calendarController.createEvent);
-router.get('/events', calendarController.getEvents);
-router.get('/events/:id', calendarController.getEventById);
-router.put('/events/:id', calendarController.updateEvent);
-router.delete('/events/:id', calendarController.deleteEvent);
+  // === GOOGLE CALENDAR ===
+  app.get('/api/calendar/google/auth-url', [authJwt.verifyToken], calendarController.getGoogleAuthUrl);
+  app.get('/api/calendar/google/callback', calendarController.googleCallback);
+  app.get('/api/calendar/google/calendars', [authJwt.verifyToken], calendarController.getGoogleCalendars);
 
-// === GOOGLE CALENDAR ===
-router.get('/google/auth-url', calendarController.getGoogleAuthUrl);
-router.get('/google/callback', calendarController.googleCallback);
-router.get('/google/calendars', calendarController.getGoogleCalendars);
+  // === MICROSOFT CALENDAR ===
+  app.get('/api/calendar/microsoft/auth-url', [authJwt.verifyToken], calendarController.getMicrosoftAuthUrl);
+  app.get('/api/calendar/microsoft/callback', calendarController.microsoftCallback);
+  app.get('/api/calendar/microsoft/calendars', [authJwt.verifyToken], calendarController.getMicrosoftCalendars);
 
-// === MICROSOFT CALENDAR ===
-router.get('/microsoft/auth-url', calendarController.getMicrosoftAuthUrl);
-router.get('/microsoft/callback', calendarController.microsoftCallback);
-router.get('/microsoft/calendars', calendarController.getMicrosoftCalendars);
-
-// === INTEGRACIONES ===
-router.get('/integrations', calendarController.getIntegrations);
-router.delete('/integrations/:id', calendarController.disconnectIntegration);
-router.post('/sync', calendarController.syncFromExternal);
-
-module.exports = router;
+  // === INTEGRACIONES ===
+  app.get('/api/calendar/integrations', [authJwt.verifyToken], calendarController.getIntegrations);
+  app.delete('/api/calendar/integrations/:id', [authJwt.verifyToken], calendarController.disconnectIntegration);
+  app.post('/api/calendar/sync', [authJwt.verifyToken], calendarController.syncFromExternal);
+};

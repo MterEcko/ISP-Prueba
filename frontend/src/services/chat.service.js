@@ -1,4 +1,5 @@
-import api from '@/api';
+import axios from 'axios';
+import { API_URL } from './frontend_apiConfig';
 
 class ChatService {
   /**
@@ -6,7 +7,7 @@ class ChatService {
    */
   async getConversations() {
     try {
-      const response = await api.get('/chat/conversations');
+      const response = await axios.get(API_URL + 'chat/conversations');
       return response.data;
     } catch (error) {
       console.error('Error getting conversations:', error);
@@ -19,7 +20,7 @@ class ChatService {
    */
   async createConversation(participantIds, name = null, type = 'direct') {
     try {
-      const response = await api.post('/chat/conversations', {
+      const response = await axios.post(API_URL + 'chat/conversations', {
         participantIds,
         name,
         type
@@ -51,7 +52,7 @@ class ChatService {
    */
   async sendMessage(conversationId, content, messageType = 'text', attachments = []) {
     try {
-      const response = await api.post('/chat/messages', {
+      const response = await axios.post(API_URL + 'chat/messages', {
         conversationId,
         content,
         messageType,
@@ -82,7 +83,7 @@ class ChatService {
    */
   async getTelegramStatus() {
     try {
-      const response = await api.get('/chat/telegram/status');
+      const response = await axios.get(API_URL + 'chat/telegram/status');
       return response.data;
     } catch (error) {
       console.error('Error getting telegram status:', error);

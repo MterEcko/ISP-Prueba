@@ -1,54 +1,36 @@
-const express = require('express');
-const router = express.Router();
+const pluginUploadController = require('../controllers/pluginUpload.controller');
+const authJwt = require('../middleware/auth.jwt');
 const multer = require('multer');
 const path = require('path');
-const pluginUploadController = require('../controllers/pluginUpload.controller');
-const { authenticate } = require('../middleware/auth.middleware');
 
-// Configurar multer para upload de archivos
+// Configure multer for plugin uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../../uploads/temp'));
+    cb(null, path.join(__dirname, '../uploads/plugins/'));
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'plugin-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, Date.now() + '-' + file.originalname);
   }
 });
 
 const upload = multer({
   storage: storage,
-  limits: {
-    fileSize: 50 * 1024 * 1024 // 50MB max
-  },
-  fileFilter: function (req, file, cb) {
-    // Solo aceptar archivos ZIP
-    if (path.extname(file.originalname).toLowerCase() !== '.zip') {
-      return cb(new Error('Solo se permiten archivos .zip'));
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/zip' || file.originalname.endsWith('.zip')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .zip files are allowed'));
     }
-    cb(null, true);
   }
 });
 
-// Todas las rutas requieren autenticación
-router.use(authenticate);
-
-// Upload plugin
-router.post('/upload', upload.single('plugin'), pluginUploadController.uploadPlugin);
-
-// Get all plugins
-router.get('/', pluginUploadController.getAllPluginUploads);
-
-// Get plugin by ID
-router.get('/:id', pluginUploadController.getPluginUpload);
-
-// Update plugin status
-router.put('/:id/status', pluginUploadController.updatePluginStatus);
-
-// Delete plugin
-router.delete('/:id', pluginUploadController.deletePluginUpload);
-
-// Validate manifest
-router.post('/validate-manifest', pluginUploadController.validateManifest);
-
-module.exports = router;
+module.exports = function(app) {
+  // === PLUGIN UPLOAD ===
+  app.post('/api/plugin-upload/upload', [authJwt.verifyToken, upload.single('plugin')], pluginUploadController.uploadPlugin);
+  app.get('/api/plugin-upload', [authJwt.verifyToken], pluginUploadController.getAllPluginUploads);
+  app.get('/api/plugin-upload/:id', [authJwt.verifyToken], pluginUploadController.getPluginUpload);
+  app.put('/api/plugin-upload/:id/status', [authJwt.verifyToken], pluginUploadController.updatePluginStatus);
+  app.delete('/api/plugin-upload/:id', [authJwt.verifyToken], pluginUploadController.deletePluginUpload);
+  app.post('/api/plugin-upload/validate-manifest', [authJwt.verifyToken], pluginUploadController.validateManifest);
+};
