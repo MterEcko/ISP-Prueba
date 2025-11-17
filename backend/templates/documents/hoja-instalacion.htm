@@ -1,0 +1,489 @@
+<!-- backend/src/templates/documents/hoja-instalacion.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoja de Instalación - {{nombre_completo}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #333;
+            background: white;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px 10px 0 0;
+            margin-bottom: 0;
+        }
+
+        .header h1 {
+            font-size: 22pt;
+            margin-bottom: 5px;
+        }
+
+        .header .subtitle {
+            font-size: 11pt;
+            opacity: 0.9;
+        }
+
+        .info-bar {
+            background: #f8f9fa;
+            padding: 15px 25px;
+            border-left: 4px solid #667eea;
+            border-right: 4px solid #667eea;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .info-bar-item {
+            font-size: 10pt;
+        }
+
+        .info-bar-item strong {
+            color: #667eea;
+        }
+
+        .content {
+            border: 2px solid #e0e0e0;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            padding: 25px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            background: #667eea;
+            color: white;
+            padding: 10px 15px;
+            font-size: 13pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 25px;
+            margin-bottom: 15px;
+        }
+
+        .data-item {
+            border-bottom: 1px solid #e0e0e0;
+            padding: 8px 0;
+        }
+
+        .data-item label {
+            display: block;
+            font-size: 9pt;
+            color: #666;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .data-item .value {
+            font-size: 11pt;
+            color: #333;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .equipment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .equipment-table th {
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-size: 10pt;
+        }
+
+        .equipment-table td {
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            font-size: 10pt;
+        }
+
+        .equipment-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .checklist {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+
+        .checklist h4 {
+            color: #28a745;
+            margin-bottom: 15px;
+            font-size: 12pt;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #28a745;
+            border-radius: 3px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .notes-section {
+            background: #fff3cd;
+            border: 2px dashed #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .notes-section h4 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 11pt;
+        }
+
+        .notes-area {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 10px;
+            min-height: 80px;
+            border-radius: 4px;
+        }
+
+        .signatures {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            page-break-inside: avoid;
+        }
+
+        .signature-block {
+            text-align: center;
+        }
+
+        .signature-line {
+            border-top: 2px solid #333;
+            margin: 50px 10px 10px 10px;
+        }
+
+        .signature-label {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 9pt;
+            margin-top: 5px;
+        }
+
+        .signature-name {
+            color: #666;
+            font-size: 9pt;
+            margin-top: 3px;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #28a745;
+            color: white;
+            border-radius: 20px;
+            font-size: 10pt;
+            font-weight: bold;
+        }
+
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .container {
+                max-width: 100%;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Encabezado -->
+        <div class="header">
+            <h1>🔧 HOJA DE INSTALACIÓN TÉCNICA</h1>
+            <p class="subtitle">Registro de instalación y configuración de servicio</p>
+        </div>
+
+        <!-- Barra de información -->
+        <div class="info-bar">
+            <div class="info-bar-item">
+                <strong>Cliente:</strong> {{numero_cliente}}
+            </div>
+            <div class="info-bar-item">
+                <strong>Fecha:</strong> {{fecha_instalacion}}
+            </div>
+            <div class="info-bar-item">
+                <strong>Técnico:</strong> {{tecnico_instalador}}
+            </div>
+            <div class="info-bar-item">
+                <strong>Estado:</strong> <span class="status-badge">INSTALADO</span>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Datos del Cliente -->
+            <div class="section">
+                <div class="section-title">📋 INFORMACIÓN DEL CLIENTE</div>
+                <div class="data-grid">
+                    <div class="data-item">
+                        <label>Nombre Completo:</label>
+                        <div class="value">{{nombre_completo}}</div>
+                    </div>
+                    <div class="data-item">
+                        <label>Teléfono:</label>
+                        <div class="value">{{telefono}}</div>
+                    </div>
+                    <div class="data-item full-width">
+                        <label>Dirección de Instalación:</label>
+                        <div class="value">{{domicilio}}</div>
+                    </div>
+                    <div class="data-item">
+                        <label>Coordenadas GPS:</label>
+                        <div class="value">{{latitud}}, {{longitud}}</div>
+                    </div>
+                    <div class="data-item">
+                        <label>Email:</label>
+                        <div class="value">{{email}}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Datos del Servicio -->
+            <div class="section">
+                <div class="section-title">🌐 CONFIGURACIÓN DEL SERVICIO</div>
+                <div class="data-grid">
+                    <div class="data-item">
+                        <label>Plan Contratado:</label>
+                        <div class="value">{{plan_servicio}}</div>
+                    </div>
+                    <div class="data-item">
+                        <label>Velocidad:</label>
+                        <div class="value">↓{{velocidad_descarga}} / ↑{{velocidad_subida}} Mbps</div>
+                    </div>
+                    <div class="data-item">
+                        <label>Zona:</label>
+                        <div class="value">{{zona}}</div>
+                    </div>
+                    <div class="data-item">
+                        <label>Nodo:</label>
+                        <div class="value">{{nodo}}</div>
+                    </div>
+                    <div class="data-item">
+                        <label>Sector:</label>
+                        <div class="value">{{sector}}</div>
+                    </div>
+                    <div class="data-item">
+                        <label>IP Asignada:</label>
+                        <div class="value">{{ip_asignada}}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Equipamiento Instalado -->
+            <div class="section">
+                <div class="section-title">📦 EQUIPAMIENTO INSTALADO</div>
+                <table class="equipment-table">
+                    <thead>
+                        <tr>
+                            <th>Tipo de Equipo</th>
+                            <th>Marca/Modelo</th>
+                            <th>Número de Serie</th>
+                            <th>MAC Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Router/CPE Principal</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>Antena Receptora</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>Cable UTP/FTP</td>
+                            <td>Cat 5e / Cat 6</td>
+                            <td>{{metros_cable}} metros</td>
+                            <td>N/A</td>
+                        </tr>
+                        <tr>
+                            <td>Conectores RJ45</td>
+                            <td>-</td>
+                            <td>{{cantidad_conectores}} pzas</td>
+                            <td>N/A</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Datos de Conexión -->
+            <div class="section">
+                <div class="section-title">🔐 CREDENCIALES DE ACCESO</div>
+                <div class="data-grid">
+                    <div class="data-item">
+                        <label>Usuario PPPoE:</label>
+                        <div class="value">{{usuario_pppoe}}</div>
+                    </div>
+                    <div class="data-item">
+                        <label>Contraseña:</label>
+                        <div class="value">••••••••</div>
+                    </div>
+                    <div class="data-item">
+                        <label>SSID WiFi:</label>
+                        <div class="value">ISP_{{numero_cliente}}</div>
+                    </div>
+                    <div class="data-item">
+                        <label>Contraseña WiFi:</label>
+                        <div class="value">••••••••</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Verificación -->
+            <div class="section">
+                <div class="checklist">
+                    <h4>✓ LISTA DE VERIFICACIÓN</h4>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <span>Instalación física del equipo completada</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <span>Configuración de red y credenciales establecidas</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <span>Prueba de velocidad realizada exitosamente</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <span>Orientación de antena optimizada</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <span>Cliente capacitado en uso básico del servicio</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <span>Información de contacto y soporte entregada</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <span>Contrato firmado y documentación completa</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notas del Técnico -->
+            <div class="notes-section">
+                <h4>📝 OBSERVACIONES Y NOTAS DEL TÉCNICO</h4>
+                <div class="notes-area">
+                    <p style="color: #999; font-style: italic;">
+                        [Espacio para notas del técnico sobre la instalación, 
+                        condiciones especiales, recomendaciones, etc.]
+                    </p>
+                </div>
+            </div>
+
+            <!-- Código QR -->
+            <div style="text-align: center; margin: 30px 0; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+                <qr-code data="INSTALL-{{numero_cliente}}-{{fecha_instalacion}}" size="120"></qr-code>
+                <p style="margin-top: 10px; font-size: 9pt; color: #666;">
+                    Código de verificación de instalación
+                </p>
+            </div>
+
+            <!-- Firmas -->
+            <div class="signatures">
+                <div class="signature-block">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">CLIENTE</div>
+                    <div class="signature-name">{{nombre_completo}}</div>
+                </div>
+                <div class="signature-block">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">TÉCNICO</div>
+                    <div class="signature-name">{{tecnico_instalador}}</div>
+                </div>
+                <div class="signature-block">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">SUPERVISOR</div>
+                    <div class="signature-name">ISP Manager</div>
+                </div>
+            </div>
+
+            <!-- Pie de página -->
+            <div class="footer">
+                <p>
+                    <strong>Instalación ID: INST-{{numero_cliente}}</strong> | 
+                    Realizada el {{fecha_instalacion}}
+                </p>
+                <p style="margin-top: 10px;">
+                    Este documento certifica que el servicio de Internet ha sido instalado 
+                    correctamente según las especificaciones técnicas acordadas.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
