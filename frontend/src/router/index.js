@@ -92,6 +92,7 @@ import OverdueInvoices from '../views/OverdueInvoices.vue';
 import PaymentGateways from '../views/PaymentGateways.vue';
 import ReportsExport from '../views/ReportsExport.vue';
 import CoverageMap from '../views/CoverageMap.vue';
+import VideoCall from '../views/VideoCall.vue';
 // ===== IMPORTACIONES PARA SUSCRIPCIONES =====
 import SubscriptionForm from '../components/SubscriptionForm.vue';
 import SubscriptionFormIntelligent from '../components/SubscriptionFormIntelligent.vue';
@@ -413,6 +414,17 @@ const routes = [
   meta: {
     requiresAuth: true,
     title: 'Mapa de Cobertura'
+  }
+},
+
+// Videollamadas
+{
+  path: '/video-call',
+  name: 'VideoCall',
+  component: VideoCall,
+  meta: {
+    requiresAuth: true,
+    title: 'Videollamadas'
   }
 },
 
