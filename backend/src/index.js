@@ -345,6 +345,14 @@ try {
 }
 
 try {
+  console.log('Registrando notification.routes...');
+  require('./routes/notification.routes')(app);
+  console.log('✅ notification.routes registradas');
+} catch (error) {
+  console.error('❌ Error en notification.routes:', error.message);
+}
+
+try {
   console.log('Registrando settings.routes...');
   require('./routes/settings.routes')(app);
   console.log('✅ settings.routes registradas');
