@@ -1274,6 +1274,28 @@ const routes = [
   },
 
   // ===============================
+  // STORE (Marketplace de Plugins)
+  // ===============================
+  {
+    path: '/store/customers',
+    name: 'StoreCustomers',
+    component: () => import('@/views/store/StoreCustomerList.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Clientes del Store'
+    }
+  },
+  {
+    path: '/store/orders',
+    name: 'StoreOrders',
+    component: () => import('@/views/store/StoreOrderList.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Órdenes del Store'
+    }
+  },
+
+  // ===============================
   // a??RUTA 404 Y MANEJO DE ERRORES
   // ===============================
   /*{
