@@ -9,7 +9,7 @@ exports.getSetupStatus = async (req, res) => {
   try {
     // Verificar si el sistema ya ha sido configurado
     const setupComplete = await db.SystemConfiguration.findOne({
-      where: { key: 'setup_completed' }
+      where: { configKey: 'setup_completed' }
     });
 
     if (setupComplete && setupComplete.value === 'true') {
@@ -23,7 +23,7 @@ exports.getSetupStatus = async (req, res) => {
     const configurations = await db.SystemConfiguration.findAll();
     const configMap = {};
     configurations.forEach(config => {
-      configMap[config.key] = config.value;
+      configMap[config.configKey] = config.configValue;
     });
 
     const setupSteps = {
@@ -376,7 +376,7 @@ exports.resetSetup = async (req, res) => {
 
     await db.SystemConfiguration.update(
       { value: 'false' },
-      { where: { key: 'setup_completed' } }
+      { where: { configKey: 'setup_completed' } }
     );
 
     return res.status(200).json({
@@ -395,16 +395,16 @@ exports.resetSetup = async (req, res) => {
 // Funciones auxiliares
 async function saveConfig(key, value) {
   const [config, created] = await db.SystemConfiguration.findOrCreate({
-    where: { key: key },
+    where: { configKey: key },
     defaults: {
-      key: key,
-      value: value,
-      category: 'setup'
+      configKey: key,
+      configValue: value,
+      module: 'setup'
     }
   });
 
   if (!created) {
-    await config.update({ value: value });
+    await config.update({ configValue: value });
   }
 
   return config;
