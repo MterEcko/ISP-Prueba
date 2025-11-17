@@ -69,6 +69,33 @@ module.exports = (sequelize) => {
       type: DataTypes.DECIMAL(10, 2),
       defaultValue: 0.00,
       comment: 'Multa por pago tardío'
+    },
+    // Campos para segmentación de clientes
+    segment: {
+      type: DataTypes.STRING(50),
+      defaultValue: 'Activo',
+      comment: 'Segmento del cliente (Activo, Moroso, Suspendido, VIP, etc.)'
+    },
+    segmentChangedAt: {
+      type: DataTypes.DATE,
+      comment: 'Fecha del último cambio de segmento'
+    },
+    segmentChangeReason: {
+      type: DataTypes.TEXT,
+      comment: 'Razón del cambio de segmento'
+    },
+    // Campos para suspensión
+    suspensionDate: {
+      type: DataTypes.DATE,
+      comment: 'Fecha de suspensión del servicio'
+    },
+    suspensionReason: {
+      type: DataTypes.STRING(100),
+      comment: 'Razón de la suspensión'
+    },
+    reactivationDate: {
+      type: DataTypes.DATE,
+      comment: 'Fecha de reactivación del servicio'
     }
   }, {
     tableName: 'ClientBilling',

@@ -47,9 +47,15 @@
           </router-link>
         </li>
         <li>
+          <router-link to="/devices">
+            <span class="icon">🖥️</span>
+            <span class="text" v-if="!isCollapsed">Dispositivos</span>
+          </router-link>
+        </li>
+        <li>
           <router-link to="/tickets">
             <span class="icon">🎫</span>
-            <span class="text" v-if="!isCollapsed">Tickets 1</span>
+            <span class="text" v-if="!isCollapsed">Tickets</span>
           </router-link>
         </li>
         <li>

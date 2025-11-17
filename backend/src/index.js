@@ -164,6 +164,15 @@ if (process.env.NODE_ENV === 'production' || process.env.ENABLE_BILLING_JOBS ===
   console.log('⚠️ Sistema de facturación en modo manual');
 }
 
+// Inicializar sistema de segmentación automática
+const { scheduleSegmentationJob } = require('./jobs/segmentation.job');
+if (process.env.NODE_ENV === 'production' || process.env.ENABLE_SEGMENTATION_JOBS === 'true') {
+  scheduleSegmentationJob();
+  console.log('✅ Sistema de segmentación automática activado');
+} else {
+  console.log('⚠️ Sistema de segmentación en modo manual');
+}
+
 // Registrar rutas
 // IMPORTANTE: El orden de registro de rutas es crítico
 // Las rutas más específicas deben registrarse antes que las más generales
@@ -395,6 +404,22 @@ try {
 }
 
 try {
+  console.log('Registrando clientInstallation.routes...');
+  require('./routes/clientInstallation.routes')(app);
+  console.log('✅ clientInstallation.routes registradas');
+} catch (error) {
+  console.error('❌ Error en clientInstallation.routes:', error.message);
+}
+
+try {
+  console.log('Registrando clientSupport.routes...');
+  require('./routes/clientSupport.routes')(app);
+  console.log('✅ clientSupport.routes registradas');
+} catch (error) {
+  console.error('❌ Error en clientSupport.routes:', error.message);
+}
+
+try {
   console.log('Registrando documentTemplate.routes...');
   require('./routes/documentTemplate.routes')(app);
   console.log('✅ documentTemplate.routes registradas');
@@ -595,6 +620,14 @@ try {
   console.log('✅ n8n.routes registradas');
 } catch (error) {
   console.error('❌ Error en n8n.routes:', error.message);
+}
+
+try {
+  console.log('Registrando setup.routes...');
+  require('./routes/setup.routes')(app);
+  console.log('✅ setup.routes registradas');
+} catch (error) {
+  console.error('❌ Error en setup.routes:', error.message);
 }
 
 console.log('\n=== FIN REGISTRO DE RUTAS ===');
