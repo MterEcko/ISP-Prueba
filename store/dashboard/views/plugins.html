@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plugins - ISP-Prueba Store</title>
+  <link rel="stylesheet" href="/dashboard/static/css/dashboard.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>ISP-Prueba Store</h1>
+        <p>Panel de Administración</p>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a href="/dashboard">
+          <span class="icon">📊</span> Dashboard
+        </a></li>
+        <li><a href="/dashboard/installations">
+          <span class="icon">💻</span> Instalaciones
+        </a></li>
+        <li><a href="/dashboard/licenses">
+          <span class="icon">🔑</span> Licencias
+        </a></li>
+        <li><a href="/dashboard/plugins" class="active">
+          <span class="icon">🧩</span> Plugins
+        </a></li>
+        <li><a href="/dashboard/map">
+          <span class="icon">🗺️</span> Mapa
+        </a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h2>Plugins del Marketplace</h2>
+        <p>Gestiona los plugins disponibles en la tienda</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid" style="margin-bottom: 30px;">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Total Plugins</span>
+            <div class="stat-card-icon" style="background: #e3f2fd; color: #2196f3;">🧩</div>
+          </div>
+          <div class="stat-card-value" id="totalPlugins">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Plugins Gratuitos</span>
+            <div class="stat-card-icon" style="background: #e8f5e9; color: #4caf50;">🆓</div>
+          </div>
+          <div class="stat-card-value" id="freePlugins">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Total Descargas</span>
+            <div class="stat-card-icon" style="background: #f3e5f5; color: #9c27b0;">⬇️</div>
+          </div>
+          <div class="stat-card-value" id="totalDownloads">-</div>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="data-table">
+        <div class="table-header">
+          <h3>Todos los Plugins</h3>
+          <div class="search-box">
+            <span>🔍</span>
+            <input type="text" id="searchInput" placeholder="Buscar plugins...">
+          </div>
+        </div>
+        <div id="pluginsTable">
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>Cargando plugins...</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API_URL = window.location.origin + '/api';
+    let allPlugins = [];
+
+    async function loadPlugins() {
+      try {
+        const response = await fetch(`${API_URL}/marketplace/plugins`);
+        const data = await response.json();
+
+        if (data.success) {
+          allPlugins = data.data;
+          renderPlugins(allPlugins);
+          updateStats(allPlugins);
+        }
+      } catch (error) {
+        console.error('Error loading plugins:', error);
+        document.getElementById('pluginsTable').innerHTML = `
+          <div class="loading">
+            <p style="color: #e74c3c;">❌ Error al cargar los plugins</p>
+          </div>
+        `;
+      }
+    }
+
+    function updateStats(plugins) {
+      document.getElementById('totalPlugins').textContent = plugins.length;
+      document.getElementById('freePlugins').textContent = plugins.filter(p => p.isFree).length;
+      document.getElementById('totalDownloads').textContent = plugins.reduce((sum, p) => sum + (p.downloadCount || 0), 0);
+    }
+
+    function renderPlugins(plugins) {
+      const tableDiv = document.getElementById('pluginsTable');
+
+      if (!plugins || plugins.length === 0) {
+        tableDiv.innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">No hay plugins disponibles</p>';
+        return;
+      }
+
+      tableDiv.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Plugin</th>
+              <th>Versión</th>
+              <th>Categoría</th>
+              <th>Precio</th>
+              <th>Descargas</th>
+              <th>Rating</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${plugins.map(plugin => `
+              <tr>
+                <td>
+                  <strong>${plugin.name}</strong><br>
+                  <small style="color: #999;">${plugin.slug}</small>
+                </td>
+                <td><code>v${plugin.version}</code></td>
+                <td><span class="badge badge-info">${getCategoryIcon(plugin.category)} ${getCategoryText(plugin.category)}</span></td>
+                <td>
+                  ${plugin.isFree ?
+                    '<span class="badge badge-success">🆓 Gratis</span>' :
+                    `<strong>$${plugin.price}</strong>`
+                  }
+                </td>
+                <td><strong>${plugin.downloadCount || 0}</strong></td>
+                <td>
+                  ${plugin.rating ?
+                    `⭐ ${plugin.rating.toFixed(1)} (${plugin.reviewCount || 0})` :
+                    '<span style="color: #999;">Sin reviews</span>'
+                  }
+                </td>
+                <td>
+                  ${plugin.isPublished ?
+                    '<span class="badge badge-success">✅ Publicado</span>' :
+                    '<span class="badge badge-warning">⏸️ Borrador</span>'
+                  }
+                </td>
+                <td>
+                  <button class="btn btn-primary btn-sm" onclick="viewPluginDetails('${plugin.id}')">👁️ Ver</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function getCategoryIcon(category) {
+      const icons = {
+        payment: '💳',
+        communication: '💬',
+        analytics: '📊',
+        security: '🔒',
+        utility: '🛠️',
+        integration: '🔗'
+      };
+      return icons[category] || '🧩';
+    }
+
+    function getCategoryText(category) {
+      const texts = {
+        payment: 'Pagos',
+        communication: 'Comunicación',
+        analytics: 'Analytics',
+        security: 'Seguridad',
+        utility: 'Utilidad',
+        integration: 'Integración'
+      };
+      return texts[category] || category;
+    }
+
+    function viewPluginDetails(pluginId) {
+      const plugin = allPlugins.find(p => p.id === pluginId);
+      if (!plugin) return;
+
+      const features = plugin.features ? JSON.parse(plugin.features) : [];
+      const requirements = plugin.requirements ? JSON.parse(plugin.requirements) : {};
+
+      alert(`
+📦 ${plugin.name}
+━━━━━━━━━━━━━━━━━━━━━━
+
+📝 Descripción:
+${plugin.description}
+
+⭐ Features:
+${features.map(f => `  • ${f}`).join('\n')}
+
+📋 Requisitos:
+  • Versión mínima: ${requirements.minVersion || 'N/A'}
+  • Licencia requerida: ${requirements.requiredLicense || 'N/A'}
+
+📊 Estadísticas:
+  • Descargas: ${plugin.downloadCount || 0}
+  • Rating: ${plugin.rating ? plugin.rating.toFixed(1) + ' ⭐' : 'Sin reviews'}
+  • Autor: ${plugin.author || 'Desconocido'}
+
+💾 Archivo:
+  • Path: ${plugin.filePath || 'N/A'}
+  • Hash: ${plugin.fileHash ? plugin.fileHash.substring(0, 16) + '...' : 'N/A'}
+      `.trim());
+    }
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      const filtered = allPlugins.filter(plugin =>
+        plugin.name.toLowerCase().includes(searchTerm) ||
+        plugin.slug.toLowerCase().includes(searchTerm) ||
+        plugin.description.toLowerCase().includes(searchTerm)
+      );
+      renderPlugins(filtered);
+    });
+
+    // Load plugins on page load
+    loadPlugins();
+
+    // Auto-refresh every 60 seconds
+    setInterval(loadPlugins, 60000);
+  </script>
+</body>
+</html>

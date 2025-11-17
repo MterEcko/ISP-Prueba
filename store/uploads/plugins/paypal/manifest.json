@@ -1,0 +1,45 @@
+{
+  "id": "paypal-payment-gateway",
+  "name": "PayPal Payment Gateway",
+  "slug": "paypal-payment-gateway",
+  "version": "1.6.3",
+  "description": "Acepta pagos con PayPal de forma segura. Pagos únicos y suscripciones recurrentes.",
+  "longDescription": "Integración oficial con PayPal para procesar pagos únicos, suscripciones recurrentes, y gestión de reembolsos. Compatible con PayPal Checkout, PayPal Express y PayPal REST API.",
+  "author": "ISP-Prueba Official",
+  "category": "payment",
+  "price": 0,
+  "isFree": true,
+  "tags": ["payment", "paypal", "gateway", "official", "free"],
+  "features": [
+    "Pagos únicos con PayPal",
+    "Suscripciones recurrentes",
+    "Webhooks de PayPal",
+    "Múltiples monedas",
+    "Reembolsos automáticos",
+    "PayPal Express Checkout",
+    "Reportes de transacciones"
+  ],
+  "requirements": {
+    "minVersion": "1.0.0",
+    "requiredLicense": "basic"
+  },
+  "configuration": {
+    "clientId": {
+      "type": "string",
+      "label": "Client ID",
+      "required": true
+    },
+    "clientSecret": {
+      "type": "string",
+      "label": "Client Secret",
+      "required": true,
+      "secret": true
+    },
+    "mode": {
+      "type": "select",
+      "label": "Modo",
+      "options": ["sandbox", "live"],
+      "default": "sandbox"
+    }
+  }
+}

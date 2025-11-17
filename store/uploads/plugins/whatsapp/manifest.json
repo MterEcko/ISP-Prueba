@@ -1,0 +1,52 @@
+{
+  "id": "whatsapp-business-notifications",
+  "name": "WhatsApp Business Notifications",
+  "slug": "whatsapp-business-notifications",
+  "version": "3.2.0",
+  "description": "Envía notificaciones y mensajes a tus clientes vía WhatsApp Business API",
+  "longDescription": "Conecta tu sistema con WhatsApp Business para enviar notificaciones automáticas, recordatorios de pago, confirmaciones de servicio y más. Utiliza WhatsApp Business API oficial.",
+  "author": "ISP-Prueba Official",
+  "category": "communication",
+  "price": 29.99,
+  "isFree": false,
+  "tags": ["whatsapp", "notifications", "messaging", "business", "premium"],
+  "features": [
+    "Envío masivo de mensajes",
+    "Plantillas personalizables",
+    "Respuestas automáticas",
+    "Integración con CRM",
+    "Analytics de mensajes",
+    "Mensajes programados",
+    "Multimedia (imágenes, PDFs)",
+    "WhatsApp Business API oficial"
+  ],
+  "requirements": {
+    "minVersion": "1.0.0",
+    "requiredLicense": "medium"
+  },
+  "configuration": {
+    "apiKey": {
+      "type": "string",
+      "label": "API Key",
+      "required": true,
+      "secret": true,
+      "description": "Tu API Key de WhatsApp Business"
+    },
+    "phoneNumberId": {
+      "type": "string",
+      "label": "Phone Number ID",
+      "required": true,
+      "description": "ID del número de teléfono de WhatsApp Business"
+    },
+    "webhookUrl": {
+      "type": "string",
+      "label": "Webhook URL",
+      "required": false
+    },
+    "enableAutoReply": {
+      "type": "boolean",
+      "label": "Respuestas automáticas",
+      "default": false
+    }
+  }
+}

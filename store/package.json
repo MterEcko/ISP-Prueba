@@ -35,7 +35,8 @@
     "crypto": "^1.0.1",
     "node-cron": "^3.0.3",
     "axios": "^1.6.2",
-    "geoip-lite": "^1.4.7"
+    "geoip-lite": "^1.4.7",
+    "archiver": "^6.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

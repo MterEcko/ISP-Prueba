@@ -1,0 +1,53 @@
+{
+  "id": "telegram-bot-notifications",
+  "name": "Telegram Bot Notifications",
+  "slug": "telegram-bot-notifications",
+  "version": "2.4.1",
+  "description": "Sistema de notificaciones mediante bot de Telegram para clientes y administradores",
+  "longDescription": "Crea un bot de Telegram personalizado para enviar notificaciones, alertas, recordatorios de pago y comunicarte con tus clientes. Incluye comandos personalizados y respuestas automáticas.",
+  "author": "ISP-Prueba Community",
+  "category": "communication",
+  "price": 0,
+  "isFree": true,
+  "tags": ["telegram", "bot", "notifications", "free", "messaging"],
+  "features": [
+    "Bot de Telegram personalizado",
+    "Notificaciones automáticas",
+    "Comandos personalizados",
+    "Respuestas automáticas",
+    "Envío masivo de mensajes",
+    "Grupos y canales",
+    "Multimedia (imágenes, documentos)",
+    "Inline keyboards"
+  ],
+  "requirements": {
+    "minVersion": "1.0.0",
+    "requiredLicense": "basic"
+  },
+  "configuration": {
+    "botToken": {
+      "type": "string",
+      "label": "Bot Token",
+      "required": true,
+      "secret": true,
+      "description": "Token del bot obtenido de @BotFather"
+    },
+    "botUsername": {
+      "type": "string",
+      "label": "Bot Username",
+      "required": true,
+      "description": "Nombre de usuario del bot (sin @)"
+    },
+    "adminChatId": {
+      "type": "string",
+      "label": "Chat ID de Admin",
+      "required": false,
+      "description": "Tu Chat ID para recibir alertas"
+    },
+    "enableCommands": {
+      "type": "boolean",
+      "label": "Habilitar comandos",
+      "default": true
+    }
+  }
+}
