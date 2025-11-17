@@ -1277,6 +1277,15 @@ const routes = [
   // STORE (Marketplace de Plugins)
   // ===============================
   {
+    path: '/store/dashboard',
+    name: 'StoreDashboard',
+    component: () => import('@/views/store/StoreDashboard.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Dashboard de Ganancias'
+    }
+  },
+  {
     path: '/store/customers',
     name: 'StoreCustomers',
     component: () => import('@/views/store/StoreCustomerList.vue'),
