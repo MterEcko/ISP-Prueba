@@ -5,6 +5,7 @@ import inventory from './modules/inventory';
 import license from './modules/license';
 import plugins from './modules/plugins';
 import calendar from './modules/calendar';
+import chat from './modules/chat';
 
 export default createStore({
   modules: {
@@ -12,6 +13,7 @@ export default createStore({
     inventory,
     license,
     plugins,
-    calendar
+    calendar,
+    chat
   }
 });

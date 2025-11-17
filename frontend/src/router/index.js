@@ -1261,6 +1261,19 @@ const routes = [
   },
 
   // ===============================
+  // CHAT
+  // ===============================
+  {
+    path: '/chat',
+    name: 'Chat',
+    component: () => import('@/views/chat/ChatView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Mensajes'
+    }
+  },
+
+  // ===============================
   // a??RUTA 404 Y MANEJO DE ERRORES
   // ===============================
   /*{
