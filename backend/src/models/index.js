@@ -156,6 +156,11 @@ db.CalendarIntegration = require('./calendarIntegration.model.js')(sequelize, Se
 db.ChatConversation = require('./chatConversation.model.js')(sequelize, Sequelize);
 db.ChatMessage = require('./chatMessage.model.js')(sequelize, Sequelize);
 
+// Store (Marketplace de Plugins)
+db.StoreCustomer = require('./storeCustomer.model.js')(sequelize, Sequelize);
+db.StoreOrder = require('./storeOrder.model.js')(sequelize, Sequelize);
+db.StoreOrderItem = require('./storeOrderItem.model.js')(sequelize, Sequelize);
+
 // ======================================
 // Relaciones: Existentes Core (Sin cambios)
 // ======================================
@@ -1227,6 +1232,32 @@ db.DocumentTemplate.hasMany(db.DocumentTemplate, {
 db.DocumentTemplate.belongsTo(db.DocumentTemplate, {
   foreignKey: 'parentTemplateId',
   as: 'parentTemplate'
+});
+
+// ======================================
+// RELACIONES: SISTEMA DE STORE (Marketplace)
+// ======================================
+
+// StoreCustomer - StoreOrder
+db.StoreCustomer.hasMany(db.StoreOrder, {
+  foreignKey: 'customerId',
+  as: 'orders'
+});
+
+db.StoreOrder.belongsTo(db.StoreCustomer, {
+  foreignKey: 'customerId',
+  as: 'customer'
+});
+
+// StoreOrder - StoreOrderItem
+db.StoreOrder.hasMany(db.StoreOrderItem, {
+  foreignKey: 'orderId',
+  as: 'items'
+});
+
+db.StoreOrderItem.belongsTo(db.StoreOrder, {
+  foreignKey: 'orderId',
+  as: 'order'
 });
 
 // Exportar el objeto db
