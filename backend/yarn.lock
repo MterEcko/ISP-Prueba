@@ -610,7 +610,7 @@
   resolved "https://registry.npmjs.org/@types/ms/-/ms-2.1.0.tgz"
   integrity sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==
 
-"@types/node@*", "@types/node@^22.8.7", "@types/node@>=10.0.0", "@types/node@>=13.7.0":
+"@types/node@*", "@types/node@^22.8.7", "@types/node@>=10.0.0", "@types/node@>=13.7.0", "@types/node@>=16":
   version "22.15.17"
   resolved "https://registry.npmjs.org/@types/node/-/node-22.15.17.tgz"
   integrity sha512-wIX2aSZL5FE+MR0JlvF87BNVrtFWf6AE6rxSE9X7OwnVvoyCQjpzSRJ+M87se/4QCkCiebQAqrJ0y6fwIyi7nw==
@@ -3743,7 +3743,7 @@ media-typer@0.3.0:
   resolved "https://registry.npmjs.org/media-typer/-/media-typer-0.3.0.tgz"
   integrity sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==
 
-mercadopago@^2.5.0:
+mercadopago@^2.10.0:
   version "2.10.0"
   resolved "https://registry.npmjs.org/mercadopago/-/mercadopago-2.10.0.tgz"
   integrity sha512-G5wW+sxrteLwk2zipMUF9UOmJuFABI3W5KiDkb7xVt74IcHxPxHjI/81QjLMYFIYQZm7pO5L3/ieAsVvyLbmwg==
@@ -4753,7 +4753,7 @@ qrcode@^1.5.4:
     pngjs "^5.0.0"
     yargs "^15.3.1"
 
-qs@^6.14.0, qs@^6.7.0, qs@6.14.0:
+qs@^6.11.0, qs@^6.14.0, qs@^6.7.0, qs@6.14.0:
   version "6.14.0"
   resolved "https://registry.npmjs.org/qs/-/qs-6.14.0.tgz"
   integrity sha512-YWWTjgABSKcvs/nWBi9PycY/JiPJqOD4JA6o9Sej2AtvSGarXxKC3OQSk4pAarbdQlKAh5D4FCQkJNkW+GAn3w==
@@ -5625,6 +5625,13 @@ strip-json-comments@~2.0.1:
   version "2.0.1"
   resolved "https://registry.npmjs.org/strip-json-comments/-/strip-json-comments-2.0.1.tgz"
   integrity sha512-4gB8na07fecVVkOI6Rs4e7T6NOTki5EmL7TUduTs6bu3EdnSycntVJ4re8kgZA+wx9IueI2Y11bfbgwtzuE0KQ==
+
+stripe@^19.3.1:
+  version "19.3.1"
+  resolved "https://registry.npmjs.org/stripe/-/stripe-19.3.1.tgz"
+  integrity sha512-5NXhLxTZ+4uO1wnsmNysILVuyeZ1Xia7niz/8ykBkGJkCcrY2WyQZwcfYuWZmZEJtWr2+0j49JXwNC6y9CHL7Q==
+  dependencies:
+    qs "^6.11.0"
 
 strnum@^1.1.1:
   version "1.1.2"
