@@ -152,6 +152,10 @@ db.TechnicianInventoryReconciliation = require('./technicianInventoryReconciliat
 db.CalendarEvent = require('./calendarEvent.model.js')(sequelize, Sequelize);
 db.CalendarIntegration = require('./calendarIntegration.model.js')(sequelize, Sequelize);
 
+// Chat
+db.ChatConversation = require('./chatConversation.model.js')(sequelize, Sequelize);
+db.ChatMessage = require('./chatMessage.model.js')(sequelize, Sequelize);
+
 // ======================================
 // Relaciones: Existentes Core (Sin cambios)
 // ======================================

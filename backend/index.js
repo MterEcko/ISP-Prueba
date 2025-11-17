@@ -78,6 +78,9 @@ require('./routes/inventoryMovement.routes')(app);
 // Rutas del calendario
 app.use('/api/calendar', require('./src/routes/calendar.routes'));
 
+// Rutas del chat
+app.use('/api/chat', require('./src/routes/chat.routes'));
+
 
 // Función para crear datos iniciales mínimos si no existen
 async function initial() {
