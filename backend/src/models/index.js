@@ -85,6 +85,7 @@ db.SystemLicense = require('./systemLicense.model.js')(sequelize, Sequelize);
 db.SystemPlugin = require('./systemPlugin.model.js')(sequelize, Sequelize);
 db.PluginAuditLog = require('./pluginAuditLog.model.js')(sequelize, Sequelize);
 db.Notification = require('./notification.model.js')(sequelize, Sequelize);
+db.MessageLog = require('./MessageLog.js')(sequelize, Sequelize);
 
 // Estructura de red mejorada
 db.Zone = require('./zone.model.js')(sequelize, Sequelize);

@@ -213,6 +213,15 @@ synchronizeDatabase().then(() => {
 // Inicializar sistema de facturación automática
 const BillingJob = require('./jobs/billing-job');
 
+// Inicializar sistema de recordatorios automáticos
+const remindersService = require('./services/reminders.service');
+try {
+  remindersService.scheduleAutomaticReminders();
+  console.log('✅ Sistema de recordatorios automáticos inicializado');
+} catch (error) {
+  console.error('❌ Error inicializando recordatorios automáticos:', error.message);
+}
+
 // Solo en producción o si quieres probarlo
 if (process.env.NODE_ENV === 'production' || process.env.ENABLE_BILLING_JOBS === 'true') {
   BillingJob.initializeJobs();
@@ -350,6 +359,14 @@ try {
   console.log('✅ notification.routes registradas');
 } catch (error) {
   console.error('❌ Error en notification.routes:', error.message);
+}
+
+try {
+  console.log('Registrando reminders.routes...');
+  require('./routes/reminders.routes')(app);
+  console.log('✅ reminders.routes registradas');
+} catch (error) {
+  console.error('❌ Error en reminders.routes:', error.message);
 }
 
 try {
