@@ -47,6 +47,13 @@ import InventoryManagementView from '../views/inventory/InventoryManagementView.
 import InventoryBatchForm from '../views/inventory/InventoryBatchForm.vue';
 import InventoryBatchRegisterForm from '../views/inventory/BatchRegisterForm.vue';
 
+// Importaciones para licencias
+import LicenseManagementView from '../views/license/LicenseManagementView.vue';
+
+// Importaciones para plugins
+import PluginManagementView from '../views/plugins/PluginManagementView.vue';
+import PluginMarketplaceView from '../views/plugins/PluginMarketplaceView.vue';
+
 
 import InventoryDashboard from '../views/inventory/InventoryDashboard';
 
