@@ -150,6 +150,10 @@ async function synchronizeDatabase() {
     await db.Payroll.sync({ force: false });
     await db.PayrollPayment.sync({ force: false });
 
+    // Sincronizar modelos de divisas
+    await db.Currency.sync({ force: false });
+    await db.ExchangeRate.sync({ force: false });
+
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
     
     // ==================== AGREGAR ESTE BLOQUE AQUÍ ====================
@@ -699,6 +703,15 @@ try {
   console.log('✅ accounting.routes registradas');
 } catch (error) {
   console.error('❌ Error en accounting.routes:', error.message);
+}
+
+// Rutas de divisas/monedas
+try {
+  console.log('Registrando currency.routes...');
+  app.use('/api/currencies', require('./routes/currency.routes'));
+  console.log('✅ currency.routes registradas');
+} catch (error) {
+  console.error('❌ Error en currency.routes:', error.message);
 }
 
 console.log('\n=== FIN REGISTRO DE RUTAS ===');

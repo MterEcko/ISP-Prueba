@@ -176,6 +176,12 @@ db.Payroll = require('./payroll.model');
 db.PayrollPayment = require('./payrollPayment.model');
 
 // ======================================
+// SISTEMA DE DIVISAS/MONEDAS
+// ======================================
+db.Currency = require('./currency.model');
+db.ExchangeRate = require('./exchangeRate.model');
+
+// ======================================
 // Relaciones: Existentes Core (Sin cambios)
 // ======================================
 
@@ -1364,6 +1370,34 @@ db.User.hasMany(db.EmployeeEmail, {
 db.EmployeeEmail.belongsTo(db.User, {
   foreignKey: 'userId',
   as: 'user'
+});
+
+// ======================================
+// RELACIONES: SISTEMA DE DIVISAS
+// ======================================
+
+// ExchangeRate - Currency (from)
+db.ExchangeRate.belongsTo(db.Currency, {
+  foreignKey: 'fromCurrencyId',
+  as: 'fromCurrency'
+});
+
+// ExchangeRate - Currency (to)
+db.ExchangeRate.belongsTo(db.Currency, {
+  foreignKey: 'toCurrencyId',
+  as: 'toCurrency'
+});
+
+// Currency - ExchangeRate (rates from)
+db.Currency.hasMany(db.ExchangeRate, {
+  foreignKey: 'fromCurrencyId',
+  as: 'ratesFrom'
+});
+
+// Currency - ExchangeRate (rates to)
+db.Currency.hasMany(db.ExchangeRate, {
+  foreignKey: 'toCurrencyId',
+  as: 'ratesTo'
 });
 
 // Exportar el objeto db
