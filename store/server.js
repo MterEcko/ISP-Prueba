@@ -138,7 +138,9 @@ db.sequelize.authenticate()
     logger.info('✅ Conexión a base de datos establecida');
 
     // Sincronizar modelos (crear tablas si no existen)
-    return db.sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
+    // force: true para recrear tablas (solo en primera migración a PostgreSQL)
+    // CAMBIAR A false DESPUÉS DE LA PRIMERA EJECUCIÓN
+    return db.sequelize.sync({ force: true });
   })
   .then(() => {
     logger.info('✅ Modelos de base de datos sincronizados');
