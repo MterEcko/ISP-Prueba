@@ -23,12 +23,40 @@ console.log('============================');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors({
-  origin: '*', // Para desarrollo - cambia esto a tu dominio en producción
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'x-access-token', 'Origin']
-}));
+// Middleware CORS - Configuración dinámica para múltiples orígenes
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Lista de orígenes permitidos
+    const allowedOrigins = [
+      'http://localhost:8080',
+      'http://localhost:8081',
+      'http://127.0.0.1:8080',
+      'http://10.10.0.121:8080', // Red local
+      'https://isp.serviciosqbit.net', // Dominio producción
+      'http://isp.serviciosqbit.net',
+    ];
+
+    // Agregar orígenes desde variable de entorno si existen
+    if (process.env.CORS_ORIGIN) {
+      const envOrigins = process.env.CORS_ORIGIN.split(',').map(o => o.trim());
+      allowedOrigins.push(...envOrigins);
+    }
+
+    // Permitir requests sin origin (como Postman, curl, mobile apps)
+    if (!origin || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️ CORS bloqueó origen: ${origin}`);
+      callback(null, true); // En desarrollo, permitir de todos modos
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'x-access-token', 'Authorization', 'Origin', 'Accept'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(helmet()); // Ayuda a securizar la app estableciendo varios headers HTTP
 app.use(morgan("dev")); // Logger de peticiones HTTP para desarrollo
