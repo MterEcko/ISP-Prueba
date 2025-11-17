@@ -5,6 +5,7 @@ const logger = require('../utils/logger');
 const fs = require('fs');
 const path = require('path');
 const pluginConfigEncryption = require('../services/pluginConfigEncryption.service');
+const pluginAudit = require('../services/pluginAudit.service');
 
 class SystemPluginController {
   constructor() {
@@ -284,7 +285,10 @@ class SystemPluginController {
       }
       
       logger.info(`Plugin ${name} registrado exitosamente`);
-      
+
+      // Auditoría
+      await pluginAudit.logPluginCreated(newPlugin, req);
+
       return res.status(201).json({
         success: true,
         data: newPlugin,
@@ -419,19 +423,23 @@ class SystemPluginController {
         });
       }
 
-      // Activar plugin
+      // Activar plugin (medir tiempo)
+      const startTime = Date.now();
       await this._activatePlugin(plugin);
-      
-      await plugin.update({ 
+
+      await plugin.update({
         active: true,
         configuration: {
           ...plugin.configuration,
           activatedAt: new Date().toISOString()
         }
       });
-      
+
       logger.info(`Plugin ${plugin.name} activado exitosamente`);
-      
+
+      // Auditoría
+      await pluginAudit.logPluginActivated(plugin, req, startTime);
+
       return res.status(200).json({
         success: true,
         data: plugin,
@@ -487,19 +495,23 @@ class SystemPluginController {
         });
       }
       
-      // Desactivar plugin
+      // Desactivar plugin (medir tiempo)
+      const startTime = Date.now();
       await this._deactivatePlugin(plugin);
-      
-      await plugin.update({ 
+
+      await plugin.update({
         active: false,
         configuration: {
           ...plugin.configuration,
           deactivatedAt: new Date().toISOString()
         }
       });
-      
+
       logger.info(`Plugin ${plugin.name} desactivado exitosamente`);
-      
+
+      // Auditoría
+      await pluginAudit.logPluginDeactivated(plugin, req, startTime);
+
       return res.status(200).json({
         success: true,
         data: plugin,
@@ -760,6 +772,9 @@ class SystemPluginController {
         });
       }
 
+      // Guardar configuración anterior para auditoría
+      const previousConfig = { ...plugin.configuration };
+
       // Actualizar configuración con datos encriptados
       const updatedConfig = {
         ...plugin.configuration,
@@ -788,7 +803,10 @@ class SystemPluginController {
       }
       
       logger.info(`Configuración del plugin ${plugin.name} actualizada`);
-      
+
+      // Auditoría de cambio de configuración
+      await pluginAudit.logConfigUpdated(plugin, previousConfig, configuration, req);
+
       return res.status(200).json({
         success: true,
         data: plugin,

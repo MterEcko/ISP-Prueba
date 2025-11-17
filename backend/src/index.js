@@ -322,6 +322,14 @@ try {
 }
 
 try {
+  console.log('Registrando pluginAudit.routes...');
+  require('./routes/pluginAudit.routes')(app);
+  console.log('✅ pluginAudit.routes registradas');
+} catch (error) {
+  console.error('❌ Error en pluginAudit.routes:', error.message);
+}
+
+try {
   console.log('Registrando settings.routes...');
   require('./routes/settings.routes')(app);
   console.log('✅ settings.routes registradas');

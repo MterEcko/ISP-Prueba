@@ -83,6 +83,7 @@ db.InventoryScrap = require('./inventoryScrap.model.js')(sequelize, Sequelize);
 db.SystemConfiguration = require('./systemConfiguration.model.js')(sequelize, Sequelize);
 db.SystemLicense = require('./systemLicense.model.js')(sequelize, Sequelize);
 db.SystemPlugin = require('./systemPlugin.model.js')(sequelize, Sequelize);
+db.PluginAuditLog = require('./pluginAuditLog.model.js')(sequelize, Sequelize);
 
 // Estructura de red mejorada
 db.Zone = require('./zone.model.js')(sequelize, Sequelize);
