@@ -87,6 +87,9 @@ app.use('/api/store', require('./src/routes/storeCustomer.routes'));
 // Rutas de Upload de Plugins
 app.use('/api/plugin-upload', require('./src/routes/pluginUpload.routes'));
 
+// Rutas de n8n Integration
+app.use('/api/n8n', require('./src/routes/n8n.routes'));
+
 
 // Función para crear datos iniciales mínimos si no existen
 async function initial() {

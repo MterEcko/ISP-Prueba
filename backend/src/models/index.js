@@ -161,6 +161,9 @@ db.StoreCustomer = require('./storeCustomer.model.js')(sequelize, Sequelize);
 db.StoreOrder = require('./storeOrder.model.js')(sequelize, Sequelize);
 db.StoreOrderItem = require('./storeOrderItem.model.js')(sequelize, Sequelize);
 
+// n8n Integration
+db.N8nWorkflow = require('./n8nWorkflow.model.js')(sequelize, Sequelize);
+
 // ======================================
 // Relaciones: Existentes Core (Sin cambios)
 // ======================================
