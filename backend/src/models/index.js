@@ -132,6 +132,22 @@ db.NotificationQueue = require('./notificationQueue.model.js')(sequelize, Sequel
 db.CommunicationContact = require('./communicationContact.model.js')(sequelize, Sequelize);
 db.CommunicationEvent = require('./communicationEvent.model.js')(sequelize, Sequelize);
 
+
+// Modelo de Firmas
+db.DocumentSignature = require('./documentSignature.model.js')(sequelize, Sequelize);
+
+// Modelo de Exportaciones
+db.TemplateExport = require('./templateExport.model.js')(sequelize, Sequelize);
+
+db.GeneratedDocumentHistory = require('./generatedDocumentHistory.model.js')(sequelize, Sequelize);
+
+db.DocumentTemplate  = require('./documentTemplate.model.js')(sequelize, Sequelize);
+
+
+db.InventoryBatch = require('./inventoryBatch.model.js')(sequelize, Sequelize);
+
+db.TechnicianInventoryReconciliation = require('./technicianInventoryReconciliation.model.js')(sequelize, Sequelize);
+
 // ======================================
 // Relaciones: Existentes Core (Sin cambios)
 // ======================================
@@ -142,6 +158,8 @@ db.Role.belongsToMany(db.Permission, {
   foreignKey: 'roleId',
   otherKey: 'permissionId',
 });
+
+
 
 db.Permission.belongsToMany(db.Role, {
   through: 'RolePermissions',
@@ -498,6 +516,106 @@ db.InventoryMovement.belongsTo(db.User, {
   as: 'movedBy',
 });
 
+
+// ==========================================
+// NUEVAS RELACIONES - InventoryBatch
+// ==========================================
+
+// InventoryBatch -> User (receivedBy)
+db.InventoryBatch.belongsTo(db.User, {
+  foreignKey: 'receivedByUserId',
+  as: 'receivedBy'
+});
+
+// InventoryBatch -> InventoryLocation
+db.InventoryBatch.belongsTo(db.InventoryLocation, {
+  foreignKey: 'locationId',
+  as: 'location'
+});
+
+// InventoryBatch -> Inventory (items del lote)
+db.InventoryBatch.hasMany(db.Inventory, {
+  foreignKey: 'batchId',
+  as: 'items'
+});
+
+// ==========================================
+// NUEVAS RELACIONES - Inventory
+// ==========================================
+
+// Inventory -> InventoryBatch
+db.Inventory.belongsTo(db.InventoryBatch, {
+  foreignKey: 'batchId',
+  as: 'batch'
+});
+
+// Inventory -> InventoryProduct
+db.Inventory.belongsTo(db.InventoryProduct, {
+  foreignKey: 'productId',
+  as: 'product'
+});
+
+// Inventory -> User (técnico asignado)
+db.Inventory.belongsTo(db.User, {
+  foreignKey: 'assignedToTechnicianId',
+  as: 'assignedTechnician'
+});
+
+// Inventory -> Inventory (padre para splits)
+db.Inventory.belongsTo(db.Inventory, {
+  foreignKey: 'parentInventoryId',
+  as: 'parentItem'
+});
+
+db.Inventory.hasMany(db.Inventory, {
+  foreignKey: 'parentInventoryId',
+  as: 'childItems'
+});
+
+// ==========================================
+// NUEVAS RELACIONES - TechnicianInventoryReconciliation
+// ==========================================
+
+// TechnicianInventoryReconciliation -> User (técnico)
+db.TechnicianInventoryReconciliation.belongsTo(db.User, {
+  foreignKey: 'technicianId',
+  as: 'technician'
+});
+
+// TechnicianInventoryReconciliation -> User (createdBy)
+db.TechnicianInventoryReconciliation.belongsTo(db.User, {
+  foreignKey: 'createdByUserId',
+  as: 'createdBy'
+});
+
+// TechnicianInventoryReconciliation -> User (approvedBy)
+db.TechnicianInventoryReconciliation.belongsTo(db.User, {
+  foreignKey: 'approvedByUserId',
+  as: 'approvedBy'
+});
+
+// User -> TechnicianInventoryReconciliation
+db.User.hasMany(db.TechnicianInventoryReconciliation, {
+  foreignKey: 'technicianId',
+  as: 'reconciliations'
+});
+
+// ==========================================
+// RELACIONES EXISTENTES PARA InventoryProduct
+// ==========================================
+
+// InventoryProduct -> Inventory
+db.InventoryProduct.hasMany(db.Inventory, {
+  foreignKey: 'productId',
+  as: 'inventoryItems'
+});
+
+// User -> Inventory (items asignados a técnico)
+db.User.hasMany(db.Inventory, {
+  foreignKey: 'assignedToTechnicianId',
+  as: 'assignedInventory'
+});
+
 // Relaciones de IP Pool y suscripciones
 db.IpPool.hasMany(db.Subscription, {
   foreignKey: 'currentIpPoolId',
@@ -647,7 +765,7 @@ db.ServicePackage.hasMany(db.ClientBilling, {
 
 db.ClientBilling.belongsTo(db.ServicePackage, {
   foreignKey: 'servicePackageId',
-  as: 'ServicePackage'  // ← Minúscula
+  as: 'ServicePackage' 
 });
 
 db.IpPool.hasMany(db.ClientBilling, {
@@ -975,6 +1093,132 @@ db.Client.hasMany(db.CommunicationEvent, {
 db.CommunicationEvent.belongsTo(db.Client, {
   foreignKey: 'clientId',
   as: 'client'
+});
+
+
+// ======================================
+// RELACIONES: SISTEMA DE DOCUMENTOS
+// ======================================
+
+// DocumentTemplate - GeneratedDocumentHistory
+db.DocumentTemplate.hasMany(db.GeneratedDocumentHistory, {
+  foreignKey: 'templateId',
+  as: 'generatedDocuments'
+});
+
+db.GeneratedDocumentHistory.belongsTo(db.DocumentTemplate, {
+  foreignKey: 'templateId',
+  as: 'template'
+});
+
+// Client - GeneratedDocumentHistory
+db.Client.hasMany(db.GeneratedDocumentHistory, {
+  foreignKey: 'clientId',
+  as: 'generatedDocuments'
+});
+
+db.GeneratedDocumentHistory.belongsTo(db.Client, {
+  foreignKey: 'clientId',
+  as: 'client'
+});
+
+// GeneratedDocumentHistory - ClientDocument
+db.GeneratedDocumentHistory.belongsTo(db.ClientDocument, {
+  foreignKey: 'clientDocumentId',
+  as: 'savedDocument'
+});
+
+db.ClientDocument.hasOne(db.GeneratedDocumentHistory, {
+  foreignKey: 'clientDocumentId',
+  as: 'generatedFrom'
+});
+
+// User relationships con DocumentTemplate
+db.User.hasMany(db.DocumentTemplate, {
+  foreignKey: 'createdBy',
+  as: 'templatesCreated'
+});
+
+db.DocumentTemplate.belongsTo(db.User, {
+  foreignKey: 'createdBy',
+  as: 'creator'
+});
+
+db.User.hasMany(db.DocumentTemplate, {
+  foreignKey: 'updatedBy',
+  as: 'templatesUpdated'
+});
+
+db.DocumentTemplate.belongsTo(db.User, {
+  foreignKey: 'updatedBy',
+  as: 'updater'
+});
+
+// User - GeneratedDocumentHistory
+db.User.hasMany(db.GeneratedDocumentHistory, {
+  foreignKey: 'generatedBy',
+  as: 'generatedDocuments'
+});
+
+db.GeneratedDocumentHistory.belongsTo(db.User, {
+  foreignKey: 'generatedBy',
+  as: 'generator'
+});
+
+
+
+
+// Relaciones de DocumentSignature
+db.GeneratedDocumentHistory.hasMany(db.DocumentSignature, {
+  foreignKey: 'generatedDocumentId',
+  as: 'signatures'
+});
+
+db.DocumentSignature.belongsTo(db.GeneratedDocumentHistory, {
+  foreignKey: 'generatedDocumentId',
+  as: 'document'
+});
+
+db.Client.hasMany(db.DocumentSignature, {
+  foreignKey: 'clientId',
+  as: 'signatures'
+});
+
+db.DocumentSignature.belongsTo(db.Client, {
+  foreignKey: 'clientId',
+  as: 'client'
+});
+
+// Relaciones de TemplateExport
+db.DocumentTemplate.hasMany(db.TemplateExport, {
+  foreignKey: 'templateId',
+  as: 'exports'
+});
+
+db.TemplateExport.belongsTo(db.DocumentTemplate, {
+  foreignKey: 'templateId',
+  as: 'template'
+});
+
+db.User.hasMany(db.TemplateExport, {
+  foreignKey: 'exportedBy',
+  as: 'templateExports'
+});
+
+db.TemplateExport.belongsTo(db.User, {
+  foreignKey: 'exportedBy',
+  as: 'exporter'
+});
+
+// Relación de versionamiento (auto-referencia)
+db.DocumentTemplate.hasMany(db.DocumentTemplate, {
+  foreignKey: 'parentTemplateId',
+  as: 'versions'
+});
+
+db.DocumentTemplate.belongsTo(db.DocumentTemplate, {
+  foreignKey: 'parentTemplateId',
+  as: 'parentTemplate'
 });
 
 // Exportar el objeto db
