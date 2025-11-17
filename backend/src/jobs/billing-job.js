@@ -303,35 +303,36 @@ class BillingJob {
 
 /**
  * Env¨ªa alerta al administrador en caso de errores cr¨ªticos
+ * CORRECCI¨®N: Usa estructura correcta de NotificationQueue
  */
 static async sendAdminAlert(subject, error) {
   console.log(`?? ALERTA ADMINISTRATIVA: ${subject}`);
-  console.log(`?? Error: ${error.message}`);
+  console.log(`? Error: ${error.message}`);
   
   try {
     const db = require('../models');
     const { NotificationQueue } = db;
     
     await NotificationQueue.create({
-      type: 'system_alert',
-      title: `?? ALERTA SISTEMA: ${subject}`,
-      message: `Error en sistema de facturaci¨®n: ${error.message}`,
-      priority: 'urgent',
-      
-      // Campos requeridos que faltaban:
-      channelId: 1, // ID de canal por defecto
-      recipient: 'admin@sistema.com', // Destinatario por defecto
+      clientId: null, // No est¨¢ asociado a un cliente espec¨ªfico
+      channelId: 1, // Canal por defecto (sistema/email)
+      recipient: 'admin@sistema.com', // Email del administrador
       messageData: JSON.stringify({
-        error: error.message,
-        stack: error.stack,
-        timestamp: new Date().toISOString(),
-        context: 'billing_job'
+        type: 'system_alert',
+        title: `?? ALERTA SISTEMA: ${subject}`,
+        message: `Error en sistema de facturaci¨®n: ${error.message}`,
+        metadata: {
+          errorStack: error.stack,
+          timestamp: new Date().toISOString(),
+          context: 'billing_job',
+          subject: subject
+        }
       }),
-      
-      status: 'pending',
       scheduledFor: new Date(),
+      status: 'pending',
       attempts: 0,
-      maxAttempts: 5
+      maxAttempts: 5,
+      priority: 'high' // Usar 'high' en lugar de 'urgent'
     });
     
     console.log('? Alerta administrativa creada');
@@ -341,7 +342,6 @@ static async sendAdminAlert(subject, error) {
     // No hacer throw para evitar bucle infinito de errores
   }
 }
-
 
   /**
    * Verifica la salud del sistema de facturaciÃ³n

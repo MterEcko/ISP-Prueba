@@ -398,6 +398,8 @@ exports.updateInvoice = async (req, res) => {
   }
 };
 
+// backend/src/controllers/invoice.controller.js
+
 /**
  * Marcar factura como pagada
  * POST /api/invoices/:id/mark-paid
@@ -405,13 +407,14 @@ exports.updateInvoice = async (req, res) => {
 exports.markAsPaid = async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      paymentReference, 
-      paymentMethod = 'manual', 
+    // Datos que vienen del frontend (InvoiceDetail.vue / InvoiceList.vue)
+    const {
+      paymentReference,
+      paymentMethod = 'manual',
       notes,
-      gatewayId = 1,        // ✅ AGREGAR
-      amount,               // ✅ AGREGAR  
-      paymentDate          // ✅ AGREGAR
+      gatewayId = 1, // Usar un ID de gateway por defecto si no se provee
+      amount,
+      paymentDate
     } = req.body;
 
     if (!id || isNaN(parseInt(id))) {
@@ -421,9 +424,7 @@ exports.markAsPaid = async (req, res) => {
       });
     }
 
-    const invoice = await Invoice.findByPk(parseInt(id), {
-      include: [{ model: Client }]
-    });
+    const invoice = await Invoice.findByPk(parseInt(id));
 
     if (!invoice) {
       return res.status(404).json({
@@ -439,35 +440,37 @@ exports.markAsPaid = async (req, res) => {
       });
     }
 
+    // Iniciar transacción para asegurar consistencia
     const transaction = await db.sequelize.transaction();
 
     try {
-      // Actualizar factura
+      // 1. Actualizar el estado de la factura
       await invoice.update({
         status: 'paid'
       }, { transaction });
 
-      // Crear registro de pago manual
+      // 2. Crear el registro de pago correspondiente
       const payment = await Payment.create({
         invoiceId: invoice.id,
         clientId: invoice.clientId,
-        gatewayId: parseInt(gatewayId),  // ✅ AGREGAR ESTA LÍNEA
-        amount: amount ? parseFloat(amount) : invoice.totalAmount,
-        paymentMethod,
-        paymentReference: paymentReference || `MANUAL-${Date.now()}`,
-        status: 'completed',
+        gatewayId: parseInt(gatewayId),
+        amount: amount ? parseFloat(amount) : invoice.totalAmount, // Usar monto del body o el total de la factura
+        paymentMethod: paymentMethod,
+        paymentReference: paymentReference || `MANUAL-PAY-${Date.now()}`,
+        status: 'completed', // El pago es exitoso
         paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
-        paymentData: {
-          type: 'manual',
-          notes: notes || 'Pago registrado manualmente',
-          processedBy: req.user?.id || null,
+        paymentData: JSON.stringify({ // Guardar metadatos útiles
+          type: 'manual_confirmation',
+          notes: notes || 'Pago registrado manualmente desde UI',
+          processedBy: req.user?.id || 'system',
           processedAt: new Date().toISOString()
-        }
+        })
       }, { transaction });
 
+      // Confirmar la transacción si todo salió bien
       await transaction.commit();
 
-      // Intentar reactivar servicio automáticamente
+      // 3. (Opcional) Intentar reactivar el servicio del cliente
       try {
         await clientBillingService.reactivateClientAfterPayment(
           invoice.clientId,
@@ -478,7 +481,7 @@ exports.markAsPaid = async (req, res) => {
         logger.warn(`Error reactivando servicio para cliente ${invoice.clientId}: ${reactivationError.message}`);
       }
 
-      logger.info(`Factura ${id} marcada como pagada manualmente`);
+      logger.info(`Factura ${id} marcada como pagada exitosamente`);
 
       return res.status(200).json({
         success: true,
@@ -490,8 +493,9 @@ exports.markAsPaid = async (req, res) => {
       });
 
     } catch (error) {
+      // Si algo falla, revertir todos los cambios
       await transaction.rollback();
-      throw error;
+      throw error; // Propagar el error para que lo capture el catch principal
     }
 
   } catch (error) {
@@ -502,6 +506,7 @@ exports.markAsPaid = async (req, res) => {
     });
   }
 };
+
 
 
 /**
@@ -564,6 +569,9 @@ exports.generatePDF = async (req, res) => {
   }
 };
 
+
+// backend/src/controllers/invoice.controller.js
+
 /**
  * Cancelar factura
  * POST /api/invoices/:id/cancel
@@ -603,26 +611,60 @@ exports.cancelInvoice = async (req, res) => {
       });
     }
 
-    // Actualizar factura
-    await invoice.update({
-      status: 'cancelled',
-      invoiceData: {
-        ...invoice.invoiceData,
-        cancellation: {
-          reason: reason || 'Cancelada por administrador',
-          cancelledAt: new Date().toISOString(),
-          cancelledBy: req.user?.id || null
+    // Iniciar transacción para asegurar consistencia
+    const transaction = await db.sequelize.transaction();
+
+    try {
+      // 1. Actualizar el estado de la factura a 'cancelled'
+      const invoiceUpdateData = {
+        status: 'cancelled',
+        invoiceData: {
+          ...invoice.invoiceData,
+          cancellation: {
+            reason: reason || 'Cancelada por administrador',
+            cancelledAt: new Date().toISOString(),
+            cancelledBy: req.user?.id || 'system'
+          }
         }
-      }
-    });
+      };
+      await invoice.update(invoiceUpdateData, { transaction });
 
-    logger.info(`Factura ${id} cancelada: ${reason}`);
+      // 2. Crear un registro de "pago nulo" para auditoría
+      const cancellationPayment = await Payment.create({
+        invoiceId: invoice.id,
+        clientId: invoice.clientId,
+        gatewayId: null, // No hay pasarela
+        amount: 0.00, // El monto es CERO
+        paymentMethod: 'other', // Método especial para registros internos
+        paymentReference: `CANCEL-${invoice.invoiceNumber}`,
+        status: 'cancelled', // El estado del pago es 'cancelado'
+        paymentDate: new Date(),
+        paymentData: JSON.stringify({
+          type: 'cancellation_record',
+          notes: `Anulación de factura: ${reason || 'N/A'}`,
+          processedBy: req.user?.id || 'system'
+        })
+      }, { transaction });
 
-    return res.status(200).json({
-      success: true,
-      data: invoice,
-      message: 'Factura cancelada exitosamente'
-    });
+      // Confirmar la transacción
+      await transaction.commit();
+
+      logger.info(`Factura ${id} cancelada y registro de anulación creado. Razón: ${reason}`);
+
+      return res.status(200).json({
+        success: true,
+        data: {
+            invoice,
+            cancellationPayment
+        },
+        message: 'Factura cancelada exitosamente'
+      });
+
+    } catch (error) {
+        // Si algo falla, revertir todos los cambios
+        await transaction.rollback();
+        throw error;
+    }
 
   } catch (error) {
     logger.error(`Error cancelando factura ${req.params.id}: ${error.message}`);
@@ -632,6 +674,7 @@ exports.cancelInvoice = async (req, res) => {
     });
   }
 };
+
 
 /**
  * Obtener estadísticas de facturación

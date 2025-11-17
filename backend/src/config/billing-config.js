@@ -200,7 +200,7 @@ module.exports = {
     
     // Configuración de impuestos
     TAX_RATE: 0.16, // IVA 16% México
-    INCLUDE_TAX: true
+    INCLUDE_TAX: false
   },
   
   /**
@@ -265,28 +265,28 @@ module.exports = {
    */
   SCHEDULED_JOBS: {
     DAILY_BILLING: {
-      schedule: '26 15 * * *',          // Todos los días a las 9:00 AM
+      schedule: '23 19 * * *',          // Todos los días a las 9:00 AM
       timezone: 'America/Mexico_City',
       enabled: true,
       description: 'Procesamiento diario de facturación'
     },
     
     INVOICE_GENERATION: {
-      schedule: '30 16 * * *',         // Todos los días a las 10:00 AM
+      schedule: '24 19 * * *',         // Todos los días a las 10:00 AM
       timezone: 'America/Mexico_City',
       enabled: true,
       description: 'Generación automática de facturas'
     },
     
     PAYMENT_REMINDERS: {
-      schedule: '30 17 * * *',         // Todos los días a las 11:00 AM
+      schedule: '25 19 * * *',         // Todos los días a las 11:00 AM
       timezone: 'America/Mexico_City',
       enabled: true,
       description: 'Envío de recordatorios de pago'
     },
     
     SERVICE_SUSPENSION: {
-      schedule: '29 18 * * *',         // Todos los días a las 12:00 PM
+      schedule: '26 19 * * *',         // Todos los días a las 12:00 PM
       timezone: 'America/Mexico_City',
       enabled: true,
       description: 'Suspensión automática de servicios vencidos'
