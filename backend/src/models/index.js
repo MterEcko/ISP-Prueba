@@ -148,6 +148,10 @@ db.InventoryBatch = require('./inventoryBatch.model.js')(sequelize, Sequelize);
 
 db.TechnicianInventoryReconciliation = require('./technicianInventoryReconciliation.model.js')(sequelize, Sequelize);
 
+// Calendario
+db.CalendarEvent = require('./calendarEvent.model.js')(sequelize, Sequelize);
+db.CalendarIntegration = require('./calendarIntegration.model.js')(sequelize, Sequelize);
+
 // ======================================
 // Relaciones: Existentes Core (Sin cambios)
 // ======================================
