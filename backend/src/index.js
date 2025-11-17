@@ -141,6 +141,15 @@ async function synchronizeDatabase() {
 	await db.TechnicianInventoryReconciliation.sync({ force: false });
 	await db.InventoryBatch.sync({ force: false });
 
+    // Sincronizar modelos de correo de empleados
+    await db.EmployeeEmail.sync({ force: false });
+
+    // Sincronizar modelos de contabilidad
+    await db.ExpenseCategory.sync({ force: false });
+    await db.Expense.sync({ force: false });
+    await db.Payroll.sync({ force: false });
+    await db.PayrollPayment.sync({ force: false });
+
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
     
     // ==================== AGREGAR ESTE BLOQUE AQUÍ ====================
@@ -656,6 +665,40 @@ try {
   console.log('✅ setup.routes registradas');
 } catch (error) {
   console.error('❌ Error en setup.routes:', error.message);
+}
+
+// Rutas de correo de empleados
+try {
+  console.log('Registrando employeeEmail.routes...');
+  app.use('/api/employee-emails', require('./routes/employeeEmail.routes'));
+  console.log('✅ employeeEmail.routes registradas');
+} catch (error) {
+  console.error('❌ Error en employeeEmail.routes:', error.message);
+}
+
+// Rutas de contabilidad
+try {
+  console.log('Registrando expense.routes...');
+  app.use('/api/expenses', require('./routes/expense.routes'));
+  console.log('✅ expense.routes registradas');
+} catch (error) {
+  console.error('❌ Error en expense.routes:', error.message);
+}
+
+try {
+  console.log('Registrando payroll.routes...');
+  app.use('/api/payroll', require('./routes/payroll.routes'));
+  console.log('✅ payroll.routes registradas');
+} catch (error) {
+  console.error('❌ Error en payroll.routes:', error.message);
+}
+
+try {
+  console.log('Registrando accounting.routes...');
+  app.use('/api/accounting', require('./routes/accounting.routes'));
+  console.log('✅ accounting.routes registradas');
+} catch (error) {
+  console.error('❌ Error en accounting.routes:', error.message);
 }
 
 console.log('\n=== FIN REGISTRO DE RUTAS ===');
