@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instalaciones - ISP-Prueba Store</title>
+  <link rel="stylesheet" href="/dashboard/static/css/dashboard.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>ISP-Prueba Store</h1>
+        <p>Panel de Administración</p>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a href="/dashboard">
+          <span class="icon">📊</span> Dashboard
+        </a></li>
+        <li><a href="/dashboard/installations" class="active">
+          <span class="icon">💻</span> Instalaciones
+        </a></li>
+        <li><a href="/dashboard/licenses">
+          <span class="icon">🔑</span> Licencias
+        </a></li>
+        <li><a href="/dashboard/plugins">
+          <span class="icon">🧩</span> Plugins
+        </a></li>
+        <li><a href="/dashboard/map">
+          <span class="icon">🗺️</span> Mapa
+        </a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h2>Instalaciones</h2>
+        <p>Gestiona todas las instalaciones del sistema</p>
+      </div>
+
+      <!-- Data Table -->
+      <div class="data-table">
+        <div class="table-header">
+          <h3>Todas las Instalaciones</h3>
+          <div class="search-box">
+            <span>🔍</span>
+            <input type="text" id="searchInput" placeholder="Buscar por empresa o hardware ID...">
+          </div>
+        </div>
+        <div id="installationsTable">
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>Cargando instalaciones...</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API_URL = window.location.origin + '/api';
+    let allInstallations = [];
+
+    async function loadInstallations() {
+      try {
+        const response = await fetch(`${API_URL}/installations`);
+        const data = await response.json();
+
+        if (data.success) {
+          allInstallations = data.data;
+          renderInstallations(allInstallations);
+        }
+      } catch (error) {
+        console.error('Error loading installations:', error);
+        document.getElementById('installationsTable').innerHTML = `
+          <div class="loading">
+            <p style="color: #e74c3c;">❌ Error al cargar las instalaciones</p>
+          </div>
+        `;
+      }
+    }
+
+    function renderInstallations(installations) {
+      const tableDiv = document.getElementById('installationsTable');
+
+      if (!installations || installations.length === 0) {
+        tableDiv.innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">No hay instalaciones registradas</p>';
+        return;
+      }
+
+      tableDiv.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Hardware ID</th>
+              <th>Estado</th>
+              <th>Licencia</th>
+              <th>Ubicación</th>
+              <th>Clientes</th>
+              <th>Último Heartbeat</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${installations.map(inst => `
+              <tr>
+                <td>
+                  <strong>${inst.companyName}</strong><br>
+                  <small style="color: #999;">Key: ${inst.installationKey.substring(0, 8)}...</small>
+                </td>
+                <td><code style="font-size: 11px;">${inst.hardwareId.substring(0, 20)}...</code></td>
+                <td>
+                  <span class="badge badge-${getBadgeClass(inst.status)}">${getStatusText(inst.status)}</span><br>
+                  ${inst.isOnline ? '<span class="badge badge-success" style="margin-top: 5px;">🟢 En línea</span>' : '<span class="badge badge-danger" style="margin-top: 5px;">🔴 Offline</span>'}
+                </td>
+                <td>
+                  ${inst.License ? `
+                    <span class="badge badge-info">${inst.License.planType}</span><br>
+                    <small>${inst.License.licenseKey.substring(0, 16)}...</small>
+                  ` : '<span class="badge badge-warning">Sin licencia</span>'}
+                </td>
+                <td>
+                  ${inst.currentCity ? `${inst.currentCity}, ${inst.currentCountry}` : 'Desconocida'}<br>
+                  ${inst.currentLatitude ? `<small style="color: #999;">GPS: ${inst.currentLatitude.toFixed(4)}, ${inst.currentLongitude.toFixed(4)}</small>` : ''}
+                </td>
+                <td><strong>${inst.totalClients || 0}</strong></td>
+                <td>${formatDate(inst.lastHeartbeat)}</td>
+                <td>
+                  ${inst.status === 'active' ?
+                    `<button class="btn btn-danger btn-sm" onclick="blockInstallation('${inst.id}', '${inst.companyName}')">🚫 Bloquear</button>` :
+                    inst.status === 'blocked' ?
+                    `<button class="btn btn-primary btn-sm" onclick="unblockInstallation('${inst.id}', '${inst.companyName}')">✅ Desbloquear</button>` :
+                    ''
+                  }
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function blockInstallation(id, companyName) {
+      const reason = prompt(`¿Por qué deseas bloquear la instalación de "${companyName}"?`, 'Violación de términos de servicio');
+      if (!reason) return;
+
+      try {
+        const response = await fetch(`${API_URL}/installations/${id}/block`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert(`✅ Instalación bloqueada correctamente`);
+          loadInstallations();
+        } else {
+          alert(`❌ Error: ${data.message}`);
+        }
+      } catch (error) {
+        console.error('Error blocking installation:', error);
+        alert('❌ Error al bloquear la instalación');
+      }
+    }
+
+    async function unblockInstallation(id, companyName) {
+      if (!confirm(`¿Deseas desbloquear la instalación de "${companyName}"?`)) return;
+
+      try {
+        const response = await fetch(`${API_URL}/installations/${id}/unblock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert(`✅ Instalación desbloqueada correctamente`);
+          loadInstallations();
+        } else {
+          alert(`❌ Error: ${data.message}`);
+        }
+      } catch (error) {
+        console.error('Error unblocking installation:', error);
+        alert('❌ Error al desbloquear la instalación');
+      }
+    }
+
+    function getBadgeClass(status) {
+      const classes = {
+        active: 'success',
+        blocked: 'danger',
+        suspended: 'warning',
+        inactive: 'info'
+      };
+      return classes[status] || 'info';
+    }
+
+    function getStatusText(status) {
+      const texts = {
+        active: 'Activo',
+        blocked: 'Bloqueado',
+        suspended: 'Suspendido',
+        inactive: 'Inactivo'
+      };
+      return texts[status] || status;
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'Nunca';
+      const date = new Date(dateString);
+      const now = new Date();
+      const diff = now - date;
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+
+      if (minutes < 1) return 'Hace un momento';
+      if (minutes < 60) return `Hace ${minutes} min`;
+      if (hours < 24) return `Hace ${hours} hrs`;
+      return `Hace ${days} días`;
+    }
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      const filtered = allInstallations.filter(inst =>
+        inst.companyName.toLowerCase().includes(searchTerm) ||
+        inst.hardwareId.toLowerCase().includes(searchTerm) ||
+        inst.installationKey.toLowerCase().includes(searchTerm)
+      );
+      renderInstallations(filtered);
+    });
+
+    // Load installations on page load
+    loadInstallations();
+
+    // Auto-refresh every 30 seconds
+    setInterval(loadInstallations, 30000);
+  </script>
+</body>
+</html>

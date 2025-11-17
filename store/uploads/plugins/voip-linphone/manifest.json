@@ -1,0 +1,56 @@
+{
+  "id": "voip-linphone-free",
+  "name": "VoIP Linphone (Free)",
+  "slug": "voip-linphone-free",
+  "version": "3.0.0",
+  "description": "Sistema VoIP gratuito basado en Linphone para llamadas por internet",
+  "longDescription": "Plugin VoIP completo basado en Linphone SDK. Permite realizar y recibir llamadas VoIP, videollamadas, mensajería instantánea y conferencias. 100% gratuito y open source.",
+  "author": "ISP-Prueba Community",
+  "category": "communication",
+  "price": 0,
+  "isFree": true,
+  "tags": ["voip", "linphone", "sip", "calls", "free", "open-source"],
+  "features": [
+    "Llamadas VoIP ilimitadas",
+    "Videollamadas HD",
+    "Mensajería instantánea",
+    "Conferencias grupales",
+    "Grabación de llamadas",
+    "Transferencia de llamadas",
+    "Buzón de voz",
+    "Soporte SIP estándar"
+  ],
+  "requirements": {
+    "minVersion": "1.0.0",
+    "requiredLicense": "basic"
+  },
+  "configuration": {
+    "sipServer": {
+      "type": "string",
+      "label": "Servidor SIP",
+      "required": true,
+      "default": "sip.linphone.org"
+    },
+    "sipUsername": {
+      "type": "string",
+      "label": "Usuario SIP",
+      "required": true
+    },
+    "sipPassword": {
+      "type": "string",
+      "label": "Contraseña SIP",
+      "required": true,
+      "secret": true
+    },
+    "enableVideo": {
+      "type": "boolean",
+      "label": "Habilitar video",
+      "default": true
+    },
+    "enableRecording": {
+      "type": "boolean",
+      "label": "Habilitar grabación",
+      "default": false
+    }
+  }
+}

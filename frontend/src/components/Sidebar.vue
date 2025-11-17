@@ -47,9 +47,15 @@
           </router-link>
         </li>
         <li>
+          <router-link to="/devices">
+            <span class="icon">🖥️</span>
+            <span class="text" v-if="!isCollapsed">Dispositivos</span>
+          </router-link>
+        </li>
+        <li>
           <router-link to="/tickets">
             <span class="icon">🎫</span>
-            <span class="text" v-if="!isCollapsed">Tickets 1</span>
+            <span class="text" v-if="!isCollapsed">Tickets</span>
           </router-link>
         </li>
         <li>
@@ -82,6 +88,53 @@
             <span class="text" v-if="!isCollapsed">Reportes</span>
           </router-link>
         </li>
+
+        <!-- Sección de Nuevas Funcionalidades -->
+        <li class="menu-separator" v-if="!isCollapsed">
+          <span class="text">HERRAMIENTAS</span>
+        </li>
+        <li>
+          <router-link to="/calendar">
+            <span class="icon">📅</span>
+            <span class="text" v-if="!isCollapsed">Calendario</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/chat">
+            <span class="icon">💬</span>
+            <span class="text" v-if="!isCollapsed">Chat</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/store/dashboard">
+            <span class="icon">🏪</span>
+            <span class="text" v-if="!isCollapsed">Marketplace</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/plugins/upload">
+            <span class="icon">🔌</span>
+            <span class="text" v-if="!isCollapsed">Plugins</span>
+          </router-link>
+        </li>
+
+        <!-- Sección de Administración -->
+        <li class="menu-separator" v-if="!isCollapsed">
+          <span class="text">ADMINISTRACIÓN</span>
+        </li>
+        <li>
+          <router-link to="/users">
+            <span class="icon">👤</span>
+            <span class="text" v-if="!isCollapsed">Usuarios</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/roles">
+            <span class="icon">🔐</span>
+            <span class="text" v-if="!isCollapsed">Roles y Permisos</span>
+          </router-link>
+        </li>
+
         <li>
           <router-link to="/settings">
             <span class="icon">⚙️</span>
@@ -236,6 +289,19 @@ export default {
 
 .sidebar-nav li {
   margin-bottom: 4px;
+}
+
+.menu-separator {
+  padding: 16px 16px 8px 16px;
+  margin-top: 12px;
+  border-top: 1px solid #37474F;
+}
+
+.menu-separator .text {
+  font-size: 0.75em;
+  font-weight: bold;
+  color: #78909C;
+  letter-spacing: 1px;
 }
 
 .sidebar-nav a {

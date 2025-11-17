@@ -1,4 +1,4 @@
-// backend/src/models/clientInstallation.model.js (29/5/25 → ACTUALIZADO)
+// backend/src/models/clientInstallation.model.js (ACTUALIZADO)
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -18,39 +18,57 @@ module.exports = (sequelize) => {
     },
     ticketId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
       references: {
         model: 'Tickets',
         key: 'id'
-      }
+      },
+      comment: 'Ticket relacionado (opcional)'
     },
-    title: {
-      type: DataTypes.STRING,
-      allowNull: false
+    technicianId: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'Users',
+        key: 'id'
+      },
+      comment: 'Técnico asignado'
     },
-    description: {
-      type: DataTypes.TEXT
+    scheduledDate: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      comment: 'Fecha programada para la instalación'
     },
-    photos: {
+    completedDate: {
+      type: DataTypes.DATE,
+      comment: 'Fecha real de instalación'
+    },
+    installationType: {
+      type: DataTypes.ENUM('new', 'upgrade', 'migration', 'repair'),
+      defaultValue: 'new',
+      comment: 'Tipo de instalación'
+    },
+    status: {
+      type: DataTypes.ENUM('scheduled', 'in_progress', 'completed', 'cancelled'),
+      defaultValue: 'scheduled'
+    },
+    equipment: {
       type: DataTypes.JSON,
-      defaultValue: [],
-      comment: 'URLs de fotos antes/después'
-    },
-    equipmentInstalled: {
-      type: DataTypes.JSON,
-      defaultValue: [],
       comment: 'Equipos instalados'
     },
-    materialsUsed: {
-      type: DataTypes.JSON,
-      defaultValue: [],
-      comment: 'Materiales utilizados'
+    signalStrength: {
+      type: DataTypes.INTEGER,
+      comment: 'Intensidad de señal (-dBm)'
     },
-    installationDate: {
-      type: DataTypes.DATE
+    photoUrl: {
+      type: DataTypes.STRING,
+      comment: 'URL de foto de la instalación'
     },
-    technicianNotes: {
-      type: DataTypes.TEXT
+    notes: {
+      type: DataTypes.TEXT,
+      comment: 'Notas generales'
+    },
+    completionNotes: {
+      type: DataTypes.TEXT,
+      comment: 'Notas al completar la instalación'
     }
   }, {
     tableName: 'ClientInstallations',

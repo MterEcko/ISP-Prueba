@@ -1,11 +1,13 @@
 // backend/src/index.js
 const express = require('express');
+const http = require('http');
 const cors = require('cors');
 const morgan = require("morgan");
 const helmet = require('helmet');
 const dotenv = require("dotenv");
 const configHelper = require('./helpers/configHelper');
 const path = require('path');
+const websocketService = require('./services/websocket.service');
 
 const { setupTPLinkPermissions } = require("./config/permissions-setup");
 
@@ -21,14 +23,43 @@ console.log('DB_NAME:', process.env.DB_NAME);
 console.log('============================');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors({
-  origin: '*', // Para desarrollo - cambia esto a tu dominio en producción
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'x-access-token', 'Origin']
-}));
+// Middleware CORS - Configuración dinámica para múltiples orígenes
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Lista de orígenes permitidos
+    const allowedOrigins = [
+      'http://localhost:8080',
+      'http://localhost:8081',
+      'http://127.0.0.1:8080',
+      'http://10.10.0.121:8080', // Red local
+      'https://isp.serviciosqbit.net', // Dominio producción
+      'http://isp.serviciosqbit.net',
+    ];
+
+    // Agregar orígenes desde variable de entorno si existen
+    if (process.env.CORS_ORIGIN) {
+      const envOrigins = process.env.CORS_ORIGIN.split(',').map(o => o.trim());
+      allowedOrigins.push(...envOrigins);
+    }
+
+    // Permitir requests sin origin (como Postman, curl, mobile apps)
+    if (!origin || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️ CORS bloqueó origen: ${origin}`);
+      callback(null, true); // En desarrollo, permitir de todos modos
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'x-access-token', 'Authorization', 'Origin', 'Accept'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(helmet()); // Ayuda a securizar la app estableciendo varios headers HTTP
 app.use(morgan("dev")); // Logger de peticiones HTTP para desarrollo
@@ -113,6 +144,19 @@ async function synchronizeDatabase() {
 	await db.TechnicianInventoryReconciliation.sync({ force: false });
 	await db.InventoryBatch.sync({ force: false });
 
+    // Sincronizar modelos de correo de empleados
+    await db.EmployeeEmail.sync({ force: false });
+
+    // Sincronizar modelos de contabilidad
+    await db.ExpenseCategory.sync({ force: false });
+    await db.Expense.sync({ force: false });
+    await db.Payroll.sync({ force: false });
+    await db.PayrollPayment.sync({ force: false });
+
+    // Sincronizar modelos de divisas
+    await db.Currency.sync({ force: false });
+    await db.ExchangeRate.sync({ force: false });
+
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
     
     // ==================== AGREGAR ESTE BLOQUE AQUÍ ====================
@@ -148,13 +192,35 @@ async function synchronizeDatabase() {
 
 // Sincronizar con la base de datos y arrancar el servidor
 synchronizeDatabase().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT} desde src/index`);
+  // Inicializar WebSocket Service
+  websocketService.initialize(server);
+
+  // Escuchar en todas las interfaces (0.0.0.0) para permitir acceso desde red local
+  const HOST = process.env.HOST || '0.0.0.0';
+
+  server.listen(PORT, HOST, () => {
+    console.log(`🚀 Servidor ISP corriendo en http://${HOST}:${PORT}`);
+    console.log(`📍 Accesible desde:`);
+    console.log(`   - Local: http://localhost:${PORT}`);
+    console.log(`   - Red:   http://TU_IP_LOCAL:${PORT}`);
+    console.log(`   - API:   http://localhost:${PORT}/api`);
+    console.log(`   - WebSocket: ws://localhost:${PORT}`);
+    console.log(`\n🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`💾 Base de datos: ${process.env.DB_DIALECT || 'sqlite'}`);
   });
 });
 
 // Inicializar sistema de facturación automática
 const BillingJob = require('./jobs/billing-job');
+
+// Inicializar sistema de recordatorios automáticos
+const remindersService = require('./services/reminders.service');
+try {
+  remindersService.scheduleAutomaticReminders();
+  console.log('✅ Sistema de recordatorios automáticos inicializado');
+} catch (error) {
+  console.error('❌ Error inicializando recordatorios automáticos:', error.message);
+}
 
 // Solo en producción o si quieres probarlo
 if (process.env.NODE_ENV === 'production' || process.env.ENABLE_BILLING_JOBS === 'true') {
@@ -162,6 +228,15 @@ if (process.env.NODE_ENV === 'production' || process.env.ENABLE_BILLING_JOBS ===
   console.log('✅ Sistema de facturación automática activado');
 } else {
   console.log('⚠️ Sistema de facturación en modo manual');
+}
+
+// Inicializar sistema de segmentación automática
+const { scheduleSegmentationJob } = require('./jobs/segmentation.job');
+if (process.env.NODE_ENV === 'production' || process.env.ENABLE_SEGMENTATION_JOBS === 'true') {
+  scheduleSegmentationJob();
+  console.log('✅ Sistema de segmentación automática activado');
+} else {
+  console.log('⚠️ Sistema de segmentación en modo manual');
 }
 
 // Registrar rutas
@@ -260,6 +335,38 @@ try {
   console.log('✅ systemPlugin.routes registradas');
 } catch (error) {
   console.error('❌ Error en systemPlugin.routes:', error.message);
+}
+
+try {
+  console.log('Registrando pluginAudit.routes...');
+  require('./routes/pluginAudit.routes')(app);
+  console.log('✅ pluginAudit.routes registradas');
+} catch (error) {
+  console.error('❌ Error en pluginAudit.routes:', error.message);
+}
+
+try {
+  console.log('Registrando metrics.routes...');
+  require('./routes/metrics.routes')(app);
+  console.log('✅ metrics.routes registradas');
+} catch (error) {
+  console.error('❌ Error en metrics.routes:', error.message);
+}
+
+try {
+  console.log('Registrando notification.routes...');
+  require('./routes/notification.routes')(app);
+  console.log('✅ notification.routes registradas');
+} catch (error) {
+  console.error('❌ Error en notification.routes:', error.message);
+}
+
+try {
+  console.log('Registrando reminders.routes...');
+  require('./routes/reminders.routes')(app);
+  console.log('✅ reminders.routes registradas');
+} catch (error) {
+  console.error('❌ Error en reminders.routes:', error.message);
 }
 
 try {
@@ -392,6 +499,22 @@ try {
   console.log('✅ client.routes registradas');
 } catch (error) {
   console.error('❌ Error en client.routes:', error.message);
+}
+
+try {
+  console.log('Registrando clientInstallation.routes...');
+  require('./routes/clientInstallation.routes')(app);
+  console.log('✅ clientInstallation.routes registradas');
+} catch (error) {
+  console.error('❌ Error en clientInstallation.routes:', error.message);
+}
+
+try {
+  console.log('Registrando clientSupport.routes...');
+  require('./routes/clientSupport.routes')(app);
+  console.log('✅ clientSupport.routes registradas');
+} catch (error) {
+  console.error('❌ Error en clientSupport.routes:', error.message);
 }
 
 try {
@@ -554,6 +677,107 @@ try {
 } catch (error) {
   console.error('❌ Error en template.routes:', error.message);
   console.error('Stack completo:', error.stack);
+}
+
+// Nuevas rutas para las 6 funcionalidades
+try {
+  console.log('Registrando calendar.routes...');
+  require('./routes/calendar.routes')(app);
+  console.log('✅ calendar.routes registradas');
+} catch (error) {
+  console.error('❌ Error en calendar.routes:', error.message);
+}
+
+try {
+  console.log('Registrando chat.routes...');
+  require('./routes/chat.routes')(app);
+  console.log('✅ chat.routes registradas');
+} catch (error) {
+  console.error('❌ Error en chat.routes:', error.message);
+}
+
+try {
+  console.log('Registrando storeCustomer.routes...');
+  require('./routes/storeCustomer.routes')(app);
+  console.log('✅ storeCustomer.routes registradas');
+} catch (error) {
+  console.error('❌ Error en storeCustomer.routes:', error.message);
+}
+
+try {
+  console.log('Registrando pluginUpload.routes...');
+  require('./routes/pluginUpload.routes')(app);
+  console.log('✅ pluginUpload.routes registradas');
+} catch (error) {
+  console.error('❌ Error en pluginUpload.routes:', error.message);
+}
+
+try {
+  console.log('Registrando n8n.routes...');
+  require('./routes/n8n.routes')(app);
+  console.log('✅ n8n.routes registradas');
+} catch (error) {
+  console.error('❌ Error en n8n.routes:', error.message);
+}
+
+try {
+  console.log('Registrando setup.routes...');
+  require('./routes/setup.routes')(app);
+  console.log('✅ setup.routes registradas');
+} catch (error) {
+  console.error('❌ Error en setup.routes:', error.message);
+}
+
+// Rutas de correo de empleados
+try {
+  console.log('Registrando employeeEmail.routes...');
+  app.use('/api/employee-emails', require('./routes/employeeEmail.routes'));
+  console.log('✅ employeeEmail.routes registradas');
+} catch (error) {
+  console.error('❌ Error en employeeEmail.routes:', error.message);
+}
+
+// Rutas de contabilidad
+try {
+  console.log('Registrando expense.routes...');
+  app.use('/api/expenses', require('./routes/expense.routes'));
+  console.log('✅ expense.routes registradas');
+} catch (error) {
+  console.error('❌ Error en expense.routes:', error.message);
+}
+
+try {
+  console.log('Registrando payroll.routes...');
+  app.use('/api/payroll', require('./routes/payroll.routes'));
+  console.log('✅ payroll.routes registradas');
+} catch (error) {
+  console.error('❌ Error en payroll.routes:', error.message);
+}
+
+try {
+  console.log('Registrando accounting.routes...');
+  app.use('/api/accounting', require('./routes/accounting.routes'));
+  console.log('✅ accounting.routes registradas');
+} catch (error) {
+  console.error('❌ Error en accounting.routes:', error.message);
+}
+
+// Rutas de divisas/monedas
+try {
+  console.log('Registrando currency.routes...');
+  app.use('/api/currencies', require('./routes/currency.routes'));
+  console.log('✅ currency.routes registradas');
+} catch (error) {
+  console.error('❌ Error en currency.routes:', error.message);
+}
+
+// Rutas del Portal del Cliente
+try {
+  console.log('Registrando clientPortal.routes...');
+  app.use('/api/client-portal', require('./routes/clientPortal.routes'));
+  console.log('✅ clientPortal.routes registradas');
+} catch (error) {
+  console.error('❌ Error en clientPortal.routes:', error.message);
 }
 
 console.log('\n=== FIN REGISTRO DE RUTAS ===');

@@ -5,6 +5,7 @@ const db = require('../models');
 const { Client, ClientBilling, Invoice, Payment, Subscription, NotificationQueue, ServicePackage } = db;
 const { Op } = db.Sequelize;
 const billingConfig = require('../config/billing-config');
+const ClientSuspensionService = require('./client.suspension.service');
 
 class BillingService {
 
@@ -533,12 +534,19 @@ async generateMissingCurrentPeriodInvoices() {
   }
 
   async suspendClientService(clientId) {
-    await ClientBilling.update(
-      { clientStatus: 'suspended' },
-      { where: { clientId } }
-    );
-    
-    console.log(`Cliente ${clientId} suspendido por falta de pago`);
+    // IMPORTANTE: Ahora usamos ClientSuspensionService que también desactiva PPPoE
+    try {
+      await ClientSuspensionService.suspendClient(clientId, 'non_payment');
+      console.log(`✅ Cliente ${clientId} suspendido por falta de pago (incluyendo PPPoE)`);
+    } catch (error) {
+      console.error(`Error suspendiendo cliente ${clientId}:`, error);
+      // Si falla la suspensión completa, al menos actualizar BD
+      await ClientBilling.update(
+        { clientStatus: 'suspended' },
+        { where: { clientId } }
+      );
+      console.log(`⚠️ Cliente ${clientId} suspendido solo en BD (error en PPPoE)`);
+    }
   }
 
   async createSuspensionNotification(clientBilling) {
@@ -829,11 +837,29 @@ async generateMissingCurrentPeriodInvoices() {
       { where: { clientId } }
     );
     
-    await ClientBilling.update(
-      { clientStatus: 'active' },
-      { where: { clientId } }
-    );
-    
+    // IMPORTANTE: Reactivar también el usuario PPPoE si estaba suspendido
+    const currentStatus = await ClientBilling.findOne({ where: { clientId } });
+
+    if (currentStatus && currentStatus.clientStatus === 'suspended') {
+      try {
+        await ClientSuspensionService.reactivateClient(clientId, null);
+        console.log(`✅ Cliente ${clientId} reactivado (incluyendo PPPoE)`);
+      } catch (error) {
+        console.error(`Error reactivando cliente ${clientId} (PPPoE):`, error);
+        // Si falla la reactivación de PPPoE, al menos actualizar BD
+        await ClientBilling.update(
+          { clientStatus: 'active' },
+          { where: { clientId } }
+        );
+        console.log(`⚠️ Cliente ${clientId} reactivado solo en BD (error en PPPoE)`);
+      }
+    } else {
+      await ClientBilling.update(
+        { clientStatus: 'active' },
+        { where: { clientId } }
+      );
+    }
+
     console.log(`Servicio reactivado para cliente ${clientId} hasta ${serviceEndDate.toLocaleDateString()}`);
   }
 }

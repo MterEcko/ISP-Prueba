@@ -83,6 +83,9 @@ db.InventoryScrap = require('./inventoryScrap.model.js')(sequelize, Sequelize);
 db.SystemConfiguration = require('./systemConfiguration.model.js')(sequelize, Sequelize);
 db.SystemLicense = require('./systemLicense.model.js')(sequelize, Sequelize);
 db.SystemPlugin = require('./systemPlugin.model.js')(sequelize, Sequelize);
+db.PluginAuditLog = require('./pluginAuditLog.model.js')(sequelize, Sequelize);
+db.Notification = require('./notification.model.js')(sequelize, Sequelize);
+db.MessageLog = require('./MessageLog.js')(sequelize, Sequelize);
 
 // Estructura de red mejorada
 db.Zone = require('./zone.model.js')(sequelize, Sequelize);
@@ -147,6 +150,39 @@ db.DocumentTemplate  = require('./documentTemplate.model.js')(sequelize, Sequeli
 db.InventoryBatch = require('./inventoryBatch.model.js')(sequelize, Sequelize);
 
 db.TechnicianInventoryReconciliation = require('./technicianInventoryReconciliation.model.js')(sequelize, Sequelize);
+
+// Calendario
+db.CalendarEvent = require('./calendarEvent.model.js')(sequelize, Sequelize);
+db.CalendarIntegration = require('./calendarIntegration.model.js')(sequelize, Sequelize);
+
+// Chat
+db.ChatConversation = require('./chatConversation.model.js')(sequelize, Sequelize);
+db.ChatMessage = require('./chatMessage.model.js')(sequelize, Sequelize);
+
+// Store (Marketplace de Plugins)
+db.StoreCustomer = require('./storeCustomer.model.js')(sequelize, Sequelize);
+db.StoreOrder = require('./storeOrder.model.js')(sequelize, Sequelize);
+db.StoreOrderItem = require('./storeOrderItem.model.js')(sequelize, Sequelize);
+
+// n8n Integration
+db.N8nWorkflow = require('./n8nWorkflow.model.js')(sequelize, Sequelize);
+
+// Correo de empleados
+db.EmployeeEmail = require('./employeeEmail.model');
+
+// ======================================
+// SISTEMA DE CONTABILIDAD
+// ======================================
+db.ExpenseCategory = require('./expenseCategory.model');
+db.Expense = require('./expense.model');
+db.Payroll = require('./payroll.model');
+db.PayrollPayment = require('./payrollPayment.model');
+
+// ======================================
+// SISTEMA DE DIVISAS/MONEDAS
+// ======================================
+db.Currency = require('./currency.model');
+db.ExchangeRate = require('./exchangeRate.model');
 
 // ======================================
 // Relaciones: Existentes Core (Sin cambios)
@@ -1219,6 +1255,152 @@ db.DocumentTemplate.hasMany(db.DocumentTemplate, {
 db.DocumentTemplate.belongsTo(db.DocumentTemplate, {
   foreignKey: 'parentTemplateId',
   as: 'parentTemplate'
+});
+
+// ======================================
+// RELACIONES: SISTEMA DE STORE (Marketplace)
+// ======================================
+
+// StoreCustomer - StoreOrder
+db.StoreCustomer.hasMany(db.StoreOrder, {
+  foreignKey: 'customerId',
+  as: 'orders'
+});
+
+db.StoreOrder.belongsTo(db.StoreCustomer, {
+  foreignKey: 'customerId',
+  as: 'customer'
+});
+
+// StoreOrder - StoreOrderItem
+db.StoreOrder.hasMany(db.StoreOrderItem, {
+  foreignKey: 'orderId',
+  as: 'items'
+});
+
+db.StoreOrderItem.belongsTo(db.StoreOrder, {
+  foreignKey: 'orderId',
+  as: 'order'
+});
+
+// ======================================
+// RELACIONES: SISTEMA DE CONTABILIDAD
+// ======================================
+
+// ExpenseCategory - Expense
+db.ExpenseCategory.hasMany(db.Expense, {
+  foreignKey: 'categoryId',
+  as: 'expenses'
+});
+
+db.Expense.belongsTo(db.ExpenseCategory, {
+  foreignKey: 'categoryId',
+  as: 'category'
+});
+
+// User - Expense (creador)
+db.User.hasMany(db.Expense, {
+  foreignKey: 'createdBy',
+  as: 'expensesCreated'
+});
+
+db.Expense.belongsTo(db.User, {
+  foreignKey: 'createdBy',
+  as: 'creator'
+});
+
+// User - Payroll (empleado)
+db.User.hasMany(db.Payroll, {
+  foreignKey: 'userId',
+  as: 'payrolls'
+});
+
+db.Payroll.belongsTo(db.User, {
+  foreignKey: 'userId',
+  as: 'employee'
+});
+
+// User - Payroll (creador)
+db.User.hasMany(db.Payroll, {
+  foreignKey: 'createdBy',
+  as: 'payrollsCreated'
+});
+
+db.Payroll.belongsTo(db.User, {
+  foreignKey: 'createdBy',
+  as: 'creator'
+});
+
+// User - Payroll (pagador)
+db.User.hasMany(db.Payroll, {
+  foreignKey: 'paidBy',
+  as: 'payrollsPaid'
+});
+
+db.Payroll.belongsTo(db.User, {
+  foreignKey: 'paidBy',
+  as: 'payer'
+});
+
+// Payroll - PayrollPayment
+db.Payroll.hasMany(db.PayrollPayment, {
+  foreignKey: 'payrollId',
+  as: 'payments'
+});
+
+db.PayrollPayment.belongsTo(db.Payroll, {
+  foreignKey: 'payrollId',
+  as: 'payroll'
+});
+
+// User - PayrollPayment (creador)
+db.User.hasMany(db.PayrollPayment, {
+  foreignKey: 'createdBy',
+  as: 'paymentsCreated'
+});
+
+db.PayrollPayment.belongsTo(db.User, {
+  foreignKey: 'createdBy',
+  as: 'creator'
+});
+
+// User - EmployeeEmail
+db.User.hasMany(db.EmployeeEmail, {
+  foreignKey: 'userId',
+  as: 'emails'
+});
+
+db.EmployeeEmail.belongsTo(db.User, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+
+// ======================================
+// RELACIONES: SISTEMA DE DIVISAS
+// ======================================
+
+// ExchangeRate - Currency (from)
+db.ExchangeRate.belongsTo(db.Currency, {
+  foreignKey: 'fromCurrencyId',
+  as: 'fromCurrency'
+});
+
+// ExchangeRate - Currency (to)
+db.ExchangeRate.belongsTo(db.Currency, {
+  foreignKey: 'toCurrencyId',
+  as: 'toCurrency'
+});
+
+// Currency - ExchangeRate (rates from)
+db.Currency.hasMany(db.ExchangeRate, {
+  foreignKey: 'fromCurrencyId',
+  as: 'ratesFrom'
+});
+
+// Currency - ExchangeRate (rates to)
+db.Currency.hasMany(db.ExchangeRate, {
+  foreignKey: 'toCurrencyId',
+  as: 'ratesTo'
 });
 
 // Exportar el objeto db
