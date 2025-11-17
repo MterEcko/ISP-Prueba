@@ -168,21 +168,21 @@ db.StoreOrderItem = require('./storeOrderItem.model.js')(sequelize, Sequelize);
 db.N8nWorkflow = require('./n8nWorkflow.model.js')(sequelize, Sequelize);
 
 // Correo de empleados
-db.EmployeeEmail = require('./employeeEmail.model');
+db.EmployeeEmail = require('./employeeEmail.model')(sequelize, Sequelize);
 
 // ======================================
 // SISTEMA DE CONTABILIDAD
 // ======================================
-db.ExpenseCategory = require('./expenseCategory.model');
-db.Expense = require('./expense.model');
-db.Payroll = require('./payroll.model');
-db.PayrollPayment = require('./payrollPayment.model');
+db.ExpenseCategory = require('./expenseCategory.model')(sequelize, Sequelize);
+db.Expense = require('./expense.model')(sequelize, Sequelize);
+db.Payroll = require('./payroll.model')(sequelize, Sequelize);
+db.PayrollPayment = require('./payrollPayment.model')(sequelize, Sequelize);
 
 // ======================================
 // SISTEMA DE DIVISAS/MONEDAS
 // ======================================
-db.Currency = require('./currency.model');
-db.ExchangeRate = require('./exchangeRate.model');
+db.Currency = require('./currency.model')(sequelize, Sequelize);
+db.ExchangeRate = require('./exchangeRate.model')(sequelize, Sequelize);
 
 // ======================================
 // Relaciones: Existentes Core (Sin cambios)

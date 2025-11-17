@@ -63,11 +63,11 @@ class NotificationService {
       //   this.sendViaSMS(notification);
       // }
 
-      logger.info(\`Notificación creada: \${notification.id} (\${type}) para usuario \${userId || 'todos'}\`);
+      logger.info(`Notificación creada: ${notification.id} (${type}) para usuario ${userId || 'todos'}`);
 
       return notification;
     } catch (error) {
-      logger.error(\`Error creando notificación: \${error.message}\`);
+      logger.error(`Error creando notificación: ${error.message}`);
       throw error;
     }
   }
@@ -107,14 +107,14 @@ class NotificationService {
       type: 'payment_received',
       priority: 'high',
       title: 'Pago Recibido',
-      message: \`Se recibió un pago de $\${payment.monto} de \${client.nombre}\`,
+      message: `Se recibió un pago de $\${payment.monto} de \${client.nombre}`,
       metadata: {
         paymentId: payment.id,
         clientId: client.id,
         amount: payment.monto,
         method: payment.metodo_pago
       },
-      actionUrl: \`/payments/\${payment.id}\`,
+      actionUrl: `/payments/\${payment.id}`,
       actionLabel: 'Ver Pago',
       sendViaWebSocket: true
     });
@@ -129,14 +129,14 @@ class NotificationService {
       type: 'payment_failed',
       priority: 'high',
       title: 'Pago Fallido',
-      message: \`El pago de $\${payment.monto} de \${client.nombre} falló: \${errorMessage}\`,
+      message: `El pago de $\${payment.monto} de \${client.nombre} falló: \${errorMessage}`,
       metadata: {
         paymentId: payment.id,
         clientId: client.id,
         amount: payment.monto,
         error: errorMessage
       },
-      actionUrl: \`/payments/\${payment.id}\`,
+      actionUrl: `/payments/\${payment.id}`,
       actionLabel: 'Ver Detalles',
       sendViaWebSocket: true
     });
@@ -151,13 +151,13 @@ class NotificationService {
       type: 'client_created',
       priority: 'medium',
       title: 'Nuevo Cliente',
-      message: \`Cliente \${client.nombre} registrado exitosamente\`,
+      message: `Cliente \${client.nombre} registrado exitosamente`,
       metadata: {
         clientId: client.id,
         clientName: client.nombre,
         createdBy: createdByUserId
       },
-      actionUrl: \`/clients/\${client.id}\`,
+      actionUrl: `/clients/\${client.id}`,
       actionLabel: 'Ver Cliente',
       sendViaWebSocket: true
     });
@@ -172,13 +172,13 @@ class NotificationService {
       type: 'client_suspended',
       priority: 'medium',
       title: 'Cliente Suspendido',
-      message: \`Cliente \${client.nombre} ha sido suspendido: \${reason}\`,
+      message: `Cliente \${client.nombre} ha sido suspendido: \${reason}`,
       metadata: {
         clientId: client.id,
         clientName: client.nombre,
         reason: reason
       },
-      actionUrl: \`/clients/\${client.id}\`,
+      actionUrl: `/clients/\${client.id}`,
       actionLabel: 'Ver Cliente',
       sendViaWebSocket: true
     });
@@ -193,14 +193,14 @@ class NotificationService {
       type: 'ticket_created',
       priority: ticket.priority === 'urgent' ? 'urgent' : 'medium',
       title: 'Nuevo Ticket',
-      message: \`Nuevo ticket #\${ticket.id} de \${client.nombre}: \${ticket.subject}\`,
+      message: `Nuevo ticket #\${ticket.id} de \${client.nombre}: \${ticket.subject}`,
       metadata: {
         ticketId: ticket.id,
         clientId: client.id,
         subject: ticket.subject,
         priority: ticket.priority
       },
-      actionUrl: \`/tickets/\${ticket.id}\`,
+      actionUrl: `/tickets/\${ticket.id}`,
       actionLabel: 'Ver Ticket',
       sendViaWebSocket: true
     });
@@ -215,13 +215,13 @@ class NotificationService {
       type: 'ticket_assigned',
       priority: 'high',
       title: 'Ticket Asignado',
-      message: \`Se te ha asignado el ticket #\${ticket.id}: \${ticket.subject}\`,
+      message: `Se te ha asignado el ticket #\${ticket.id}: \${ticket.subject}`,
       metadata: {
         ticketId: ticket.id,
         subject: ticket.subject,
         assignedBy: assignedByUsername
       },
-      actionUrl: \`/tickets/\${ticket.id}\`,
+      actionUrl: `/tickets/\${ticket.id}`,
       actionLabel: 'Ver Ticket',
       sendViaWebSocket: true
     });
@@ -236,14 +236,14 @@ class NotificationService {
       type: 'invoice_overdue',
       priority: 'high',
       title: 'Factura Vencida',
-      message: \`Factura #\${invoice.numero_factura} de \${client.nombre} está vencida ($\${invoice.total})\`,
+      message: `Factura #\${invoice.numero_factura} de \${client.nombre} está vencida ($\${invoice.total})`,
       metadata: {
         invoiceId: invoice.id,
         clientId: client.id,
         amount: invoice.total,
         dueDate: invoice.fecha_vencimiento
       },
-      actionUrl: \`/invoices/\${invoice.id}\`,
+      actionUrl: `/invoices/\${invoice.id}`,
       actionLabel: 'Ver Factura',
       sendViaWebSocket: true
     });
@@ -272,7 +272,7 @@ class NotificationService {
       userId: null,
       type: 'plugin_error',
       priority: 'high',
-      title: \`Error en Plugin: \${pluginName}\`,
+      title: `Error en Plugin: \${pluginName}`,
       message: errorMessage,
       metadata: {
         plugin: pluginName,
@@ -293,14 +293,14 @@ class NotificationService {
       type: 'low_inventory',
       priority: 'medium',
       title: 'Inventario Bajo',
-      message: \`El producto "\${product.nombre}" tiene stock bajo: \${currentStock} unidades (mínimo: \${minStock})\`,
+      message: `El producto "\${product.nombre}" tiene stock bajo: \${currentStock} unidades (mínimo: \${minStock})`,
       metadata: {
         productId: product.id,
         productName: product.nombre,
         currentStock: currentStock,
         minStock: minStock
       },
-      actionUrl: \`/inventory/\${product.id}\`,
+      actionUrl: `/inventory/\${product.id}`,
       actionLabel: 'Ver Producto',
       sendViaWebSocket: true
     });
@@ -315,13 +315,13 @@ class NotificationService {
       type: 'device_offline',
       priority: 'high',
       title: 'Dispositivo Desconectado',
-      message: \`El dispositivo \${device.name} (\${device.ip}) está fuera de línea\`,
+      message: `El dispositivo \${device.name} (\${device.ip}) está fuera de línea`,
       metadata: {
         deviceId: device.id,
         deviceName: device.name,
         deviceIp: device.ip
       },
-      actionUrl: \`/devices/\${device.id}\`,
+      actionUrl: `/devices/\${device.id}`,
       actionLabel: 'Ver Dispositivo',
       sendViaWebSocket: true
     });
@@ -403,7 +403,7 @@ class NotificationService {
         unreadCount: unreadCount
       };
     } catch (error) {
-      logger.error(\`Error obteniendo notificaciones: \${error.message}\`);
+      logger.error(`Error obteniendo notificaciones: \${error.message}`);
       throw error;
     }
   }
@@ -435,7 +435,7 @@ class NotificationService {
 
       return notification;
     } catch (error) {
-      logger.error(\`Error marcando notificación como leída: \${error.message}\`);
+      logger.error(`Error marcando notificación como leída: \${error.message}`);
       throw error;
     }
   }
@@ -461,7 +461,7 @@ class NotificationService {
 
       return { updated: result[0] };
     } catch (error) {
-      logger.error(\`Error marcando todas las notificaciones como leídas: \${error.message}\`);
+      logger.error(`Error marcando todas las notificaciones como leídas: \${error.message}`);
       throw error;
     }
   }
@@ -491,7 +491,7 @@ class NotificationService {
 
       return notification;
     } catch (error) {
-      logger.error(\`Error archivando notificación: \${error.message}\`);
+      logger.error(`Error archivando notificación: \${error.message}`);
       throw error;
     }
   }
@@ -509,10 +509,10 @@ class NotificationService {
         }
       });
 
-      logger.info(\`Eliminadas \${result} notificaciones expiradas\`);
+      logger.info(`Eliminadas \${result} notificaciones expiradas`);
       return result;
     } catch (error) {
-      logger.error(\`Error limpiando notificaciones expiradas: \${error.message}\`);
+      logger.error(`Error limpiando notificaciones expiradas: \${error.message}`);
       throw error;
     }
   }
@@ -534,10 +534,10 @@ class NotificationService {
         }
       });
 
-      logger.info(\`Eliminadas \${result} notificaciones archivadas antiguas\`);
+      logger.info(`Eliminadas \${result} notificaciones archivadas antiguas`);
       return result;
     } catch (error) {
-      logger.error(\`Error limpiando notificaciones archivadas: \${error.message}\`);
+      logger.error(`Error limpiando notificaciones archivadas: \${error.message}`);
       throw error;
     }
   }
