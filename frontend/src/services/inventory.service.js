@@ -1,4 +1,4 @@
-// inventory.service.js - VERSIÓN CORREGIDA SIN ERRORES
+// inventory.service.js 
 import axios from 'axios';
 import authHeader from './auth-header';
 import { API_URL } from './frontend_apiConfig';
@@ -162,6 +162,27 @@ class InventoryService {
     return axios.delete(`${API_URL}inventory/${id}`, { 
       headers: authHeader() 
     });
+  }
+
+  // ================== QR CODES ==================
+  
+  /**
+   * Genera códigos QR para uno o varios elementos de inventario
+   * @param {Array|Number} itemIds - ID o array de IDs de elementos
+   * @returns {Promise} - Promesa con los códigos QR generados
+   */
+  generateQRCodes(itemIds) {
+    // Asegurarse de que itemIds sea un array
+    const ids = Array.isArray(itemIds) ? itemIds : [itemIds];
+    
+    // Hacer una petición por cada ID según la documentación: POST /api/inventory/:id/qr
+    const promises = ids.map(id => 
+      axios.post(`${API_URL}inventory/${id}/qr`, {}, { 
+        headers: authHeader() 
+      })
+    );
+    
+    return Promise.all(promises);
   }
 
   // ================== FUNCIONES AVANZADAS (rutas que SÍ existen) ==================
@@ -491,6 +512,225 @@ getInventoryStats(params = {}) {
     
     const efficiency = ((used - scrap) / used) * 100;
     return Math.max(0, Math.min(100, efficiency));
+  }
+
+  // ================== INVENTORY BATCHES ==================
+
+  getAllBatches(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    if (params.page) queryParams.append('page', params.page);
+    if (params.size) queryParams.append('size', params.size);
+    if (params.status) queryParams.append('status', params.status);
+    if (params.supplier) queryParams.append('supplier', params.supplier);
+    if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+    if (params.dateTo) queryParams.append('dateTo', params.dateTo);
+
+    return axios.get(`${API_URL}inventory/batches?${queryParams.toString()}`, { 
+      headers: authHeader() 
+    });
+  }
+
+  getBatch(id) {
+    return axios.get(`${API_URL}inventory/batches/${id}`, { 
+      headers: authHeader() 
+    });
+  }
+
+  createBatch(batch) {
+    return axios.post(`${API_URL}inventory/batches`, batch, { 
+      headers: authHeader() 
+    });
+  }
+
+  addItemsToBatch(batchId, items) {
+    return axios.post(`${API_URL}inventory/batches/${batchId}/add-items`, items, { 
+      headers: authHeader() 
+    });
+  }
+
+  completeBatch(batchId) {
+    return axios.post(`${API_URL}inventory/batches/${batchId}/complete`, {}, { 
+      headers: authHeader() 
+    });
+  }
+
+  cancelBatch(batchId, reason) {
+    return axios.post(`${API_URL}inventory/batches/${batchId}/cancel`, { reason }, { 
+      headers: authHeader() 
+    });
+  }
+
+  // ================== TECHNICIAN INVENTORY ==================
+
+  assignToTechnician(data) {
+    return axios.post(`${API_URL}inventory/assign-to-technician`, data, { 
+      headers: authHeader() 
+    });
+  }
+
+  getTechnicianInventory(technicianId) {
+    return axios.get(`${API_URL}inventory/technician/${technicianId}/inventory`, { 
+      headers: authHeader() 
+    });
+  }
+
+  consumeMaterialByTechnician(data) {
+    return axios.post(`${API_URL}inventory/consume-material`, data, { 
+      headers: authHeader() 
+    });
+  }
+
+  returnToWarehouse(inventoryId, data) {
+    return axios.post(`${API_URL}inventory/${inventoryId}/return-to-warehouse`, data, { 
+      headers: authHeader() 
+    });
+  }
+
+  reportMissing(inventoryId, data) {
+    return axios.post(`${API_URL}inventory/${inventoryId}/report-missing`, data, { 
+      headers: authHeader() 
+    });
+  }
+
+  // ================== RECONCILIATION ==================
+
+  generateReconciliation(data) {
+    return axios.post(`${API_URL}inventory/reconciliations/generate`, data, { 
+      headers: authHeader() 
+    });
+  }
+
+  getAllReconciliations(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    if (params.page) queryParams.append('page', params.page);
+    if (params.size) queryParams.append('size', params.size);
+    if (params.technicianId) queryParams.append('technicianId', params.technicianId);
+    if (params.period) queryParams.append('period', params.period);
+    if (params.status) queryParams.append('status', params.status);
+
+    return axios.get(`${API_URL}inventory/reconciliations?${queryParams.toString()}`, { 
+      headers: authHeader() 
+    });
+  }
+
+  getTechnicianReconciliations(technicianId, params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    if (params.page) queryParams.append('page', params.page);
+    if (params.size) queryParams.append('size', params.size);
+    if (params.status) queryParams.append('status', params.status);
+
+    return axios.get(`${API_URL}inventory/reconciliations/technician/${technicianId}?${queryParams.toString()}`, { 
+      headers: authHeader() 
+    });
+  }
+
+  approveReconciliation(id, data) {
+    return axios.put(`${API_URL}inventory/reconciliations/${id}/approve`, data, { 
+      headers: authHeader() 
+    });
+  }
+
+  getTechnicianBalance(technicianId, period) {
+    const queryParams = new URLSearchParams();
+    if (period) queryParams.append('period', period);
+
+    return axios.get(`${API_URL}inventory/technician/${technicianId}/balance?${queryParams.toString()}`, { 
+      headers: authHeader() 
+    });
+  }
+
+  getUnregisteredReport(daysThreshold = 30) {
+    const queryParams = new URLSearchParams({ daysThreshold });
+
+    return axios.get(`${API_URL}inventory/unregistered-report?${queryParams.toString()}`, { 
+      headers: authHeader() 
+    });
+  }
+
+  closeUnregistered(inventoryId, data) {
+    return axios.post(`${API_URL}inventory/${inventoryId}/close-unregistered`, data, { 
+      headers: authHeader() 
+    });
+  }
+  
+// =============================================
+  // === ¡TODOS ESTOS MÉTODOS SON NUEVOS! ===
+  // =============================================
+
+
+
+
+
+  // --- Métodos para TYPES (Tipos de Inventario) ---
+
+  getAllTypes(params = {}) {
+    const queryParams = new URLSearchParams();
+    if (params.includeCategory) queryParams.append('includeCategory', params.includeCategory);
+    
+    // ⬇️ ¡ASEGÚRATE DE QUE ESTA RUTA SEA CORRECTA EN TU BACKEND!
+    return axios.get(`${API_URL}inventory-types?${queryParams.toString()}`, { 
+      headers: authHeader() 
+    });
+  }
+
+  // --- Métodos para PRODUCTS (Catálogo) ---
+
+  getAllProducts(params = {}) {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page);
+    if (params.size) queryParams.append('size', params.size);
+
+    // ⬇️ ¡ASEGÚRATE DE QUE ESTA RUTA SEA CORRECTA EN TU BACKEND!
+    return axios.get(`${API_URL}inventory-products?${queryParams.toString()}`, { 
+      headers: authHeader() 
+    });
+  }
+
+  getProduct(id) {
+    return axios.get(`${API_URL}inventory-products/${id}`, { 
+      headers: authHeader() 
+    });
+  }
+
+  createProduct(data) {
+    return axios.post(`${API_URL}inventory-products`, data, { 
+      headers: authHeader() 
+    });
+  }
+
+  updateProduct(id, data) {
+    return axios.put(`${API_URL}inventory-products/${id}`, data, { 
+      headers: authHeader() 
+    });
+  }
+
+
+  
+  // --- Métodos para IMPORT/EXPORT ---
+  
+  bulkImport(formData, options = {}) {
+    // ⬇️ ¡ASEGÚRATE DE QUE ESTA RUTA SEA CORRECTA EN TU BACKEND!
+    return axios.post(`${API_URL}inventory/import`, formData, {
+      headers: {
+        ...authHeader(),
+        // No pongas 'Content-Type': 'multipart/form-data', 
+        // axios lo hace automáticamente con FormData
+      },
+      signal: options.signal,
+      onUploadProgress: options.onUploadProgress
+    });
+  }
+
+  exportInventory(params, options = {}) {
+    // ⬇️ ¡ASEGÚRATE DE QUE ESTA RUTA SEA CORRECTA EN TU BACKEND!
+    return axios.post(`${API_URL}inventory/export`, params, {
+      headers: authHeader(),
+      responseType: 'blob',
+      signal: options.signal
+    });
   }
 }
 

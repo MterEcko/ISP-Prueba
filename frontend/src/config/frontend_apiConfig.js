@@ -19,3 +19,69 @@ export default API_BASE_URL;
 //
 // Si la variable de entorno no está definida, se usará "http://localhost:3000/api/" por defecto.
 
+// Configuración para uploads
+export const UPLOAD_CONFIG = {
+  maxFileSize: 10 * 1024 * 1024, // 10MB
+  allowedTypes: {
+    documents: ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+    images: ['image/jpeg', 'image/png', 'image/gif'],
+    all: ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+  }
+};
+
+// URLs de endpoints
+export const ENDPOINTS = {
+  // Autenticación
+  auth: {
+    login: 'auth/signin',
+    signup: 'auth/signup',
+    logout: 'auth/logout'
+  },
+  
+  // Plantillas
+  templates: {
+    active: 'document-templates/active',
+    admin: 'admin/document-templates',
+    single: (id) => `document-templates/${id}`,
+    content: (id) => `admin/document-templates/${id}/content`,
+    toggle: (id) => `admin/document-templates/${id}/toggle`,
+    variables: (clientId) => `document-templates/client/${clientId}/variables`
+  },
+  
+  // Documentos
+  documents: {
+    preview: (templateId, clientId) => `documents/preview/${templateId}/${clientId}`,
+    generate: (templateId, clientId) => `documents/generate/${templateId}/${clientId}`,
+    history: (clientId) => `documents/history/${clientId}`,
+    sign: (historyId) => `documents/sign/${historyId}`,
+    download: (documentId) => `documents/${documentId}/download`
+  },
+  
+  // Clientes
+  clients: {
+    documents: (clientId) => `clients/${clientId}/documents`,
+    uploadDocument: (clientId) => `clients/${clientId}/documents`
+  },
+  
+  // Firmas
+  signatures: {
+    create: 'documents/signatures',
+    get: (documentId) => `documents/${documentId}/signatures`,
+    verify: (signatureId) => `signatures/${signatureId}/verify`,
+    revoke: (signatureId) => `signatures/${signatureId}/revoke`
+  },
+  
+  // Email
+  email: {
+    send: (documentId) => `documents/${documentId}/send-email`,
+    bulk: 'documents/send-bulk',
+    history: (documentId) => `documents/${documentId}/email-history`,
+    preview: (documentId) => `documents/${documentId}/email-preview`
+  },
+  
+  // Operaciones masivas
+  bulk: {
+    generate: 'documents/generate-bulk',
+    download: 'documents/download-bulk'
+  }
+};

@@ -1,0 +1,115 @@
+{
+  "inventory": {
+    "thresholds": {
+      "stock": {
+        "low": 10,           /* Stock bajo predeterminado */
+        "critical": 5,        /* Stock crítico predeterminado */
+        "byCategory": {
+          "router": {
+            "low": 8,
+            "critical": 3
+          },
+          "antenna": {
+            "low": 15,
+            "critical": 5
+          },
+          "cable": {
+            "low": 200,       /* Para materiales que se miden en metros o unidades grandes */
+            "critical": 100
+          },
+          "connector": {
+            "low": 50,
+            "critical": 20
+          },
+          "poe": {
+            "low": 12,
+            "critical": 6
+          }
+        }
+      },
+      "age": {
+        "maintenance": 365,   /* Días antes de recomendar mantenimiento */
+        "replacement": 730    /* Días antes de recomendar reemplazo */
+      }
+    },
+    "status": {
+      "options": [
+        {"id": "available", "name": "Disponible", "color": "#4CAF50"},
+        {"id": "inUse", "name": "En uso", "color": "#FF9800"},
+        {"id": "inRepair", "name": "En reparación", "color": "#2196F3"},
+        {"id": "defective", "name": "Defectuoso", "color": "#F44336"},
+        {"id": "retired", "name": "Retirado", "color": "#9E9E9E"}
+      ],
+      "default": "available"
+    },
+    "categories": [
+      {"id": "router", "name": "Router", "icon": "router"},
+      {"id": "antenna", "name": "Antena", "icon": "antenna"},
+      {"id": "switch", "name": "Switch", "icon": "switch"},
+      {"id": "cable", "name": "Cable", "icon": "cable"},
+      {"id": "connector", "name": "Conector", "icon": "connector"},
+      {"id": "poe", "name": "Adaptador PoE", "icon": "power"},
+      {"id": "radio", "name": "Radio", "icon": "radio"},
+      {"id": "accessPoint", "name": "Punto de Acceso", "icon": "wifi"},
+      {"id": "tool", "name": "Herramienta", "icon": "tools"},
+      {"id": "other", "name": "Otro", "icon": "box"}
+    ],
+    "locations": {
+      "defaultCapacity": 100
+    }
+  },
+  "dashboard": {
+    "limits": {
+      "lowStockAlerts": 5,
+      "recentMovements": 5,
+      "topLocations": 4
+    },
+    "refresh": {
+      "autoRefresh": true,
+      "interval": 300000  /* 5 minutos en milisegundos */
+    }
+  },
+  "reports": {
+    "formats": ["pdf", "excel", "csv"],
+    "default": "pdf",
+    "templates": {
+      "inventory": "inventory_report_template.html",
+      "movements": "movements_report_template.html",
+      "stockAlerts": "stock_alerts_report_template.html"
+    }
+  },
+  "labels": {
+    "sizes": [
+      {"id": "small", "name": "Pequeño (30x20mm)", "width": 30, "height": 20},
+      {"id": "medium", "name": "Mediano (50x30mm)", "width": 50, "height": 30},
+      {"id": "large", "name": "Grande (70x50mm)", "width": 70, "height": 50}
+    ],
+    "defaultSize": "medium",
+    "defaultType": "qr",
+    "defaults": {
+      "showName": true,
+      "showSerial": true,
+      "showModel": false
+    }
+  },
+  "notifications": {
+    "lowStock": {
+      "enabled": true,
+      "recipients": ["admin@example.com", "inventory@example.com"],
+      "frequency": "daily"
+    },
+    "maintenance": {
+      "enabled": true,
+      "recipients": ["maintenance@example.com"],
+      "frequency": "weekly"
+    }
+  },
+  "features": {
+    "batchOperations": true,
+    "qrScanning": true,
+    "barcodeScanning": true,
+    "locationTracking": true,
+    "maintenanceTracking": true,
+    "costTracking": true
+  }
+}

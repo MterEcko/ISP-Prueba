@@ -1,3 +1,4 @@
+
 <template>
   <div class="billing-tab">
     <div class="billing-grid">
@@ -7,7 +8,7 @@
         <div class="section-header">
           <div class="section-title">
             <div class="section-icon">??</div>
-            <h3>Resumen de Facturaci¨®n prueba</h3>
+            <h3>Resumen de Facturaci¨®n</h3>
           </div>
           <div class="section-actions">
             <button @click="refreshBilling" class="btn btn-secondary" :disabled="loading">
@@ -133,7 +134,7 @@
               Registrar Pago
             </button>
             <button @click="viewAllPayments" class="btn btn-secondary">
-              ?? Ver Todos
+              ??? Ver Todos
             </button>
           </div>
         </div>
@@ -290,7 +291,7 @@
                 </button>
                 <button 
                   v-if="invoice.status === 'pending' || invoice.status === 'overdue'"
-                  @click="markAsPaid(invoice)" 
+                  @click="openPaymentModal(invoice)" 
                   class="action-btn primary"
                 >
                   ?? Marcar Pagada
@@ -398,6 +399,107 @@
         </div>
       </div>
     </div>
+
+    <!-- ? NUEVO: Modal de Pago (igual que InvoiceDetail) -->
+    <div v-if="showPaymentModal" class="modal-overlay" @click="closePaymentModal">
+      <div class="modal-content" @click.stop>
+        <h3>Registrar Pago - Factura #{{ selectedInvoice?.invoiceNumber || selectedInvoice?.id }}</h3>
+        <p>Monto total: <strong>${{ selectedInvoice?.totalAmount || selectedInvoice?.amount }}</strong></p>
+        
+        <div class="payment-options">
+          <div class="form-group">
+            <label for="selectedGateway">M¨¦todo de Pago *</label>
+            <select id="selectedGateway" v-model="paymentForm.gatewayId" @change="onGatewayChange" required>
+              <option v-for="gateway in paymentGateways" :key="gateway.id" :value="gateway.id">
+                {{ gateway.name }} ({{ formatGatewayType(gateway.gatewayType) }})
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="paymentAmount">Monto *</label>
+            <input
+              type="number"
+              id="paymentAmount"
+              v-model="paymentForm.amount"
+              :max="selectedInvoice?.totalAmount || selectedInvoice?.amount"
+              step="0.01"
+              required
+            />
+            <small>M¨¢ximo: ${{ selectedInvoice?.totalAmount || selectedInvoice?.amount }}</small>
+          </div>
+
+          <div class="form-group">
+            <label for="paymentRef">Referencia de Pago</label>
+            <input
+              type="text"
+              id="paymentRef"
+              v-model="paymentForm.reference"
+              placeholder="Ej: TRANSFER-123456"
+            />
+          </div>
+
+          <!-- ? Campo de comprobante (solo transferencias) -->
+          <div v-if="selectedGatewayType === 'transfer'" class="form-group full-width">
+            <label for="receiptFile">
+              Comprobante de Transferencia 
+              <span class="optional">(Recomendado)</span>
+            </label>
+            <input
+              type="file"
+              id="receiptFile"
+              @change="handleReceiptUpload"
+              accept=".jpg,.jpeg,.png,.pdf"
+            />
+            <small>Formatos: JPG, PNG, PDF (m¨¢x. 5MB)</small>
+            
+            <div v-if="receiptFile" class="file-selected">
+              <span class="file-icon">??</span>
+              <span class="file-name">{{ receiptFile.name }}</span>
+              <span class="file-size">({{ formatFileSize(receiptFile.size) }})</span>
+            </div>
+          </div>
+          
+          <!-- ? Info boxes -->
+          <div class="gateway-info">
+            <div v-if="selectedGatewayType === 'cash'" class="info-box info-success">
+              <strong>?? Pago en Efectivo</strong>
+              <p>El pago ser¨¢ aprobado autom¨¢ticamente al registrarse.</p>
+            </div>
+            
+            <div v-else-if="selectedGatewayType === 'transfer'" class="info-box info-warning">
+              <strong>?? Transferencia Bancaria</strong>
+              <p>El pago entrar¨¢ en estado PENDIENTE y requerir¨¢ aprobaci¨®n manual.</p>
+              <p>Se recomienda adjuntar el comprobante para agilizar la revisi¨®n.</p>
+            </div>
+            
+            <div v-else-if="selectedGatewayType === 'mercadopago' || selectedGatewayType === 'paypal'" class="info-box info-primary">
+              <strong>?? Pasarela de Pago</strong>
+              <p>El pago ser¨¢ confirmado autom¨¢ticamente cuando la pasarela notifique el resultado.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="paymentNotes">Notas</label>
+          <textarea
+            id="paymentNotes"
+            v-model="paymentForm.notes"
+            rows="3"
+            placeholder="Notas sobre el pago..."
+          ></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button @click="closePaymentModal" class="btn-cancel">
+            Cancelar
+          </button>
+          <button @click="submitPayment" class="btn-confirm" :disabled="isProcessing">
+            {{ isProcessing ? 'Procesando...' : 'Registrar Pago' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -406,9 +508,6 @@ import ClientService from '../../services/client.service';
 import BillingService from '../../services/billing.service';
 import InvoiceService from '../../services/invoice.service';
 import PaymentService from '../../services/payment.service';
-// Agregar estos imports que faltan si los necesitamos
-// import SubscriptionService from '../../services/subscription.service';
-// import PDFGeneratorService from '../../services/pdf.generator.service';
 
 export default {
   name: 'BillingTab',
@@ -429,11 +528,27 @@ export default {
       loadingPayments: false,
       loadingInvoices: false,
       loadingStats: false,
+      isProcessing: false, // ? NUEVO
       
-      // Datos principales - AGREGAR recentPayments que faltaba
-      recentPayments: [], // ¡û ESTO FALTABA
+      // Datos principales
+      recentPayments: [],
       clientInvoices: [],
       billingStats: {},
+      
+      // ? NUEVO: Pasarelas de pago
+      paymentGateways: [],
+      selectedGatewayType: null,
+      
+      // ? NUEVO: Modal de pago
+      showPaymentModal: false,
+      selectedInvoice: null,
+      paymentForm: {
+        gatewayId: null,
+        amount: null,
+        reference: '',
+        notes: ''
+      },
+      receiptFile: null,
       
       // Configuraciones
       statsFilter: 'monthly',
@@ -450,12 +565,13 @@ export default {
     }
   },
   
-  mounted() {
+  async mounted() {
     console.log('?? BillingTab mounted');
     console.log('?? ClientId recibido:', this.clientId);
     console.log('?? BillingInfo recibido:', this.billingInfo);
     
     if (this.clientId) {
+      await this.loadPaymentGateways(); // ? NUEVO: Cargar primero las pasarelas
       this.loadAllBillingData();
     } else {
       console.error('? No se recibi¨® clientId v¨¢lido');
@@ -464,50 +580,72 @@ export default {
   
   methods: {
     // ===============================
+    // ? NUEVO: Cargar pasarelas de pago
+    // ===============================
+    async loadPaymentGateways() {
+      try {
+        console.log('?? Cargando pasarelas de pago...');
+        const response = await PaymentService.getAllPaymentGateways({ active: true });
+        this.paymentGateways = response.data.data || response.data || [];
+        
+        if (!this.paymentGateways || this.paymentGateways.length === 0) {
+          console.log('?? No hay gateways en BD, usando valores por defecto');
+          this.paymentGateways = [
+            { id: 1, name: 'Efectivo', gatewayType: 'cash' },
+            { id: 2, name: 'Transferencia Bancaria', gatewayType: 'transfer' },
+            { id: 3, name: 'Mercado Pago', gatewayType: 'mercadopago' },
+            { id: 4, name: 'PayPal', gatewayType: 'paypal' }
+          ];
+        }
+        
+        console.log('? Gateways cargados:', this.paymentGateways);
+      } catch (error) {
+        console.error('? Error cargando gateways:', error);
+        this.paymentGateways = [
+          { id: 1, name: 'Efectivo', gatewayType: 'cash' },
+          { id: 2, name: 'Transferencia Bancaria', gatewayType: 'transfer' }
+        ];
+      }
+    },
+
+    // ===============================
     // CARGA DE DATOS
     // ===============================
     async loadAllBillingData() {
       await Promise.all([
-        this.loadRecentPayments(), // ¡û Agregarlo de vuelta
+        this.loadRecentPayments(),
         this.loadClientInvoices(),
         this.loadStats()
       ]);
     },
 
-async loadRecentPayments() {
-  this.loadingPayments = true;
-  try {
-    console.log('?? Iniciando carga de pagos para clientId:', this.clientId);
-    console.log('?? PaymentService existe:', !!PaymentService);
-    console.log('?? M¨¦todo getAllPayments existe:', typeof PaymentService.getAllPayments);
-    
-    const response = await PaymentService.getAllPayments({ 
-      clientId: this.clientId, 
-      limit: 5 
-    });
-    
-    console.log('?? Respuesta RAW de pagos:', response);
-    console.log('?? Response.data:', response.data);
-    
-    const paymentsData = this.extractApiData(response);
-    console.log('?? Datos extra¨ªdos:', paymentsData);
-    
-    this.recentPayments = paymentsData.payments || [];
-    
-    console.log('? Pagos recientes finales:', this.recentPayments.length);
-    console.log('?? Array completo de pagos:', this.recentPayments);
-    
-  } catch (error) {
-    console.error('? ERROR completo cargando pagos:', error);
-    console.error('? Error response:', error.response?.data);
-    console.error('? Error status:', error.response?.status);
-    console.error('? Error message:', error.message);
-    this.recentPayments = [];
-  } finally {
-    this.loadingPayments = false;
-  }
-},
-
+    async loadRecentPayments() {
+      this.loadingPayments = true;
+      try {
+        console.log('?? Iniciando carga de pagos para clientId:', this.clientId);
+        
+        const response = await PaymentService.getAllPayments({ 
+          clientId: this.clientId, 
+          limit: 5 
+        });
+        
+        console.log('?? Respuesta RAW de pagos:', response);
+        
+        const paymentsData = this.extractApiData(response);
+        console.log('?? Datos extra¨ªdos:', paymentsData);
+        
+        this.recentPayments = paymentsData.payments || [];
+        
+        console.log('? Pagos recientes finales:', this.recentPayments.length);
+        
+      } catch (error) {
+        console.error('? ERROR completo cargando pagos:', error);
+        console.error('? Error response:', error.response?.data);
+        this.recentPayments = [];
+      } finally {
+        this.loadingPayments = false;
+      }
+    },
 
     async loadClientInvoices() {
       this.loadingInvoices = true;
@@ -535,12 +673,11 @@ async loadRecentPayments() {
       }
     },
 
-async loadStats() {
+    async loadStats() {
       this.loadingStats = true;
       try {
-        console.log('Calculando estad¨ªsticas b¨¢sicas');
+        console.log('?? Calculando estad¨ªsticas b¨¢sicas');
         
-        // Cargar todos los pagos para estad¨ªsticas m¨¢s precisas
         let allPayments = [];
         try {
           const allPaymentsResponse = await PaymentService.getAllPayments({
@@ -550,22 +687,22 @@ async loadStats() {
           const allPaymentsData = this.extractApiData(allPaymentsResponse);
           allPayments = allPaymentsData.payments || [];
         } catch (error) {
-          console.warn('No se pudieron cargar todos los pagos para estad¨ªsticas:', error);
+          console.warn('?? No se pudieron cargar todos los pagos para estad¨ªsticas:', error);
         }
         
         this.billingStats = {
           totalPaid: this.calculateTotalPaidFromPayments(allPayments),
           totalPayments: allPayments.length,
-          totalInvoices: this.clientInvoices.length,
+totalInvoices: this.clientInvoices.length,
           pendingInvoices: this.clientInvoices.filter(inv => inv.status === 'pending').length,
           averageDaysLate: this.calculateAverageDaysLate(),
           paymentScore: this.calculatePaymentScore()
         };
         
-        console.log('Estad¨ªsticas calculadas:', this.billingStats);
+        console.log('? Estad¨ªsticas calculadas:', this.billingStats);
         
       } catch (error) {
-        console.error('Error cargando estad¨ªsticas:', error);
+        console.error('? Error cargando estad¨ªsticas:', error);
         this.billingStats = {
           totalPaid: '0.00',
           totalPayments: 0,
@@ -595,17 +732,6 @@ async loadStats() {
       return Math.round(totalDaysLate / overdueInvoices.length);
     },
 
-   
-
-
-
-
-    // M¨¦todos auxiliares para c¨¢lculos
-    calculateTotalPaid() {
-      const paidInvoices = this.clientInvoices.filter(inv => inv.status === 'paid');
-      return paidInvoices.reduce((total, inv) => total + parseFloat(inv.totalAmount || inv.amount || 0), 0).toFixed(2);
-    },
-
     calculatePaymentScore() {
       if (this.clientInvoices.length === 0) return 100;
       
@@ -616,7 +742,6 @@ async loadStats() {
       return Math.round((paidOnTime / this.clientInvoices.length) * 100);
     },
 
-    // M¨¦todo auxiliar para extraer datos de respuestas API (igual que ServicesTab)
     extractApiData(response) {
       if (!response || !response.data) {
         console.warn('?? Respuesta vac¨ªa o inv¨¢lida:', response);
@@ -674,7 +799,7 @@ async loadStats() {
         this.$emit('show-notification', 'Generando recibo...', 'info');
         // TODO: Implementar descarga de recibo
       } catch (error) {
-        console.error('Error generando recibo:', error);
+        console.error('? Error generando recibo:', error);
         this.$emit('show-notification', 'Error generando recibo', 'error');
       }
     },
@@ -683,11 +808,9 @@ async loadStats() {
       if (!confirm('?Confirmar este pago?')) return;
       
       try {
-        // TODO: Implementar cuando tengamos endpoint de confirmaci¨®n
         this.$emit('show-notification', 'Funcionalidad en desarrollo', 'warning');
-        
       } catch (error) {
-        console.error('Error confirmando pago:', error);
+        console.error('? Error confirmando pago:', error);
         this.$emit('show-notification', 'Error confirmando pago', 'error');
       }
     },
@@ -750,42 +873,168 @@ async loadStats() {
         link.remove();
         
       } catch (error) {
-        console.error('Error descargando factura:', error);
+        console.error('? Error descargando factura:', error);
         this.$emit('show-notification', 'Error descargando factura', 'error');
       }
     },
 
-    async markAsPaid(invoice) {
-      if (!confirm('?Marcar esta factura como pagada?')) return;
+    // ? NUEVO: Abrir modal de pago
+    openPaymentModal(invoice) {
+      this.selectedInvoice = invoice;
+      
+      // Seleccionar gateway por defecto (efectivo)
+      const cashGateway = this.paymentGateways.find(g => g.gatewayType === 'cash');
+      if (cashGateway) {
+        this.paymentForm.gatewayId = cashGateway.id;
+        this.selectedGatewayType = 'cash';
+      }
+      
+      this.paymentForm.amount = invoice.totalAmount || invoice.amount;
+      this.paymentForm.reference = '';
+      this.paymentForm.notes = '';
+      this.receiptFile = null;
+      
+      this.showPaymentModal = true;
+    },
+
+    // ? NUEVO: Cerrar modal de pago
+    closePaymentModal() {
+      this.showPaymentModal = false;
+      this.selectedInvoice = null;
+      this.paymentForm = {
+        gatewayId: null,
+        amount: null,
+        reference: '',
+        notes: ''
+      };
+      this.receiptFile = null;
+      this.selectedGatewayType = null;
+      this.isProcessing = false;
+    },
+
+    // ? NUEVO: Cambio de gateway
+    onGatewayChange() {
+      const selectedGateway = this.paymentGateways.find(
+        g => g.id === this.paymentForm.gatewayId
+      );
+      this.selectedGatewayType = selectedGateway?.gatewayType || null;
+      console.log('?? Gateway seleccionado:', selectedGateway?.name, '(' + this.selectedGatewayType + ')');
+    },
+
+    // ? NUEVO: Manejar subida de comprobante
+    handleReceiptUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+          alert('El archivo es demasiado grande. M¨¢ximo 5MB.');
+          event.target.value = '';
+          this.receiptFile = null;
+          return;
+        }
+        this.receiptFile = file;
+        console.log('?? Comprobante seleccionado:', file.name);
+      }
+    },
+
+    // ? NUEVO: Enviar pago (l¨®gica diferenciada)
+    async submitPayment() {
+      if (this.isProcessing) return;
+      
+      this.isProcessing = true;
       
       try {
+        const selectedGateway = this.paymentGateways.find(
+          g => g.id === this.paymentForm.gatewayId
+        );
+        
+        // ? Obtener usuario actual
+        const currentUser = this.$store?.state?.auth?.user || 
+                           JSON.parse(localStorage.getItem('user') || '{}');
+        const submittedBy = currentUser.id || 1;
+        
+        console.log('?? Usuario actual:', currentUser);
+        console.log('?? ID del usuario que registra:', submittedBy);
+        
         const paymentData = {
-          invoiceId: invoice.id,
-          clientId: this.clientId,
-          amount: invoice.totalAmount || invoice.amount,
-          paymentMethod: 'cash',
-          status: 'completed',
-          paymentDate: new Date().toISOString()
+          gatewayId: this.paymentForm.gatewayId,
+          paymentMethod: this.getPaymentMethodFromGateway(selectedGateway),
+          amount: parseFloat(this.paymentForm.amount),
+          notes: this.paymentForm.notes || 'Pago registrado desde BillingTab',
+          paymentDate: new Date().toISOString().split('T')[0],
+          paymentReference: this.paymentForm.reference || 
+                           `${selectedGateway?.gatewayType?.toUpperCase()}-${Date.now()}`,
+          submittedBy
         };
         
-        await InvoiceService.markAsPaid(invoice.id, paymentData);
+        console.log('?? Datos de pago a enviar:', paymentData);
+        console.log('?? Comprobante adjunto:', this.receiptFile?.name || 'Ninguno');
         
-        await this.loadClientInvoices();
+        // ? L¨®gica diferenciada por tipo de gateway
+        if (selectedGateway.gatewayType === 'cash') {
+          // ? EFECTIVO: Auto-aprobado
+          await InvoiceService.markAsPaid(this.selectedInvoice.id, paymentData);
+          
+          this.$emit('show-notification', 
+            '? Pago en efectivo registrado y aprobado autom¨¢ticamente.', 
+            'success'
+          );
+          
+        } else if (selectedGateway.gatewayType === 'transfer') {
+          // ? TRANSFERENCIA: Pendiente de aprobaci¨®n
+          
+          if (!this.receiptFile) {
+            const confirmWithout = confirm(
+              '?? No ha adjuntado comprobante de transferencia.\n' +
+              'Se recomienda adjuntar el comprobante para agilizar la aprobaci¨®n.\n\n' +
+              '?Desea continuar de todas formas?'
+            );
+            if (!confirmWithout) {
+              this.isProcessing = false;
+              return;
+            }
+          }
+          
+          await PaymentService.submitManualPayment(paymentData, this.receiptFile);
+          
+          this.$emit('show-notification', 
+            '? Pago por transferencia registrado.\nPendiente de aprobaci¨®n por el administrador.', 
+            'info'
+          );
+          
+        } else {
+          // ? PASARELAS: Pendiente hasta webhook
+          await InvoiceService.markAsPaid(this.selectedInvoice.id, paymentData);
+          
+          this.$emit('show-notification', 
+            '? Pago registrado en la pasarela.\nEsperando confirmaci¨®n autom¨¢tica.', 
+            'info'
+          );
+        }
         
-        this.$emit('show-notification', 'Factura marcada como pagada', 'success');
+        this.closePaymentModal();
+        
+        // ? Recargar datos
+        await Promise.all([
+          this.loadClientInvoices(),
+          this.loadRecentPayments(),
+          this.loadStats()
+        ]);
         
       } catch (error) {
-        console.error('Error marcando factura como pagada:', error);
-        this.$emit('show-notification', 'Error actualizando factura', 'error');
+        console.error('? Error registrando pago:', error);
+        const errorMsg = error.response?.data?.message || 
+                         error.response?.data?.error ||
+                         'Error registrando el pago.';
+        this.$emit('show-notification', `? ${errorMsg}`, 'error');
+        this.isProcessing = false;
       }
     },
 
     async sendInvoiceByEmail(invoice) {
       try {
         this.$emit('show-notification', 'Funcionalidad de env¨ªo por email en desarrollo', 'info');
-        
       } catch (error) {
-        console.error('Error enviando factura:', error);
+        console.error('? Error enviando factura:', error);
         this.$emit('show-notification', 'Error enviando factura', 'error');
       }
     },
@@ -795,7 +1044,47 @@ async loadStats() {
     },
 
     // ===============================
-    // M¨¦TODOS DE FORMATO (mismos que ServicesTab)
+    // ? HELPERS
+    // ===============================
+    getPaymentMethodFromGateway(gateway) {
+      if (!gateway) return 'cash';
+      
+      const methodMap = {
+        'cash': 'cash',
+        'transfer': 'transfer',
+        'card': 'card',
+        'oxxo': 'oxxo',
+        'spei': 'spei',
+        'paypal': 'online',
+        'mercadopago': 'online'
+      };
+      
+      return methodMap[gateway.gatewayType] || 'cash';
+    },
+
+    formatGatewayType(gatewayType) {
+      const types = {
+        'cash': 'Efectivo',
+        'transfer': 'Transferencia',
+        'card': 'Tarjeta',
+        'oxxo': 'OXXO',
+        'spei': 'SPEI',
+        'paypal': 'PayPal',
+        'mercadopago': 'Mercado Pago'
+      };
+      return types[gatewayType] || gatewayType;
+    },
+
+    formatFileSize(bytes) {
+      if (!bytes || bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    },
+
+    // ===============================
+    // M¨¦TODOS DE FORMATO
     // ===============================
     formatDate(dateString) {
       if (!dateString) return null;
@@ -840,7 +1129,8 @@ async loadStats() {
         'completed': 'Completado',
         'pending': 'Pendiente',
         'failed': 'Fallido',
-        'cancelled': 'Cancelado'
+        'cancelled': 'Cancelado',
+        'processing': 'Procesando'
       };
       return statusMap[status] || status;
     },
@@ -850,7 +1140,8 @@ async loadStats() {
         'pending': 'Pendiente',
         'paid': 'Pagada',
         'overdue': 'Vencida',
-        'cancelled': 'Cancelada'
+        'cancelled': 'Cancelada',
+        'partial': 'Pago Parcial'
       };
       return statusMap[status] || status;
     },
@@ -918,11 +1209,8 @@ async loadStats() {
 };
 </script>
 
-
-
 <style scoped>
-/* CSS para BillingTab con adaptaciones espec¨ªficas */
-
+/* ===== BASE STYLES ===== */
 .billing-tab {
   max-width: 1400px;
   margin: 0 auto;
@@ -1028,6 +1316,13 @@ async loadStats() {
   box-shadow: 0 4px 8px rgba(5, 150, 105, 0.3);
 }
 
+.btn-primary:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .btn-secondary {
   background: #f1f5f9;
   color: #475569;
@@ -1037,6 +1332,16 @@ async loadStats() {
 .btn-secondary:hover {
   background: #e2e8f0;
   border-color: #cbd5e1;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ===== ESTADOS DE CARGA ===== */
@@ -1085,6 +1390,14 @@ async loadStats() {
   background: #f8fafc;
   border-radius: 8px;
   border-left: 4px solid #059669;
+  transition: all 0.2s ease;
+}
+
+.summary-item:hover {
+  background: #f0fdf4;
+  border-left-color: #047857;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15);
 }
 
 .summary-label {
@@ -1118,6 +1431,18 @@ async loadStats() {
   color: #ef4444;
 }
 
+.summary-value.status-cancelled {
+  color: #94a3b8;
+}
+
+.summary-value.status-pending {
+  color: #f59e0b;
+}
+
+.summary-value.status-grace_period {
+  color: #3b82f6;
+}
+
 .summary-value.overdue {
   color: #ef4444;
   font-weight: 700;
@@ -1132,6 +1457,7 @@ async loadStats() {
   font-size: 12px;
   color: #64748b;
   font-weight: 400;
+  margin-left: 4px;
 }
 
 .billing-actions {
@@ -1158,6 +1484,7 @@ async loadStats() {
 .payment-card:hover {
   border-color: #059669;
   box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+  transform: translateY(-2px);
 }
 
 .payment-header {
@@ -1178,6 +1505,7 @@ async loadStats() {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .payment-date {
@@ -1189,8 +1517,9 @@ async loadStats() {
   padding: 3px 8px;
   border-radius: 12px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .payment-status.status-completed {
@@ -1203,9 +1532,24 @@ async loadStats() {
   color: #92400e;
 }
 
+.payment-status.status-processing {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
 .payment-status.status-failed {
   background: #fee2e2;
   color: #991b1b;
+}
+
+.payment-status.status-cancelled {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.payment-method {
+  display: flex;
+  align-items: center;
 }
 
 .method-badge {
@@ -1218,6 +1562,7 @@ async loadStats() {
   font-size: 12px;
   color: #475569;
   border: 1px solid #e2e8f0;
+  font-weight: 500;
 }
 
 .payment-details {
@@ -1234,6 +1579,7 @@ async loadStats() {
   font-weight: 500;
   color: #64748b;
   width: 100px;
+  flex-shrink: 0;
 }
 
 .detail-value {
@@ -1241,7 +1587,7 @@ async loadStats() {
 }
 
 .detail-value.reference {
-  font-family: monospace;
+  font-family: 'Courier New', monospace;
   background: #f1f5f9;
   padding: 2px 6px;
   border-radius: 4px;
@@ -1272,6 +1618,7 @@ async loadStats() {
 .invoice-card:hover {
   border-color: #059669;
   box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+  transform: translateY(-2px);
 }
 
 .invoice-header {
@@ -1292,6 +1639,7 @@ async loadStats() {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .invoice-period {
@@ -1303,8 +1651,9 @@ async loadStats() {
   padding: 3px 8px;
   border-radius: 12px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .invoice-status.status-pending {
@@ -1327,6 +1676,11 @@ async loadStats() {
   color: #64748b;
 }
 
+.invoice-status.status-partial {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
 .invoice-amount {
   text-align: right;
 }
@@ -1339,19 +1693,21 @@ async loadStats() {
   margin-bottom: 4px;
 }
 
-.due-date {
+.invoice-amount .due-date {
   font-size: 12px;
   color: #64748b;
 }
 
 .invoice-details {
   margin-bottom: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
 }
 
 .detail-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   font-size: 14px;
 }
 
@@ -1403,6 +1759,7 @@ async loadStats() {
   border-color: #059669;
   background: #f0fdf4;
   color: #059669;
+  transform: translateY(-1px);
 }
 
 .action-btn.primary {
@@ -1413,6 +1770,8 @@ async loadStats() {
 
 .action-btn.primary:hover {
   background: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
 }
 
 /* ===== ESTAD¨ªSTICAS ===== */
@@ -1430,6 +1789,14 @@ async loadStats() {
   background: #f8fafc;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.stat-item:hover {
+  background: #f0fdf4;
+  border-color: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15);
 }
 
 .stat-icon {
@@ -1443,6 +1810,7 @@ async loadStats() {
   color: white;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(5, 150, 105, 0.3);
+  flex-shrink: 0;
 }
 
 .stat-info {
@@ -1471,6 +1839,11 @@ async loadStats() {
   color: #475569;
   font-size: 14px;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-select:hover {
+  border-color: #cbd5e1;
 }
 
 .filter-select:focus {
@@ -1506,6 +1879,252 @@ async loadStats() {
   line-height: 1.5;
 }
 
+/* ===== MODAL DE PAGO ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modal-content h3 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.modal-content p {
+  margin: 0 0 20px 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.modal-content p strong {
+  color: #059669;
+  font-weight: 700;
+}
+
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.form-group .optional {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: normal;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.form-group input:hover,
+.form-group select:hover,
+.form-group textarea:hover {
+  border-color: #cbd5e1;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+}
+
+.form-group small {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.file-selected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.file-icon {
+  font-size: 18px;
+}
+
+.file-name {
+  flex: 1;
+  font-weight: 500;
+  color: #0c4a6e;
+  word-break: break-all;
+}
+
+.file-size {
+  color: #64748b;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  white-space: nowrap;
+}
+
+.gateway-info {
+  margin-top: 16px;
+}
+
+.info-box {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.info-box strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.info-box p {
+  margin: 4px 0;
+  color: #475569;
+}
+
+.info-success {
+  background: #f0fdf4;
+  border-left: 4px solid #22c55e;
+}
+
+.info-warning {
+  background: #fffbeb;
+  border-left: 4px solid #f59e0b;
+}
+
+.info-primary {
+  background: #eff6ff;
+  border-left: 4px solid #3b82f6;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-cancel:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.btn-confirm {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: white;
+}
+
+.btn-confirm:hover:not(:disabled) {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.btn-confirm:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ===== SCROLLBAR PERSONALIZADO ===== */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 /* ===== RESPONSIVO ===== */
 @media (max-width: 768px) {
   .billing-tab {
@@ -1516,6 +2135,15 @@ async loadStats() {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
+  }
+  
+  .section-actions {
+    flex-direction: column;
+  }
+  
+  .section-actions .btn {
+    width: 100%;
+    justify-content: center;
   }
   
   .summary-grid {
@@ -1533,9 +2161,45 @@ async loadStats() {
     gap: 12px;
   }
   
+  .payment-method {
+    width: 100%;
+  }
+  
+  .method-badge {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .invoice-amount {
+    text-align: left;
+    width: 100%;
+  }
+  
   .billing-actions,
   .payment-actions,
   .invoice-actions {
+    width: 100%;
+  }
+  
+  .billing-actions .btn,
+  .payment-actions .action-btn,
+  .invoice-actions .action-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .modal-content {
+    padding: 24px;
+    max-width: 95%;
+  }
+  
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+  
+  .btn-cancel,
+  .btn-confirm {
+    width: 100%;
     justify-content: center;
   }
 }
@@ -1553,5 +2217,78 @@ async loadStats() {
   .stat-item {
     padding: 16px;
   }
+  
+  .section-title h3 {
+    font-size: 16px;
+  }
+  
+  .payment-info h4 {
+    font-size: 18px;
+  }
+  
+  .invoice-amount .amount {
+    font-size: 16px;
+  }
+  
+  .stat-value {
+    font-size: 18px;
+  }
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-content {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.payment-card,
+.invoice-card {
+  animation: slideIn 0.3s ease-out;
+  animation-fill-mode: both;
+}
+
+.payment-card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.payment-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.payment-card:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.invoice-card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.invoice-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.invoice-card:nth-child(3) {
+  animation-delay: 0.15s;
 }
 </style>

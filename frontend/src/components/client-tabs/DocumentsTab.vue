@@ -1,3 +1,4 @@
+<!-- frontend/src/components/client/DocumentosTab.vue -->
 <template>
   <div class="documentos-tab">
     <div class="documentos-header">
@@ -44,8 +45,21 @@
       </div>
     </div>
 
+    <!-- Loading -->
+    <div v-if="loading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Cargando documentos...</p>
+    </div>
+
+    <!-- Error -->
+    <div v-if="error" class="error-container">
+      <div class="error-icon">⚠️</div>
+      <p>{{ error }}</p>
+      <button @click="loadDocuments" class="retry-btn">Reintentar</button>
+    </div>
+
     <!-- Lista de documentos -->
-    <div class="documents-content">
+    <div v-if="!loading && !error" class="documents-content">
       
       <!-- Documentos Subidos -->
       <div v-if="activeCategory === 'all' || activeCategory === 'uploaded'" class="document-section">
@@ -63,11 +77,7 @@
         </div>
 
         <div v-else class="documents-grid">
-          <div 
-            v-for="doc in uploadedDocs" 
-            :key="doc.id"
-            class="document-card uploaded"
-          >
+          <div v-for="doc in uploadedDocs" :key="doc.id" class="document-card uploaded">
             <div class="document-icon">
               {{ getFileIcon(doc.filename) }}
             </div>
@@ -84,13 +94,13 @@
             </div>
 
             <div class="document-actions">
-              <button @click="downloadDocument(doc.id)" class="action-btn download" title="Descargar">
+              <button @click="downloadUploadedDocument(doc.id)" class="action-btn download" title="Descargar">
                 ⬇️
               </button>
               <button @click="previewDocument(doc)" class="action-btn preview" title="Vista previa">
                 👁️
               </button>
-              <button @click="deleteDocument(doc.id)" class="action-btn delete" title="Eliminar">
+              <button @click="deleteUploadedDocument(doc.id)" class="action-btn delete" title="Eliminar">
                 🗑️
               </button>
             </div>
@@ -119,34 +129,39 @@
         </div>
 
         <div v-else class="documents-grid">
-          <div 
-            v-for="doc in generatedDocs" 
-            :key="doc.id"
-            class="document-card generated"
-          >
+          <div v-for="doc in generatedDocs" :key="doc.id" class="document-card generated">
             <div class="document-icon">
-              📋
+              {{ getTemplateIcon(doc.DocumentTemplate?.templateType) }}
             </div>
             
             <div class="document-info">
-              <div class="document-name">{{ doc.name }}</div>
+              <div class="document-name">{{ doc.DocumentTemplate?.name || 'Documento' }}</div>
               <div class="document-meta">
-                <span class="document-type">{{ doc.type }}</span>
+                <span class="document-type">{{ doc.DocumentTemplate?.category || 'general' }}</span>
                 <span class="document-date">{{ formatDate(doc.generatedAt) }}</span>
               </div>
               <div class="document-status">
                 <span :class="['status-badge', doc.status]">
                   {{ formatDocumentStatus(doc.status) }}
                 </span>
+                <span v-if="doc.signedAt" class="signed-badge">✍️ Firmado</span>
               </div>
             </div>
 
             <div class="document-actions">
-              <button @click="downloadGeneratedDocument(doc)" class="action-btn download" title="Descargar">
+              <button @click="downloadGeneratedDoc(doc.id)" class="action-btn download" title="Descargar">
                 ⬇️
               </button>
-              <button @click="regenerateDocument(doc)" class="action-btn regenerate" title="Regenerar">
-                🔄
+              <button 
+                v-if="doc.DocumentTemplate?.requiresSignature && !doc.signedAt" 
+                @click="openSignatureModal(doc)" 
+                class="action-btn sign" 
+                title="Firmar"
+              >
+                ✍️
+              </button>
+              <button @click="openEmailModal(doc)" class="action-btn email" title="Enviar por email">
+                📧
               </button>
               <button @click="viewDocumentDetails(doc)" class="action-btn details" title="Detalles">
                 ℹ️
@@ -156,7 +171,7 @@
         </div>
 
         <!-- Plantillas disponibles -->
-        <div class="document-templates">
+        <div v-if="availableTemplates.length > 0" class="document-templates">
           <h5>📄 Plantillas Disponibles</h5>
           <div class="templates-grid">
             <div 
@@ -208,6 +223,7 @@
                 <input 
                   type="file" 
                   id="docFile" 
+                  ref="fileInput"
                   @change="handleFileUpload" 
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   class="file-input"
@@ -295,7 +311,12 @@
           <div v-if="selectedTemplate" class="template-preview">
             <h4>Vista previa:</h4>
             <div class="preview-content">
-              <p>{{ selectedTemplate.preview }}</p>
+              <p>{{ selectedTemplate.description }}</p>
+              <p class="preview-note" v-if="selectedTemplate.availableVariables && selectedTemplate.availableVariables.length > 0">
+                <strong>Variables disponibles:</strong> 
+                {{ selectedTemplate.availableVariables.slice(0, 5).join(', ') }}
+                <span v-if="selectedTemplate.availableVariables.length > 5">...</span>
+              </p>
             </div>
           </div>
 
@@ -319,7 +340,7 @@
     <div v-if="showPreviewModal" class="modal-overlay" @click="closePreviewModal">
       <div class="modal-content preview-modal" @click.stop>
         <div class="modal-header">
-          <h3>Vista Previa: {{ previewDocument?.filename }}</h3>
+          <h3>Vista Previa: {{ currentPreviewDoc?.filename }}</h3>
           <button @click="closePreviewModal" class="close-btn">✕</button>
         </div>
         
@@ -334,7 +355,7 @@
             <div v-else class="preview-unavailable">
               <div class="unavailable-icon">❌</div>
               <p>Vista previa no disponible para este tipo de archivo</p>
-              <button @click="downloadDocument(previewDocument.id)" class="download-anyway-btn">
+              <button @click="downloadUploadedDocument(currentPreviewDoc.id)" class="download-anyway-btn">
                 Descargar para ver
               </button>
             </div>
@@ -343,12 +364,121 @@
       </div>
     </div>
 
+    <!-- Modal de Firma Digital -->
+    <div v-if="showSignatureModal" class="modal-overlay" @click="closeSignatureModal">
+      <div class="modal-content signature-modal" @click.stop>
+        <div class="modal-header">
+          <h3>Firma Digital del Documento</h3>
+          <button @click="closeSignatureModal" class="close-btn">✕</button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="signature-document-info">
+            <p><strong>Documento:</strong> {{ currentSignatureDoc?.DocumentTemplate?.name }}</p>
+            <p><strong>Cliente:</strong> {{ client.firstName }} {{ client.lastName }}</p>
+          </div>
+
+          <signature-canvas
+            v-if="client && client.firstName"
+            :signer-name="`${client.firstName} ${client.lastName}`"
+            signer-type="client"
+            @signature-saved="handleSignatureSaved"
+            @signature-cancelled="closeSignatureModal"
+            @signature-error="handleSignatureError"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Envío por Email -->
+    <div v-if="showEmailModal" class="modal-overlay" @click="closeEmailModal">
+      <div class="modal-content email-modal" @click.stop>
+        <div class="modal-header">
+          <h3>Enviar Documento por Email</h3>
+          <button @click="closeEmailModal" class="close-btn">✕</button>
+        </div>
+        
+        <div class="modal-body">
+          <form @submit.prevent="sendEmail">
+            <div class="form-group">
+              <label>Documento:</label>
+              <div class="document-preview-info">
+                {{ currentEmailDoc?.DocumentTemplate?.name || 'Documento' }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="emailRecipient">Destinatario: *</label>
+              <input 
+                type="email"
+                id="emailRecipient"
+                v-model="emailData.recipient"
+                class="form-control"
+                :placeholder="client.email || 'email@ejemplo.com'"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="emailSubject">Asunto: *</label>
+              <input 
+                type="text"
+                id="emailSubject"
+                v-model="emailData.subject"
+                class="form-control"
+                placeholder="Asunto del correo"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="emailMessage">Mensaje:</label>
+              <textarea 
+                id="emailMessage"
+                v-model="emailData.message"
+                class="form-control"
+                rows="6"
+                placeholder="Escribe tu mensaje aquí..."
+              ></textarea>
+              <small class="form-hint">
+                Variables disponibles: {{nombre_completo}}, {{documento}}
+              </small>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" v-model="emailData.includeAttachment" />
+                Adjuntar documento PDF
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" @click="closeEmailModal" class="btn-cancel">
+                Cancelar
+              </button>
+              <button type="submit" class="btn-send" :disabled="sendingEmail">
+                {{ sendingEmail ? 'Enviando...' : 'Enviar Email' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+import ClientDocumentService from '../../services/clientDocument.service';
+import DocumentTemplateService from '../../services/documentTemplate.service';
+import DocumentAdvancedService from '../../services/documentAdvanced.service';
+import SignatureCanvas from '../documents/SignatureCanvas.vue';
+
 export default {
   name: 'DocumentosTab',
+  components: {
+    SignatureCanvas
+  },
   props: {
     client: {
       type: Object,
@@ -358,79 +488,57 @@ export default {
   data() {
     return {
       activeCategory: 'all',
+      loading: false,
+      error: null,
+      
+      // Documentos
+      uploadedDocs: [],
+      generatedDocs: [],
+      availableTemplates: [],
+      
+      // Modales
       showUploadModal: false,
       showGenerateModal: false,
       showPreviewModal: false,
+      showSignatureModal: false,
+      showEmailModal: false,
+      
+      // Estados
       uploading: false,
       generating: false,
+      sendingEmail: false,
       uploadProgress: 0,
-      previewDocument: null,
+      
+      // Documentos actuales
+      currentPreviewDoc: null,
+      currentSignatureDoc: null,
+      currentEmailDoc: null,
       previewUrl: null,
       selectedTemplate: null,
 
-      categories: [
-        { id: 'all', label: 'Todos', icon: '📁', count: 0 },
-        { id: 'uploaded', label: 'Subidos', icon: '📎', count: 0 },
-        { id: 'generated', label: 'Generados', icon: '📋', count: 0 }
-      ],
-
+      // Formularios
       newDocument: {
         type: '',
         file: null,
         description: ''
       },
 
-      availableTemplates: [
-        {
-          id: 'contract',
-          name: 'Contrato de Servicio',
-          description: 'Contrato estándar de servicios de internet',
-          icon: '📋',
-          preview: 'Contrato de prestación de servicios de internet entre la empresa y el cliente...'
-        },
-        {
-          id: 'installation',
-          name: 'Hoja de Instalación',
-          description: 'Documento técnico de instalación',
-          icon: '🔧',
-          preview: 'Reporte técnico de instalación de equipo y configuración de servicio...'
-        },
-        {
-          id: 'receipt',
-          name: 'Recibo de Pago',
-          description: 'Comprobante de pago de servicios',
-          icon: '🧾',
-          preview: 'Comprobante de pago por servicios de internet correspondiente al período...'
-        },
-        {
-          id: 'report',
-          name: 'Reporte Técnico',
-          description: 'Informe de estado del servicio',
-          icon: '📊',
-          preview: 'Reporte técnico del estado del servicio y equipamiento del cliente...'
-        }
+      emailData: {
+        recipient: '',
+        subject: '',
+        message: '',
+        includeAttachment: true
+      },
+
+      categories: [
+        { id: 'all', label: 'Todos', icon: '📁', count: 0 },
+        { id: 'uploaded', label: 'Subidos', icon: '📎', count: 0 },
+        { id: 'generated', label: 'Generados', icon: '📋', count: 0 }
       ]
     };
   },
+  
   computed: {
-    uploadedDocs() {
-      return this.client.ClientDocuments || [];
-    },
-
-    generatedDocs() {
-      // Simular documentos generados por el sistema
-      return [
-        {
-          id: 'gen_1',
-          name: 'Contrato de Servicio - Juan Pérez.pdf',
-          type: 'Contrato',
-          status: 'generated',
-          generatedAt: '2024-01-15T10:30:00Z'
-        }
-        // Aquí irían los documentos reales generados
-      ];
-    },
-
     totalDocuments() {
       return this.uploadedDocs.length + this.generatedDocs.length;
     },
@@ -444,13 +552,62 @@ export default {
     },
 
     totalSize() {
-      // Calcular tamaño total (simulado)
-      return this.uploadedDocs.length * 1024 * 1024 * 2; // 2MB promedio por doc
+      // Estimación simple
+      return this.uploadedDocs.length * 1024 * 1024 * 2;
     }
   },
+
+  mounted() {
+    if (this.client && this.client.id) {
+      this.loadDocuments();
+      this.loadTemplates();
+    }
+  },
+
   methods: {
     // ===============================
-    // GESTIÓN DE ARCHIVOS
+    // CARGA DE DATOS
+    // ===============================
+
+    async loadDocuments() {
+      if (!this.client || !this.client.id) {
+        console.warn('Cliente no disponible');
+        return;
+      }
+
+      this.loading = true;
+      this.error = null;
+
+      try {
+        // Cargar documentos subidos
+        const uploadedResponse = await ClientDocumentService.getClientDocuments(this.client.id);
+        this.uploadedDocs = uploadedResponse.data || [];
+
+        // Cargar documentos generados
+        const generatedResponse = await DocumentTemplateService.getDocumentHistory(this.client.id);
+        this.generatedDocs = generatedResponse.data || [];
+
+        this.updateCategoryCounts();
+
+      } catch (error) {
+        console.error('Error cargando documentos:', error);
+        this.error = 'Error al cargar los documentos. Por favor, intenta de nuevo.';
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async loadTemplates() {
+      try {
+        const response = await DocumentTemplateService.getActiveTemplates();
+        this.availableTemplates = response.data || [];
+      } catch (error) {
+        console.error('Error cargando plantillas:', error);
+      }
+    },
+
+    // ===============================
+    // SUBIR DOCUMENTOS
     // ===============================
 
     handleFileUpload(event) {
@@ -469,13 +626,13 @@ export default {
     },
 
     validateAndSetFile(file) {
-      // Validar tamaño (10MB máximo)
+      // Validar tamaño (10MB)
       if (file.size > 10 * 1024 * 1024) {
         alert('El archivo es demasiado grande. Máximo 10MB permitido.');
         return;
       }
 
-      // Validar tipo de archivo
+      // Validar tipo
       const allowedTypes = [
         'application/pdf',
         'image/jpeg',
@@ -495,6 +652,9 @@ export default {
     removeFile() {
       this.newDocument.file = null;
       this.uploadProgress = 0;
+      if (this.$refs.fileInput) {
+        this.$refs.fileInput.value = '';
+      }
     },
 
     async uploadDocument() {
@@ -513,61 +673,91 @@ export default {
           formData.append('description', this.newDocument.description);
         }
 
-        // Simular progreso de subida
+        // Simular progreso
         const progressInterval = setInterval(() => {
           if (this.uploadProgress < 90) {
             this.uploadProgress += 10;
           }
         }, 200);
 
-        // Llamar al método del componente padre
-        await this.$emit('upload-document', formData);
+        await ClientDocumentService.uploadDocument(this.client.id, formData);
         
         clearInterval(progressInterval);
         this.uploadProgress = 100;
 
         setTimeout(() => {
           this.closeUploadModal();
-          this.updateCategoryCounts();
+          this.loadDocuments(); // Recargar documentos
         }, 500);
 
       } catch (error) {
         console.error('Error subiendo documento:', error);
-        alert('Error subiendo documento');
+        alert('Error subiendo documento: ' + (error.response?.data?.message || error.message));
       } finally {
         this.uploading = false;
       }
     },
 
-    async downloadDocument(id) {
+    // ===============================
+    // DESCARGAR/ELIMINAR SUBIDOS
+    // ===============================
+
+    async downloadUploadedDocument(documentId) {
       try {
-        await this.$emit('download-document', id);
+        const response = await ClientDocumentService.downloadDocument(documentId);
+        
+        // Crear enlace para descargar
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        
+        // Obtener nombre del archivo
+        const contentDisposition = response.headers['content-disposition'];
+        let filename = 'documento.pdf';
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch && filenameMatch.length === 2) {
+            filename = filenameMatch[1];
+          }
+        }
+        
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        
       } catch (error) {
         console.error('Error descargando documento:', error);
-        alert('Error descargando documento');
+        alert('Error al descargar el documento');
       }
     },
 
-    async deleteDocument(id) {
+    async deleteUploadedDocument(documentId) {
       if (!confirm('¿Está seguro que desea eliminar este documento?')) {
         return;
       }
 
       try {
-        await this.$emit('delete-document', id);
-        this.updateCategoryCounts();
+        await ClientDocumentService.deleteDocument(documentId);
+        this.loadDocuments(); // Recargar documentos
       } catch (error) {
         console.error('Error eliminando documento:', error);
-        alert('Error eliminando documento');
+        alert('Error al eliminar el documento');
       }
     },
 
     // ===============================
-    // GENERACIÓN DE DOCUMENTOS
+    // GENERAR DOCUMENTOS
     // ===============================
 
     selectTemplate(template) {
       this.selectedTemplate = template;
+    },
+
+    generateFromTemplate(template) {
+      this.selectedTemplate = template;
+      this.showGenerateModal = true;
     },
 
     async generateDocument() {
@@ -576,61 +766,170 @@ export default {
       this.generating = true;
 
       try {
-        await this.$emit('generate-document', this.selectedTemplate.id);
+        await DocumentTemplateService.generateDocument(
+          this.selectedTemplate.id,
+          this.client.id,
+          { saveToDocuments: true }
+        );
+        
         this.closeGenerateModal();
-        this.updateCategoryCounts();
+        this.loadDocuments(); // Recargar documentos
+        
+        alert('Documento generado exitosamente');
+        
       } catch (error) {
         console.error('Error generando documento:', error);
-        alert('Error generando documento');
+        alert('Error al generar el documento: ' + (error.response?.data?.message || error.message));
       } finally {
         this.generating = false;
       }
     },
 
-    generateFromTemplate(template) {
-      this.selectedTemplate = template;
-      this.showGenerateModal = true;
+    // ===============================
+    // DESCARGAR DOCUMENTOS GENERADOS
+    // ===============================
+
+    async downloadGeneratedDoc(historyId) {
+      try {
+        const user = JSON.parse(localStorage.getItem('user'));
+        const headers = user && user.accessToken 
+          ? { 'x-access-token': user.accessToken }
+          : {};
+
+        const response = await axios.get(
+          `http://localhost:3000/api/documents/generated/${historyId}/download`,
+          {
+            headers,
+            responseType: 'blob'
+          }
+        );
+        
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        
+        // Obtener nombre del archivo
+        const contentDisposition = response.headers['content-disposition'];
+        let filename = `documento_${historyId}.pdf`;
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch && filenameMatch.length === 2) {
+            filename = filenameMatch[1];
+          }
+        }
+        
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        
+      } catch (error) {
+        console.error('Error descargando documento generado:', error);
+        alert('Error al descargar el documento');
+      }
     },
 
-    async regenerateDocument(doc) {
-      if (!confirm('¿Regenerar este documento? Se sobrescribirá la versión actual.')) {
+    // ===============================
+    // FIRMAS DIGITALES
+    // ===============================
+
+    openSignatureModal(doc) {
+      this.currentSignatureDoc = doc;
+      this.showSignatureModal = true;
+    },
+
+    async handleSignatureSaved(signatureData) {
+      try {
+        await DocumentAdvancedService.createSignature({
+          generatedDocumentId: this.currentSignatureDoc.id,
+          signatureData: signatureData.signatureData,
+          signerName: signatureData.signerName,
+          signerType: signatureData.signerType,
+          signedAt: signatureData.signedAt
+        });
+        
+        this.closeSignatureModal();
+        this.loadDocuments(); // Recargar para mostrar firma
+        alert('Firma guardada exitosamente');
+        
+      } catch (error) {
+        console.error('Error guardando firma:', error);
+        alert('Error al guardar la firma');
+      }
+    },
+
+    handleSignatureError(error) {
+      console.error('Error en firma:', error);
+      alert('Error al procesar la firma');
+    },
+
+    // ===============================
+    // ENVÍO DE EMAILS
+    // ===============================
+
+    openEmailModal(doc) {
+      this.currentEmailDoc = doc;
+      this.emailData.recipient = this.client.email || '';
+      this.emailData.subject = `Documento: ${doc.DocumentTemplate?.name || 'Documento'}`;
+      this.emailData.message = `Estimado/a ${this.client.firstName} ${this.client.lastName},\n\nAdjunto encontrará el documento solicitado.\n\nSaludos cordiales.`;
+      this.showEmailModal = true;
+    },
+
+    async sendEmail() {
+      if (!this.emailData.recipient || !this.emailData.subject) {
+        alert('Complete los campos requeridos');
         return;
       }
 
+      this.sendingEmail = true;
+
       try {
-        await this.$emit('generate-document', doc.templateId || 'contract');
+        await DocumentAdvancedService.sendDocumentByEmail(
+          this.currentEmailDoc.id,
+          {
+            recipient: this.emailData.recipient,
+            subject: this.emailData.subject,
+            message: this.emailData.message,
+            includeAttachment: this.emailData.includeAttachment
+          }
+        );
+        
+        this.closeEmailModal();
+        alert('Email enviado correctamente');
+        
       } catch (error) {
-        console.error('Error regenerando documento:', error);
-        alert('Error regenerando documento');
+        console.error('Error enviando email:', error);
+        alert('Error al enviar el email: ' + (error.response?.data?.message || error.message));
+      } finally {
+        this.sendingEmail = false;
       }
-    },
-
-    downloadGeneratedDocument(doc) {
-      // Simular descarga de documento generado
-      console.log('Descargando documento generado:', doc.name);
-    },
-
-    viewDocumentDetails(doc) {
-      console.log('Ver detalles del documento:', doc);
     },
 
     // ===============================
     // VISTA PREVIA
     // ===============================
 
-   /* previewDocument(doc) {
-      this.previewDocument = doc;
+    previewDocument(doc) {
+      this.currentPreviewDoc = doc;
       
-      // Solo mostrar vista previa para PDFs e imágenes
       const extension = doc.filename.split('.').pop().toLowerCase();
       if (['pdf', 'jpg', 'jpeg', 'png'].includes(extension)) {
-        this.previewUrl = `/api/documents/${doc.id}/preview`;
+        // Crear URL para preview
+        this.previewUrl = `http://localhost:3000/api/documents/${doc.id}/preview`;
       } else {
         this.previewUrl = null;
       }
       
       this.showPreviewModal = true;
-    },*/
+    },
+
+    viewDocumentDetails(doc) {
+      // Mostrar modal con detalles completos del documento
+      console.log('Ver detalles:', doc);
+      // Aquí puedes crear un modal de detalles si lo deseas
+      alert(`Detalles del documento:\n\nID: ${doc.id}\nPlantilla: ${doc.DocumentTemplate?.name}\nGenerado: ${this.formatDate(doc.generatedAt)}\nEstado: ${this.formatDocumentStatus(doc.status)}`);
+    },
 
     // ===============================
     // UTILIDADES
@@ -645,14 +944,29 @@ export default {
         'jpg': '🖼️',
         'jpeg': '🖼️',
         'png': '🖼️',
+        'gif': '🖼️',
         'doc': '📘',
         'docx': '📘',
         'txt': '📝',
         'xls': '📗',
-        'xlsx': '📗'
+        'xlsx': '📗',
+        'zip': '📦',
+        'rar': '📦'
       };
       
       return iconMap[extension] || '📄';
+    },
+
+    getTemplateIcon(templateType) {
+      const iconMap = {
+        'contract': '📋',
+        'installation': '🔧',
+        'receipt': '🧾',
+        'report': '📊',
+        'invoice': '💰',
+        'letter': '✉️'
+      };
+      return iconMap[templateType] || '📄';
     },
 
     formatDate(dateString) {
@@ -682,19 +996,21 @@ export default {
       const statusMap = {
         'generated': 'Generado',
         'pending': 'Pendiente',
+        'signed': 'Firmado',
+        'sent': 'Enviado',
         'error': 'Error'
       };
       return statusMap[status] || status;
     },
 
     updateCategoryCounts() {
-      this.categories[0].count = this.totalDocuments; // Todos
-      this.categories[1].count = this.uploadedDocuments; // Subidos
-      this.categories[2].count = this.generatedDocuments; // Generados
+      this.categories[0].count = this.totalDocuments;
+      this.categories[1].count = this.uploadedDocuments;
+      this.categories[2].count = this.generatedDocuments;
     },
 
     // ===============================
-    // MODALES
+    // CERRAR MODALES
     // ===============================
 
     closeUploadModal() {
@@ -705,6 +1021,9 @@ export default {
         description: ''
       };
       this.uploadProgress = 0;
+      if (this.$refs.fileInput) {
+        this.$refs.fileInput.value = '';
+      }
     },
 
     closeGenerateModal() {
@@ -714,110 +1033,129 @@ export default {
 
     closePreviewModal() {
       this.showPreviewModal = false;
-      this.previewDocument = null;
+      this.currentPreviewDoc = null;
       this.previewUrl = null;
+    },
+
+    closeSignatureModal() {
+      this.showSignatureModal = false;
+      this.currentSignatureDoc = null;
+    },
+
+    closeEmailModal() {
+      this.showEmailModal = false;
+      this.currentEmailDoc = null;
+      this.emailData = {
+        recipient: '',
+        subject: '',
+        message: '',
+        includeAttachment: true
+      };
     }
   },
 
-  mounted() {
-    this.updateCategoryCounts();
-  },
-
   watch: {
-    'client.ClientDocuments': {
-      handler() {
-        this.updateCategoryCounts();
+    'client.id': {
+      handler(newVal) {
+        if (newVal) {
+          this.loadDocuments();
+          this.loadTemplates();
+        }
       },
-      deep: true
+      immediate: true
     }
   }
 };
 </script>
 
 <style scoped>
+/* ============================= */
+/* CONTENEDOR PRINCIPAL */
+/* ============================= */
+
 .documentos-tab {
-  padding: 24px;
+  padding: 20px;
   background: #f8f9fa;
-  min-height: 100vh;
+  min-height: 500px;
 }
 
-/* ===============================
-   HEADER
-   =============================== */
+/* ============================= */
+/* HEADER */
+/* ============================= */
 
 .documentos-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e0e0e0;
 }
 
 .header-info h3 {
-  margin: 0 0 4px 0;
+  margin: 0;
   color: #333;
   font-size: 1.5rem;
-  font-weight: 600;
 }
 
 .subtitle {
-  margin: 0;
   color: #666;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  margin-top: 4px;
 }
 
 .upload-btn {
-  background: linear-gradient(135deg, #2196F3, #1976D2);
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  padding: 12px 20px;
   border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
 }
 
 .upload-btn:hover {
-  background: linear-gradient(135deg, #1976D2, #1565C0);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
 }
 
-/* ===============================
-   CATEGORÍAS
-   =============================== */
+/* ============================= */
+/* CATEGORÍAS */
+/* ============================= */
 
 .document-categories {
   display: flex;
   gap: 12px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
 .category-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 12px 20px;
   background: white;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   font-weight: 500;
+  color: #666;
 }
 
 .category-btn:hover {
   border-color: #667eea;
-  background: #f8f9ff;
+  color: #667eea;
+  transform: translateY(-2px);
 }
 
 .category-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-color: #667eea;
-  background: #667eea;
   color: white;
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
 }
 
 .category-icon {
@@ -825,24 +1163,24 @@ export default {
 }
 
 .category-count {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.3);
   padding: 2px 8px;
   border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: bold;
 }
 
 .category-btn.active .category-count {
-  background: rgba(255,255,255,0.3);
+  background: rgba(255, 255, 255, 0.25);
 }
 
-/* ===============================
-   ESTADÍSTICAS
-   =============================== */
+/* ============================= */
+/* ESTADÍSTICAS */
+/* ============================= */
 
 .documents-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -850,21 +1188,22 @@ export default {
 .stat-card {
   background: white;
   padding: 20px;
-  border-radius: 12px;
+  border-radius: 10px;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  transition: transform 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .stat-number {
   font-size: 2rem;
   font-weight: bold;
   color: #667eea;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .stat-label {
@@ -873,24 +1212,71 @@ export default {
   font-weight: 500;
 }
 
-/* ===============================
-   CONTENIDO DE DOCUMENTOS
-   =============================== */
+/* ============================= */
+/* LOADING Y ERROR */
+/* ============================= */
+
+.loading-container {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-container {
+  text-align: center;
+  padding: 60px 20px;
+  color: #f44336;
+}
+
+.error-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.retry-btn {
+  padding: 10px 24px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 16px;
+  font-weight: 600;
+}
+
+.retry-btn:hover {
+  background: #5568d3;
+}
+
+/* ============================= */
+/* CONTENIDO DE DOCUMENTOS */
+/* ============================= */
 
 .documents-content {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
 .document-section {
+  background: white;
   padding: 24px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.document-section:last-child {
-  border-bottom: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .section-header {
@@ -898,13 +1284,14 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
 }
 
 .section-header h4 {
   margin: 0;
   color: #333;
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.3rem;
 }
 
 .section-actions {
@@ -918,800 +1305,991 @@ export default {
   font-size: 0.9rem;
 }
 
-.generate-btn,
-.upload-first-btn,
-.generate-first-btn {
+.generate-btn {
+  padding: 8px 16px;
   background: #4CAF50;
   color: white;
   border: none;
-  padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
-.generate-btn:hover,
-.upload-first-btn:hover,
-.generate-first-btn:hover {
+.generate-btn:hover {
   background: #45a049;
+  transform: translateY(-2px);
 }
 
-/* ===============================
-  DOCUMENTOS GRID
-  =============================== */
-
-.documents-grid {
- display: grid;
- grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
- gap: 16px;
- margin-top: 16px;
-}
-
-.document-card {
- display: flex;
- align-items: center;
- gap: 16px;
- padding: 16px;
- border: 1px solid #e0e0e0;
- border-radius: 8px;
- background: #fafafa;
- transition: all 0.2s ease;
-}
-
-.document-card:hover {
- border-color: #667eea;
- background: white;
- box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.document-card.uploaded {
- border-left: 4px solid #2196F3;
-}
-
-.document-card.generated {
- border-left: 4px solid #4CAF50;
-}
-
-.document-icon {
- font-size: 2rem;
- flex-shrink: 0;
-}
-
-.document-info {
- flex: 1;
- min-width: 0;
-}
-
-.document-name {
- font-weight: 600;
- color: #333;
- margin-bottom: 4px;
- white-space: nowrap;
- overflow: hidden;
- text-overflow: ellipsis;
-}
-
-.document-meta {
- display: flex;
- gap: 12px;
- margin-bottom: 4px;
-}
-
-.document-type,
-.document-date {
- font-size: 0.85rem;
- color: #666;
-}
-
-.document-description {
- font-size: 0.9rem;
- color: #777;
- margin-top: 8px;
- line-height: 1.4;
-}
-
-.document-status {
- margin-top: 8px;
-}
-
-.status-badge {
- padding: 4px 8px;
- border-radius: 12px;
- font-size: 0.75rem;
- font-weight: 600;
- text-transform: uppercase;
-}
-
-.status-badge.generated {
- background: #e8f5e8;
- color: #4CAF50;
-}
-
-.status-badge.pending {
- background: #fff3cd;
- color: #856404;
-}
-
-.status-badge.error {
- background: #f8d7da;
- color: #721c24;
-}
-
-.document-actions {
- display: flex;
- gap: 8px;
- flex-shrink: 0;
-}
-
-.action-btn {
- width: 36px;
- height: 36px;
- border: none;
- border-radius: 6px;
- cursor: pointer;
- font-size: 1rem;
- transition: all 0.2s ease;
- display: flex;
- align-items: center;
- justify-content: center;
-}
-
-.action-btn.download {
- background: #e3f2fd;
- color: #1976d2;
-}
-
-.action-btn.download:hover {
- background: #1976d2;
- color: white;
-}
-
-.action-btn.preview {
- background: #f3e5f5;
- color: #7b1fa2;
-}
-
-.action-btn.preview:hover {
- background: #7b1fa2;
- color: white;
-}
-
-.action-btn.delete {
- background: #ffebee;
- color: #d32f2f;
-}
-
-.action-btn.delete:hover {
- background: #d32f2f;
- color: white;
-}
-
-.action-btn.regenerate {
- background: #e8f5e8;
- color: #4CAF50;
-}
-
-.action-btn.regenerate:hover {
- background: #4CAF50;
- color: white;
-}
-
-.action-btn.details {
- background: #fff3e0;
- color: #f57c00;
-}
-
-.action-btn.details:hover {
- background: #f57c00;
- color: white;
-}
-
-/* ===============================
-  EMPTY SECTIONS
-  =============================== */
+/* ============================= */
+/* EMPTY STATE */
+/* ============================= */
 
 .empty-section {
- text-align: center;
- padding: 40px 20px;
- color: #666;
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
 }
 
 .empty-icon {
- font-size: 3rem;
- margin-bottom: 16px;
- opacity: 0.6;
+  font-size: 4rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
 }
 
-.empty-section p {
- margin: 0 0 16px 0;
- font-size: 1.1rem;
+.upload-first-btn,
+.generate-first-btn {
+  padding: 12px 24px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
-/* ===============================
-  PLANTILLAS
-  =============================== */
+.upload-first-btn:hover,
+.generate-first-btn:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+}
+
+/* ============================= */
+/* GRID DE DOCUMENTOS */
+/* ============================= */
+
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 16px;
+}
+
+.document-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f9f9f9;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.document-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.document-card.uploaded {
+  border-left: 4px solid #2196F3;
+}
+
+.document-card.generated {
+  border-left: 4px solid #4CAF50;
+}
+
+.document-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.document-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.document-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.document-type {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.document-description {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-status {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-badge.generated {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.pending {
+  background: #fff3e0;
+  color: #f57f17;
+}
+
+.status-badge.signed {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-badge.sent {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.status-badge.error {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.signed-badge {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ============================= */
+/* ACCIONES DE DOCUMENTOS */
+/* ============================= */
+
+.document-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  padding: 8px 12px;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  transform: scale(1.1);
+}
+
+.action-btn.download {
+  border-color: #4CAF50;
+}
+
+.action-btn.download:hover {
+  background: #4CAF50;
+}
+
+.action-btn.preview {
+  border-color: #2196F3;
+}
+
+.action-btn.preview:hover {
+  background: #2196F3;
+}
+
+.action-btn.delete {
+  border-color: #f44336;
+}
+
+.action-btn.delete:hover {
+  background: #f44336;
+}
+
+.action-btn.sign {
+  border-color: #ff9800;
+}
+
+.action-btn.sign:hover {
+  background: #ff9800;
+}
+
+.action-btn.email {
+  border-color: #9c27b0;
+}
+
+.action-btn.email:hover {
+  background: #9c27b0;
+}
+
+.action-btn.details {
+  border-color: #607d8b;
+}
+
+.action-btn.details:hover {
+  background: #607d8b;
+}
+
+/* ============================= */
+/* PLANTILLAS DISPONIBLES */
+/* ============================= */
 
 .document-templates {
- margin-top: 32px;
- padding-top: 24px;
- border-top: 1px solid #f0f0f0;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 2px dashed #e0e0e0;
 }
 
 .document-templates h5 {
- margin: 0 0 16px 0;
- color: #333;
- font-size: 1.1rem;
- font-weight: 600;
+  margin-bottom: 16px;
+  color: #333;
+  font-size: 1.1rem;
 }
 
 .templates-grid {
- display: grid;
- grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
- gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
 }
 
 .template-card {
- display: flex;
- align-items: center;
- gap: 12px;
- padding: 16px;
- border: 1px solid #e0e0e0;
- border-radius: 8px;
- background: white;
- cursor: pointer;
- transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .template-card:hover {
- border-color: #667eea;
- background: #f8f9ff;
- transform: translateY(-1px);
+  border-color: #667eea;
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .template-icon {
- font-size: 1.5rem;
- flex-shrink: 0;
+  font-size: 2rem;
+  flex-shrink: 0;
 }
 
 .template-info {
- flex: 1;
+  flex: 1;
 }
 
 .template-name {
- font-weight: 600;
- color: #333;
- margin-bottom: 4px;
- font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
 }
 
 .template-description {
- font-size: 0.85rem;
- color: #666;
- line-height: 1.3;
+  font-size: 0.85rem;
+  color: #666;
 }
 
-/* ===============================
-  MODALES
-  =============================== */
+/* ============================= */
+/* MODALES */
+/* ============================= */
 
 .modal-overlay {
- position: fixed;
- top: 0;
- left: 0;
- right: 0;
- bottom: 0;
- background: rgba(0,0,0,0.5);
- display: flex;
- align-items: center;
- justify-content: center;
- z-index: 1000;
- padding: 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
 }
 
 .modal-content {
- background: white;
- border-radius: 12px;
- box-shadow: 0 20px 60px rgba(0,0,0,0.3);
- max-width: 90vw;
- max-height: 90vh;
- overflow: hidden;
- display: flex;
- flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.3s ease;
 }
 
-.upload-modal {
- width: 500px;
-}
-
-.generate-modal {
- width: 600px;
-}
-
-.preview-modal {
- width: 80vw;
- height: 80vh;
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-header {
- display: flex;
- justify-content: space-between;
- align-items: center;
- padding: 20px 24px;
- border-bottom: 1px solid #e0e0e0;
- background: #f8f9fa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 2px solid #f0f0f0;
 }
 
 .modal-header h3 {
- margin: 0;
- color: #333;
- font-size: 1.3rem;
- font-weight: 600;
+  margin: 0;
+  color: #333;
+  font-size: 1.3rem;
 }
 
 .close-btn {
- background: none;
- border: none;
- font-size: 1.5rem;
- cursor: pointer;
- color: #666;
- width: 32px;
- height: 32px;
- border-radius: 50%;
- display: flex;
- align-items: center;
- justify-content: center;
- transition: all 0.2s ease;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #999;
+  transition: color 0.3s ease;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 .close-btn:hover {
- background: #f0f0f0;
- color: #333;
+  color: #333;
+  background: #f0f0f0;
 }
 
 .modal-body {
- padding: 24px;
- overflow-y: auto;
- flex: 1;
+  padding: 24px;
 }
 
-/* ===============================
-  FORMULARIOS
-  =============================== */
+/* ============================= */
+/* MODAL DE UPLOAD */
+/* ============================= */
 
-.form-group {
- margin-bottom: 20px;
-}
-
-.form-group label {
- display: block;
- margin-bottom: 6px;
- font-weight: 600;
- color: #333;
-}
-
-.form-control {
- width: 100%;
- padding: 12px;
- border: 1px solid #ddd;
- border-radius: 6px;
- font-size: 0.95rem;
- transition: border-color 0.2s ease;
- box-sizing: border-box;
-}
-
-.form-control:focus {
- outline: none;
- border-color: #667eea;
- box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+.upload-modal {
+  width: 600px;
 }
 
 .file-upload-area {
- border: 2px dashed #ddd;
- border-radius: 8px;
- padding: 20px;
- transition: all 0.2s ease;
- cursor: pointer;
- position: relative;
+  position: relative;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  background: #fafafa;
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .file-upload-area:hover {
- border-color: #667eea;
- background: #f8f9ff;
+  border-color: #667eea;
+  background: #f5f7ff;
 }
 
 .file-input {
- position: absolute;
- top: 0;
- left: 0;
- width: 100%;
- height: 100%;
- opacity: 0;
- cursor: pointer;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .upload-content {
- text-align: center;
+  pointer-events: none;
 }
 
 .upload-placeholder {
- color: #666;
+  color: #666;
 }
 
 .upload-icon {
- font-size: 2rem;
- margin-bottom: 12px;
+  font-size: 3rem;
+  margin-bottom: 16px;
 }
 
 .upload-link {
- color: #667eea;
- font-weight: 600;
+  color: #667eea;
+  text-decoration: underline;
+  font-weight: 600;
 }
 
 .file-preview {
- display: flex;
- align-items: center;
- justify-content: space-between;
- padding: 12px;
- background: #f8f9fa;
- border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
 }
 
 .file-info {
- display: flex;
- align-items: center;
- gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .file-icon {
- font-size: 1.5rem;
+  font-size: 2rem;
 }
 
 .file-details {
- text-align: left;
+  text-align: left;
 }
 
 .file-name {
- font-weight: 600;
- color: #333;
- margin-bottom: 2px;
+  font-weight: 600;
+  color: #333;
 }
 
 .file-size {
- font-size: 0.85rem;
- color: #666;
+  font-size: 0.85rem;
+  color: #666;
 }
 
 .remove-file-btn {
- background: #ffebee;
- color: #d32f2f;
- border: none;
- width: 24px;
- height: 24px;
- border-radius: 50%;
- cursor: pointer;
- font-size: 0.9rem;
- display: flex;
- align-items: center;
- justify-content: center;
- transition: all 0.2s ease;
+  background: #f44336;
+  color: white;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  pointer-events: all;
 }
 
 .remove-file-btn:hover {
- background: #d32f2f;
- color: white;
+  background: #d32f2f;
+  transform: scale(1.1);
 }
 
 .upload-progress {
- margin: 16px 0;
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .progress-bar {
- background: #f0f0f0;
- border-radius: 10px;
- height: 8px;
- overflow: hidden;
- margin-bottom: 4px;
+  flex: 1;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .progress-fill {
- background: linear-gradient(90deg, #667eea, #764ba2);
- height: 100%;
- transition: width 0.3s ease;
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s ease;
 }
 
 .progress-text {
- font-size: 0.85rem;
- color: #666;
- text-align: center;
- display: block;
+  font-weight: 600;
+  color: #667eea;
+  min-width: 40px;
 }
 
-.form-actions {
- display: flex;
- gap: 12px;
- justify-content: flex-end;
- margin-top: 24px;
- padding-top: 16px;
- border-top: 1px solid #f0f0f0;
-}
+/* ============================= */
+/* MODAL DE GENERAR */
+/* ============================= */
 
-.btn-cancel {
- padding: 10px 20px;
- border: 1px solid #ddd;
- background: white;
- color: #666;
- border-radius: 6px;
- cursor: pointer;
- font-weight: 500;
- transition: all 0.2s ease;
+.generate-modal {
+  width: 700px;
 }
-
-.btn-cancel:hover {
- background: #f5f5f5;
- border-color: #bbb;
-}
-
-.btn-upload,
-.btn-generate {
- padding: 10px 20px;
- border: none;
- background: linear-gradient(135deg, #667eea, #764ba2);
- color: white;
- border-radius: 6px;
- cursor: pointer;
- font-weight: 500;
- transition: all 0.2s ease;
-}
-
-.btn-upload:hover,
-.btn-generate:hover {
- background: linear-gradient(135deg, #5a6fd8, #6a42a0);
- transform: translateY(-1px);
-}
-
-.btn-upload:disabled,
-.btn-generate:disabled {
- background: #ccc;
- cursor: not-allowed;
- transform: none;
-}
-
-/* ===============================
-  SELECCIÓN DE PLANTILLAS
-  =============================== */
 
 .template-selection h4 {
- margin: 0 0 16px 0;
- color: #333;
- font-size: 1.1rem;
- font-weight: 600;
+  margin-bottom: 16px;
+  color: #333;
 }
 
 .template-options {
- display: grid;
- gap: 12px;
- margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
 }
 
 .template-option {
- display: flex;
- align-items: center;
- gap: 16px;
- padding: 16px;
- border: 2px solid #e0e0e0;
- border-radius: 8px;
- background: white;
- cursor: pointer;
- transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
 }
 
 .template-option:hover {
- border-color: #667eea;
- background: #f8f9ff;
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .template-option.selected {
- border-color: #667eea;
- background: #667eea;
- color: white;
+  border-color: #667eea;
+  background: linear-gradient(135deg, #f5f7ff 0%, #e8ebff 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
 .option-icon {
- font-size: 1.5rem;
- flex-shrink: 0;
+  font-size: 2.5rem;
+  flex-shrink: 0;
 }
 
 .option-info {
- flex: 1;
+  flex: 1;
 }
 
 .option-name {
- font-weight: 600;
- margin-bottom: 4px;
- font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+  font-size: 1.1rem;
 }
 
 .option-description {
- font-size: 0.9rem;
- opacity: 0.8;
- line-height: 1.3;
+  color: #666;
+  font-size: 0.9rem;
 }
 
 .template-preview {
- background: #f8f9fa;
- border-radius: 8px;
- padding: 16px;
- margin-bottom: 24px;
+  margin-top: 24px;
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
 }
 
 .template-preview h4 {
- margin: 0 0 12px 0;
- color: #333;
- font-size: 1rem;
- font-weight: 600;
-}
-
-.preview-content {
- background: white;
- padding: 16px;
- border-radius: 6px;
- border: 1px solid #e0e0e0;
+  margin-bottom: 12px;
+  color: #333;
 }
 
 .preview-content p {
- margin: 0;
- color: #666;
- font-style: italic;
- line-height: 1.4;
+  color: #666;
+  margin-bottom: 12px;
 }
 
-/* ===============================
-  VISTA PREVIA DE DOCUMENTOS
-  =============================== */
+.preview-note {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fff3e0;
+  border-left: 4px solid #ff9800;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* ============================= */
+/* MODAL DE PREVIEW */
+/* ============================= */
+
+.preview-modal {
+  width: 90%;
+  max-width: 1200px;
+  height: 90vh;
+}
+
+.preview-modal .modal-body {
+  padding: 0;
+  height: calc(90vh - 80px);
+}
 
 .preview-container {
- height: 100%;
- display: flex;
- flex-direction: column;
+  width: 100%;
+  height: 100%;
 }
 
 .document-preview-frame {
- width: 100%;
- height: 100%;
- border: none;
- border-radius: 6px;
+  width: 100%;
+  height: 100%;
+  border: none;
 }
 
 .preview-unavailable {
- display: flex;
- flex-direction: column;
- align-items: center;
- justify-content: center;
- height: 400px;
- color: #666;
- text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
 }
 
 .unavailable-icon {
- font-size: 3rem;
- margin-bottom: 16px;
- opacity: 0.6;
-}
-
-.preview-unavailable p {
- margin: 0 0 16px 0;
- font-size: 1.1rem;
+  font-size: 4rem;
+  margin-bottom: 20px;
 }
 
 .download-anyway-btn {
- background: #667eea;
- color: white;
- border: none;
- padding: 10px 20px;
- border-radius: 6px;
- cursor: pointer;
- font-weight: 500;
- transition: background-color 0.2s ease;
+  margin-top: 20px;
+  padding: 10px 24px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
 }
 
 .download-anyway-btn:hover {
- background: #5a6fd8;
+  background: #5568d3;
 }
 
-/* ===============================
-  RESPONSIVE
-  =============================== */
+/* ============================= */
+/* MODAL DE FIRMA */
+/* ============================= */
+
+.signature-modal {
+  width: 800px;
+}
+
+.signature-document-info {
+  background: #f5f7fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.signature-document-info p {
+  margin: 8px 0;
+  color: #333;
+}
+
+/* ============================= */
+/* MODAL DE EMAIL */
+/* ============================= */
+
+.email-modal {
+  width: 700px;
+}
+
+.document-preview-info {
+  padding: 12px;
+  background: #f5f7fa;
+  border-radius: 6px;
+  color: #333;
+  font-weight: 600;
+}
+
+/* ============================= */
+/* FORMULARIOS */
+/* ============================= */
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid #f0f0f0;
+}
+
+.btn-cancel,
+.btn-upload,
+.btn-generate,
+.btn-send {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.btn-cancel {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.btn-cancel:hover {
+  background: #e0e0e0;
+}
+
+.btn-upload {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-upload:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-upload:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-generate {
+  background: #4CAF50;
+  color: white;
+}
+
+.btn-generate:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-2px);
+}
+
+.btn-generate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-send {
+  background: #2196F3;
+  color: white;
+}
+
+.btn-send:hover:not(:disabled) {
+  background: #1976d2;
+  transform: translateY(-2px);
+}
+
+.btn-send:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================= */
+/* RESPONSIVE */
+/* ============================= */
 
 @media (max-width: 768px) {
- .documentos-tab {
-   padding: 16px;
- }
+  .documentos-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
 
- .documentos-header {
-   flex-direction: column;
-   gap: 16px;
-   align-items: stretch;
- }
+  .upload-btn {
+    width: 100%;
+  }
 
- .documents-stats {
-   grid-template-columns: repeat(2, 1fr);
- }
+  .document-categories {
+    flex-wrap: wrap;
+  }
 
- .documents-grid {
-   grid-template-columns: 1fr;
- }
+  .documents-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
- .document-card {
-   flex-direction: column;
-   align-items: flex-start;
-   gap: 12px;
- }
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
 
- .document-actions {
-   align-self: stretch;
-   justify-content: flex-end;
- }
+  .document-card {
+    flex-direction: column;
+    text-align: center;
+  }
 
- .section-header {
-   flex-direction: column;
-   align-items: flex-start;
-   gap: 12px;
- }
+  .document-actions {
+    width: 100%;
+    justify-content: center;
+  }
 
- .section-actions {
-   align-self: stretch;
-   justify-content: space-between;
- }
+  .templates-grid {
+    grid-template-columns: 1fr;
+  }
 
- .templates-grid {
-   grid-template-columns: 1fr;
- }
+  .modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
 
- .modal-content {
-   width: 95vw;
-   margin: 20px;
- }
+  .upload-modal,
+  .generate-modal,
+  .email-modal {
+    width: 95%;
+  }
 
- .category-btn {
-   flex: 1;
-   justify-content: center;
- }
+  .preview-modal {
+    width: 95%;
+    height: 95vh;
+  }
+
+  .signature-modal {
+    width: 95%;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .btn-cancel,
+  .btn-upload,
+  .btn-generate,
+  .btn-send {
+    width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
- .documents-stats {
-   grid-template-columns: 1fr;
- }
+  .documentos-tab {
+    padding: 12px;
+  }
 
- .category-btn {
-   padding: 10px 12px;
-   font-size: 0.9rem;
- }
+  .documents-stats {
+    grid-template-columns: 1fr;
+  }
 
- .stat-card {
-   padding: 16px;
- }
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
 
- .stat-number {
-   font-size: 1.5rem;
- }
+  .section-actions {
+    width: 100%;
+    flex-direction: column;
+  }
 
- .form-actions {
-   flex-direction: column;
- }
-
- .document-actions {
-   grid-template-columns: repeat(4, 1fr);
-   gap: 4px;
- }
-
- .action-btn {
-   width: 32px;
-   height: 32px;
-   font-size: 0.9rem;
- }
+  .generate-btn {
+    width: 100%;
+  }
 }
 
+/* ============================= */
+/* SCROLLBAR PERSONALIZADO */
+/* ============================= */
+
+.template-options::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.template-options::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.template-options::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 10px;
+}
+
+.template-options::-webkit-scrollbar-thumb:hover,
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #5568d3;
+}
+
+/* ============================= */
+/* ANIMACIONES ADICIONALES */
+/* ============================= */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.document-card {
+  animation: fadeIn 0.3s ease;
+}
+
+.template-card {
+  animation: fadeIn 0.3s ease;
+}
+
+/* ============================= */
+/* ESTILOS PARA IMPRESIÓN */
+/* ============================= */
+
+@media print {
+  .documentos-header,
+  .document-categories,
+  .documents-stats,
+  .document-actions,
+  .upload-btn,
+  .generate-btn {
+    display: none;
+  }
+
+  .documentos-tab {
+    background: white;
+    padding: 0;
+  }
+
+  .document-card {
+    page-break-inside: avoid;
+    border: 1px solid #ddd;
+  }
+}
 </style>

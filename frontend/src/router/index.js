@@ -37,12 +37,18 @@ import MikrotikPools from '../views/MikrotikPools.vue';
 import MikrotikProfiles from '../views/MikrotikProfiles.vue';
 
 // Nuevas importaciones para inventario
-import InventoryList from '../views/InventoryList.vue';
-import InventoryForm from '../views/InventoryForm.vue';
-import InventoryDetail from '../views/InventoryDetail.vue';
-import InventoryLocationList from '../views/InventoryLocationList.vue';
+import InventoryList from '../views/inventory/InventoryList.vue';
+import InventoryForm from '../views/inventory/InventoryForm.vue';
+import InventoryProductForm from '../views/inventory/InventoryProductForm.vue';
+import InventoryDetail from '../views/inventory/InventoryDetail.vue';
+import InventoryLocationList from '../views/inventory/InventoryLocationList.vue';
 import InventoryManagement from '../views/InventoryManagement.vue';
-import InventoryManagementView from '../views/InventoryManagementView.vue';
+import InventoryManagementView from '../views/inventory/InventoryManagementView.vue';
+import InventoryBatchForm from '../views/inventory/InventoryBatchForm.vue';
+import InventoryBatchRegisterForm from '../views/inventory/BatchRegisterForm.vue';
+
+
+import InventoryDashboard from '../views/inventory/InventoryDashboard';
 
 // ===== NUEVAS IMPORTACIONES PARA DISPOSITIVOS =====
 import DeviceList from '../views/DeviceList.vue';
@@ -87,7 +93,7 @@ import SubscriptionFormIntelligent from '../components/SubscriptionFormIntellige
 
 // ===== ?? NUEVAS IMPORTACIONES PARA COMUNICACIONES =====
 import CommunicationDashboard from '../views/CommunicationDashboard.vue';
-// Comentamos las importaciones que a¨²n no existen como views
+// Comentamos las importaciones que aï¿½ï¿½n no existen como views
 // import TemplateEditor from '../views/TemplateEditor.vue';
 // import MessageComposer from '../views/MessageComposer.vue';
 // import CommunicationSettings from '../views/CommunicationSettings.vue';
@@ -121,12 +127,14 @@ const routes = [
     component: RolList,
     meta: { requiresAuth: true }
   },
+/*
   {
     path: '/inventory',
     name: 'InventoryList',
     component: InventoryList,
     meta: { requiresAuth: true }
   },
+*/
   {
     path: '/inventory/new',
     name: 'NewInventory',
@@ -140,13 +148,19 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/inventory/location',
+    name: 'InventoryLocationList',
+    component: InventoryLocationList,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/inventory/management',
     name: 'InventoryManagement',
     component: InventoryManagement,
     meta: { requiresAuth: true }
   },
   {
-    path: '/inventory/managementview',
+    path: '/inventory',
     name: 'InventoryManagementView',
     component: InventoryManagementView,
     meta: { requiresAuth: true }
@@ -158,9 +172,45 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/inventory/newproduct',
+    name: 'NewInventoryProduct',
+    component: InventoryProductForm,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory/batch/add',
+    name: 'NewInventoryBatch',
+    component: InventoryBatchForm,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory/batch/:id/edit',
+    name: 'EditInventoryBatch',
+    component: InventoryBatchForm,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory/batch/register/add',
+    name: 'NewInventoryBatchRegister',
+    component: InventoryBatchRegisterForm,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory/batch/register/:id/edit',
+    name: 'EditInventoryBatchRegister',
+    component: InventoryBatchRegisterForm,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/FibraOpticaList',
     name: 'FibraOpticaList',
     component: FibraOpticaList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory/dashboard',
+    name: 'InventoryDashboard',
+    component: InventoryDashboard,
     meta: { requiresAuth: true }
   },
   
@@ -212,10 +262,10 @@ const routes = [
     }
   },
 // ===============================
-// RUTAS DEL MÓDULO DE BILLING/CONTABILIDAD
+// RUTAS DEL Mï¿½DULO DE BILLING/CONTABILIDAD
 // ===============================
 
-// Dashboard principal de facturación
+// Dashboard principal de facturaciï¿½n
 {
   path: '/billing',
   name: 'BillingDashboard',
@@ -226,14 +276,14 @@ const routes = [
   }
 },
 
-// Gestión de facturas
+// Gestiï¿½n de facturas
 {
   path: '/billing/invoices',
   name: 'InvoiceList',
   component: InvoiceList,
   meta: { 
     requiresAuth: true,
-    title: 'Gestión de Facturas'
+    title: 'Gestiï¿½n de Facturas'
   }
 },
 {
@@ -264,14 +314,14 @@ const routes = [
   }
 },
 
-// Gestión de pagos
+// Gestiï¿½n de pagos
 {
   path: '/billing/payments',
   name: 'PaymentList',
   component: PaymentList,
   meta: { 
     requiresAuth: true,
-    title: 'Gestión de Pagos'
+    title: 'Gestiï¿½n de Pagos'
   }
 },
 {
@@ -284,14 +334,14 @@ const routes = [
   }
 },
 
-// Configuración de facturación por cliente
+// Configuraciï¿½n de facturaciï¿½n por cliente
 {
   path: '/billing/clients/:clientId/config',
   name: 'ClientBillingConfig',
   component: ClientBillingConfig,
   meta: { 
     requiresAuth: true,
-    title: 'Configuración de Facturación'
+    title: 'Configuraciï¿½n de Facturaciï¿½n'
   }
 },
 
@@ -317,7 +367,7 @@ const routes = [
   }
 },
 
-// Configuración de pasarelas de pago
+// Configuraciï¿½n de pasarelas de pago
 {
   path: '/billing/gateways',
   name: 'PaymentGateways',
@@ -332,7 +382,7 @@ const routes = [
   // e??? RUTAS PARA SUSCRIPCIONES INTELIGENTES
   // ===============================
   
-  // 1. NUEVA SUSCRIPCI?¡°N (Detecci?3n autom??tica si ya tiene suscripciones)
+  // 1. NUEVA SUSCRIPCI?ï¿½ï¿½N (Detecci?3n autom??tica si ya tiene suscripciones)
   {
     path: '/clients/:clientId/subscription/new',
     name: 'NewSubscription',
@@ -418,7 +468,7 @@ const routes = [
     })
   },
   
-  // 6. GESTI?¡°N INTELIGENTE DE SUSCRIPCI?¡°N (Detecci?3n autom??tica del tipo)
+  // 6. GESTI?ï¿½ï¿½N INTELIGENTE DE SUSCRIPCI?ï¿½ï¿½N (Detecci?3n autom??tica del tipo)
   {
     path: '/clients/:clientId/subscription/manage',
     name: 'ManageSubscription',
@@ -434,7 +484,7 @@ const routes = [
     })
   },
   
-  // 7. EDITAR SUSCRIPCI?¡°N ESPEC??FICA (Para enlaces directos)
+  // 7. EDITAR SUSCRIPCI?ï¿½ï¿½N ESPEC??FICA (Para enlaces directos)
   {
     path: '/clients/:clientId/subscription/:subscriptionId/edit',
     name: 'EditSubscription',
@@ -452,7 +502,7 @@ const routes = [
   },
 
   // ===============================
-  // e?¡±¡ì RUTAS PARA DEBUG Y MONITOREO (COMENTADAS HASTA QUE SE CREEN LOS ARCHIVOS)
+  // e?ï¿½ï¿½ï¿½ï¿½ RUTAS PARA DEBUG Y MONITOREO (COMENTADAS HASTA QUE SE CREEN LOS ARCHIVOS)
   // ===============================
   
   // a? ??? DESCOMENTA CUANDO CREES LOS ARCHIVOS DebugConsole.vue y TransactionMonitor.vue
@@ -464,7 +514,7 @@ const routes = [
     component: DebugConsole,
     meta: { 
       requiresAuth: true,
-      title: 'e?¡±? Consola de Debug',
+      title: 'e?ï¿½ï¿½? Consola de Debug',
       adminOnly: true
     }
   },
@@ -476,7 +526,7 @@ const routes = [
     component: TransactionMonitor,
     meta: { 
       requiresAuth: true,
-      title: 'e?¡°? Monitor de Transacciones',
+      title: 'e?ï¿½ï¿½? Monitor de Transacciones',
       adminOnly: true
     }
   },
@@ -488,7 +538,7 @@ const routes = [
     component: DebugConsole,
     meta: { 
       requiresAuth: true,
-      title: 'e?¡±? Debug de Cliente',
+      title: 'e?ï¿½ï¿½? Debug de Cliente',
       adminOnly: true
     },
     props: route => ({
@@ -499,7 +549,7 @@ const routes = [
   */
 
   // ===============================
-  // e?¡°? RUTAS PARA VISTAS DE SUSCRIPCIONES (COMENTADAS)
+  // e?ï¿½ï¿½? RUTAS PARA VISTAS DE SUSCRIPCIONES (COMENTADAS)
   // ===============================
   
   // a? ??? DESCOMENTA CUANDO CREES LOS ARCHIVOS SubscriptionList.vue, SubscriptionDetail.vue, SubscriptionHistory.vue
@@ -588,15 +638,15 @@ const routes = [
     }
   },
   
- //  COMENTAMOS LAS RUTAS QUE USAN VISTAS A¨²N NO CREADAS
-  // Gesti¨®n de plantillas
+ //  COMENTAMOS LAS RUTAS QUE USAN VISTAS Aï¿½ï¿½N NO CREADAS
+  // Gestiï¿½ï¿½n de plantillas
   {
     path: '/communications/templates',
     name: 'TemplateManager',
     component: TemplateManager,
     meta: { 
       requiresAuth: true,
-      title: 'Gesti¨®n de Plantillas',
+      title: 'Gestiï¿½ï¿½n de Plantillas',
       permission: 'manage_templates'
     }
   },
@@ -790,7 +840,7 @@ const routes = [
   },
 
   // ===============================
-  // RUTAS PARA GESTI?¡°N DE MARCAS Y FAMILIAS
+  // RUTAS PARA GESTI?ï¿½ï¿½N DE MARCAS Y FAMILIAS
   // ===============================
   {
     path: '/device-brands',
@@ -848,7 +898,7 @@ const routes = [
   },
   
   // ===============================
-  // RUTAS DE CONFIGURACI?¡°N
+  // RUTAS DE CONFIGURACI?ï¿½ï¿½N
   // ===============================
   {
     path: '/settings/',
@@ -1092,7 +1142,7 @@ const routes = [
   },
   
   // ===============================
-  // RUTAS PARA GESTI?¡°N DE ROLES Y PERMISOS
+  // RUTAS PARA GESTI?ï¿½ï¿½N DE ROLES Y PERMISOS
   // ===============================
   {
     path: '/roles',
@@ -1132,7 +1182,7 @@ const routes = [
   },
   
   // ===============================
-  // RUTAS PARA GESTI?¡°N DE USUARIOS
+  // RUTAS PARA GESTI?ï¿½ï¿½N DE USUARIOS
   // ===============================
   {
     path: '/users',
@@ -1169,14 +1219,14 @@ const routes = [
   },
 
   // ===============================
-  // e?¡±? RUTAS DE REDIRECCI?¡°N Y COMPATIBILIDAD
+  // e?ï¿½ï¿½? RUTAS DE REDIRECCI?ï¿½ï¿½N Y COMPATIBILIDAD
   // ===============================
   
   // Redirigir rutas legacy de suscripciones al nuevo sistema
   {
     path: '/clients/:clientId/subscription/:subscriptionId/change',
     redirect: to => {
-      console.log('e?¡±? Redirigiendo a gesti?3n inteligente de suscripci?3n');
+      console.log('e?ï¿½ï¿½? Redirigiendo a gesti?3n inteligente de suscripci?3n');
       return `/clients/${to.params.clientId}/subscription/manage`;
     }
   },
@@ -1185,7 +1235,7 @@ const routes = [
   {
     path: '/clients/:clientId/packages',
     redirect: to => {
-      console.log('e?¡±? Redirigiendo a nueva suscripci?3n');
+      console.log('e?ï¿½ï¿½? Redirigiendo a nueva suscripci?3n');
       return `/clients/${to.params.clientId}/subscription/new`;
     }
   },
@@ -1220,7 +1270,7 @@ const router = createRouter({
 });
 
 // ===============================
-// e??????GUARDS DE NAVEGACI?¡°N B??SICOS
+// e??????GUARDS DE NAVEGACI?ï¿½ï¿½N B??SICOS
 // ===============================
 
 router.beforeEach((to, from, next) => {
@@ -1229,7 +1279,7 @@ router.beforeEach((to, from, next) => {
   const loggedIn = localStorage.getItem('user');
   
   // Log b??sico de navegaci?3n
-  console.log('e?¡ì- Navegando de', from.path, 'a', to.path);
+  console.log('e?ï¿½ï¿½- Navegando de', from.path, 'a', to.path);
 
   // Verificar autenticaci?3n
   if (authRequired && !loggedIn) {
@@ -1247,7 +1297,7 @@ router.beforeEach((to, from, next) => {
 
   // Log para operaciones peligrosas
   if (to.meta?.dangerous) {
-    console.warn('a? ??? NAVEGANDO A OPERACI?¡°N PELIGROSA:', {
+    console.warn('a? ??? NAVEGANDO A OPERACI?ï¿½ï¿½N PELIGROSA:', {
       route: to.name,
       operationType: to.meta.operationType,
       params: to.params
@@ -1258,7 +1308,7 @@ router.beforeEach((to, from, next) => {
 });
 
 // ===============================
-// e??¡¥ HELPERS DE NAVEGACI?¡°N B??SICOS
+// e??ï¿½ï¿½ HELPERS DE NAVEGACI?ï¿½ï¿½N B??SICOS
 // ===============================
 
 /**
@@ -1309,7 +1359,7 @@ export const subscriptionRoutes = {
 };
 
 // ===============================
-// e?¡°? ANALYTICS DE NAVEGACI?¡°N B??SICOS
+// e?ï¿½ï¿½? ANALYTICS DE NAVEGACI?ï¿½ï¿½N B??SICOS
 // ===============================
 
 router.afterEach((to, from) => {
@@ -1323,7 +1373,7 @@ router.afterEach((to, from) => {
   
   // Tracking espec?-fico para operaciones de suscripciones
   if (to.name && to.name.includes('Subscription')) {
-    console.log('e?¡°? Tracking operaci?3n de suscripci?3n:', {
+    console.log('e?ï¿½ï¿½? Tracking operaci?3n de suscripci?3n:', {
       operation: to.meta?.operationType,
       clientId: to.params?.clientId,
       subscriptionId: to.params?.subscriptionId,

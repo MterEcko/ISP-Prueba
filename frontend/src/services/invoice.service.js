@@ -100,18 +100,42 @@ class InvoiceService {
   // ===============================
 
   // GET /api/invoices/client/:clientId - Obtener facturas de un cliente
-  getClientInvoices(clientId, params = {}) {
-    let queryParams = new URLSearchParams();
-    
-    if (params.status) queryParams.append('status', params.status);
-    if (params.limit) queryParams.append('limit', params.limit);
-    if (params.page) queryParams.append('page', params.page);
 
-    return axios.get(`${API_URL}invoices/client/${clientId}?${queryParams.toString()}`, { 
+  // GET /api/invoices/client/:clientId - Obtener facturas de un cliente
+  getClientInvoices(clientId, params = {}) {
+    // ✅ CORRECCIÓN DEFINITIVA: Construimos la URL manualmente
+    const queryParts = [];
+
+    // Lógica especial para el formato de status que necesitas
+    if (params.status && Array.isArray(params.status) && params.status.length > 0) {
+      // 1. El primer estado SIEMPRE usa la clave "status="
+      queryParts.push(`status=${encodeURIComponent(params.status[0])}`);
+      
+      // 2. Los siguientes estados se añaden a la URL sin valor y sin "="
+      for (let i = 1; i < params.status.length; i++) {
+        queryParts.push(encodeURIComponent(params.status[i]));
+      }
+    } else if (params.status) {
+      // Si solo es un estado (un string), funciona de forma normal
+      queryParts.push(`status=${encodeURIComponent(params.status)}`);
+    }
+
+    // Añadimos otros parámetros estándar que puedan venir (ej: paginación)
+    if (params.limit) {
+      queryParts.push(`limit=${encodeURIComponent(params.limit)}`);
+    }
+    if (params.page) {
+      queryParts.push(`page=${encodeURIComponent(params.page)}`);
+    }
+    
+    // Unimos todas las partes con "&"
+    const queryString = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+
+    // La llamada a axios ya no usa el objeto 'params', solo la URL que construimos
+    return axios.get(`${API_URL}invoices/client/${clientId}${queryString}`, { 
       headers: authHeader() 
     });
   }
-
   // ===============================
   // DESCARGA Y EXPORTACIÓN
   // ===============================
