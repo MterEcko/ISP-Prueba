@@ -66,23 +66,23 @@ module.exports = (sequelize) => {
       defaultValue: 0
     },
     features: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON, // JSON funciona en SQLite y PostgreSQL
       defaultValue: []
     },
     requirements: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       defaultValue: {}
     },
     screenshots: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       defaultValue: []
     },
     changelog: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       defaultValue: []
     },
     tags: {
-      type: DataTypes.ARRAY(DataTypes.STRING),
+      type: DataTypes.JSON, // Almacenamos array como JSON para compatibilidad con SQLite
       defaultValue: []
     },
     status: {
@@ -90,7 +90,7 @@ module.exports = (sequelize) => {
       defaultValue: 'published'
     },
     metadata: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       defaultValue: {}
     }
   }, {

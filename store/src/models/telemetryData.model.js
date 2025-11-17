@@ -17,7 +17,7 @@ module.exports = (sequelize) => {
       comment: 'heartbeat, error, action, etc'
     },
     data: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       defaultValue: {}
     },
     timestamp: {

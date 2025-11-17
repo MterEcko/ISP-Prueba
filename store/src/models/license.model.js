@@ -37,7 +37,7 @@ module.exports = (sequelize) => {
 
     // Características habilitadas
     featuresEnabled: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       defaultValue: {}
     },
 
@@ -112,7 +112,7 @@ module.exports = (sequelize) => {
       type: DataTypes.TEXT
     },
     metadata: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       defaultValue: {}
     }
   }, {

@@ -3,8 +3,8 @@
 ## Requisitos Previos
 
 - Node.js >= 16.0.0
-- PostgreSQL >= 12
 - npm >= 8.0.0
+- **Base de datos**: SQLite (para desarrollo) o PostgreSQL >= 12 (para producción)
 
 ## Instalación
 
@@ -15,7 +15,36 @@ cd store
 npm install
 ```
 
-### 2. Configurar PostgreSQL
+### 2. Elegir Base de Datos
+
+El sistema soporta dos opciones de base de datos:
+
+#### Opción A: SQLite (Recomendado para desarrollo/pruebas)
+
+✅ **Ventajas**:
+- No requiere instalación adicional
+- Archivo único portable
+- Perfecto para desarrollo y testing
+- Configuración instantánea
+
+⚠️ **Limitaciones**:
+- No recomendado para producción con alta concurrencia
+- Menor rendimiento con muchos usuarios simultáneos
+
+**Configuración**: En `.env` usa:
+```env
+DB_DIALECT=sqlite
+SQLITE_PATH=./database.sqlite
+```
+
+#### Opción B: PostgreSQL (Recomendado para producción)
+
+✅ **Ventajas**:
+- Alta concurrencia
+- Mejor rendimiento
+- Robusto para producción
+
+### 3. Configurar PostgreSQL (Solo si elegiste Opción B)
 
 Asegúrate de que PostgreSQL esté instalado y en ejecución:
 

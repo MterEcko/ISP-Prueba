@@ -17,7 +17,7 @@ module.exports = (sequelize) => {
       allowNull: false
     },
     parameters: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       defaultValue: {}
     },
     status: {
@@ -26,7 +26,7 @@ module.exports = (sequelize) => {
     },
     sentAt: DataTypes.DATE,
     executedAt: DataTypes.DATE,
-    response: DataTypes.JSONB,
+    response: DataTypes.JSON,
     error: DataTypes.TEXT,
     issuedBy: DataTypes.STRING
   }, {

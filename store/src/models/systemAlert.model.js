@@ -21,7 +21,7 @@ module.exports = (sequelize) => {
     },
     title: DataTypes.STRING,
     message: DataTypes.TEXT,
-    data: DataTypes.JSONB,
+    data: DataTypes.JSON,
     isResolved: {
       type: DataTypes.BOOLEAN,
       defaultValue: false

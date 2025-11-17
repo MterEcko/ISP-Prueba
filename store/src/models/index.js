@@ -1,28 +1,53 @@
 const { Sequelize } = require('sequelize');
 const logger = require('../config/logger');
+const path = require('path');
 
 // Configuración de la base de datos
-const sequelize = new Sequelize(
-  process.env.DB_NAME || 'isp_store',
-  process.env.DB_USER || 'postgres',
-  process.env.DB_PASSWORD || '',
-  {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    dialect: 'postgres',
+const dbDialect = process.env.DB_DIALECT || 'sqlite';
+
+let sequelize;
+
+if (dbDialect === 'sqlite') {
+  // Configuración para SQLite (desarrollo/testing)
+  const dbPath = process.env.SQLITE_PATH || path.join(__dirname, '../../database.sqlite');
+
+  sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: dbPath,
     logging: process.env.NODE_ENV === 'development' ? msg => logger.debug(msg) : false,
-    pool: {
-      max: 10,
-      min: 0,
-      acquire: 30000,
-      idle: 10000
-    },
     define: {
       timestamps: true,
       underscored: false
     }
-  }
-);
+  });
+
+  logger.info(`📦 Usando SQLite: ${dbPath}`);
+} else {
+  // Configuración para PostgreSQL (producción)
+  sequelize = new Sequelize(
+    process.env.DB_NAME || 'isp_store',
+    process.env.DB_USER || 'postgres',
+    process.env.DB_PASSWORD || '',
+    {
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 5432,
+      dialect: 'postgres',
+      logging: process.env.NODE_ENV === 'development' ? msg => logger.debug(msg) : false,
+      pool: {
+        max: 10,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
+      },
+      define: {
+        timestamps: true,
+        underscored: false
+      }
+    }
+  );
+
+  logger.info(`🐘 Usando PostgreSQL: ${process.env.DB_NAME || 'isp_store'}`);
+}
 
 const db = {};
 

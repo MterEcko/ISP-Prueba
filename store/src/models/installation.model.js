@@ -39,7 +39,7 @@ module.exports = (sequelize) => {
 
     // Información del sistema
     systemInfo: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       defaultValue: {},
       comment: 'Información del sistema operativo, arquitectura, etc'
     },
@@ -108,7 +108,7 @@ module.exports = (sequelize) => {
 
     // Metadata
     metadata: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       defaultValue: {}
     }
   }, {
