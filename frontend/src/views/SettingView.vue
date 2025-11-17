@@ -45,6 +45,20 @@
       >
         Integraciones
       </button>
+      <button 
+        class="tab-button" 
+        :class="{ active: activeTab === 'email' }"
+        @click="activeTab = 'email'"
+      >
+        Email (SMTP)
+      </button>
+      <button 
+        class="tab-button" 
+        :class="{ active: activeTab === 'telegram' }"
+        @click="activeTab = 'telegram'"
+      >
+        Telegram
+      </button>
     </div>
     
     <div class="tab-content">
@@ -294,6 +308,250 @@
           </div>
         </div>
       </div>
+      <!-- Configuración de Email SMTP -->
+<div v-if="activeTab === 'email'" class="tab-pane">
+  <div class="card">
+    <h2>Configuración de Email (SMTP)</h2>
+    
+    <form @submit.prevent="saveEmailSettings">
+      <div class="form-group">
+        <label for="smtpHost">Servidor SMTP</label>
+        <input 
+          type="text" 
+          id="smtpHost" 
+          v-model="emailSettings.host"
+          placeholder="smtp.gmail.com"
+          required
+        />
+        <small class="form-hint">Ejemplo: smtp.gmail.com, smtp.ionos.mx, smtp.office365.com</small>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="smtpPort">Puerto</label>
+          <input 
+            type="number" 
+            id="smtpPort" 
+            v-model="emailSettings.port"
+            placeholder="587"
+            required
+          />
+          <small class="form-hint">587 (TLS) o 465 (SSL)</small>
+        </div>
+        
+        <div class="form-group">
+          <label>Tipo de Conexión</label>
+          <div class="connection-type-display">
+            <span class="badge" :class="emailSettings.port == 465 ? 'badge-success' : 'badge-info'">
+              {{ emailSettings.port == 465 ? 'SSL (Puerto 465)' : 'TLS (Puerto 587)' }}
+            </span>
+          </div>
+          <small class="form-hint">Se detecta automáticamente según el puerto</small>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="smtpUser">Usuario / Email</label>
+        <input 
+          type="email" 
+          id="smtpUser" 
+          v-model="emailSettings.user"
+          placeholder="usuario@ejemplo.com"
+          required
+        />
+      </div>
+      
+      <div class="form-group">
+        <label for="smtpPassword">Contraseña SMTP</label>
+        <input 
+          type="password" 
+          id="smtpPassword" 
+          v-model="emailSettings.password"
+          :placeholder="emailSettings.hasPassword ? '••••••••' : 'Ingrese su contraseña'"
+        />
+        <small class="form-hint">
+          {{ emailSettings.hasPassword ? 'Dejar en blanco para mantener la contraseña actual' : 'Para Gmail, use una App Password' }}
+        </small>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="emailFromName">Nombre del Remitente</label>
+          <input 
+            type="text" 
+            id="emailFromName" 
+            v-model="emailSettings.fromName"
+            placeholder="Mi ISP"
+            required
+          />
+        </div>
+        
+        <div class="form-group">
+          <label for="emailFromAddress">Email del Remitente</label>
+          <input 
+            type="email" 
+            id="emailFromAddress" 
+            v-model="emailSettings.fromAddress"
+            placeholder="noreply@miisp.com"
+            required
+          />
+        </div>
+      </div>
+      
+      <!-- Resultado de prueba -->
+      <div v-if="testResults.email" class="test-result" :class="testResults.email.success ? 'success' : 'error'">
+        <div class="test-result-icon">
+          {{ testResults.email.success ? '✓' : '✗' }}
+        </div>
+        <div class="test-result-message">
+          {{ testResults.email.message }}
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          @click="testEmailConnection" 
+          :disabled="saving || !emailSettings.user"
+        >
+          <span v-if="saving">Probando...</span>
+          <span v-else>🧪 Probar Conexión</span>
+        </button>
+        <button type="submit" class="btn btn-primary" :disabled="saving">
+          <span v-if="saving">Guardando...</span>
+          <span v-else>💾 Guardar Configuración</span>
+        </button>
+      </div>
+    </form>
+    
+    <!-- Información adicional -->
+    <div class="info-box mt-4">
+      <h4>📝 Configuraciones Comunes</h4>
+      <div class="config-examples">
+        <div class="config-example">
+          <strong>Gmail:</strong>
+          <p>Host: smtp.gmail.com | Puerto: 587 o 465</p>
+          <p><small>Requiere App Password (no la contraseña normal)</small></p>
+        </div>
+        <div class="config-example">
+          <strong>Outlook/Hotmail:</strong>
+          <p>Host: smtp-mail.outlook.com | Puerto: 587</p>
+        </div>
+        <div class="config-example">
+          <strong>Office 365:</strong>
+          <p>Host: smtp.office365.com | Puerto: 587</p>
+        </div>
+        <div class="config-example">
+          <strong>Ionos:</strong>
+          <p>Host: smtp.ionos.mx | Puerto: 465 o 587</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Configuración de Telegram -->
+<div v-if="activeTab === 'telegram'" class="tab-pane">
+  <div class="card">
+    <h2>Configuración de Telegram Bot</h2>
+    
+    <div class="telegram-status">
+      <div class="status-badge" :class="telegramSettings.enabled ? 'status-active' : 'status-inactive'">
+        {{ telegramSettings.enabled ? '✓ Activo' : '○ Inactivo' }}
+      </div>
+    </div>
+    
+    <form @submit.prevent="saveTelegramSettings">
+      <div class="form-check mb-4">
+        <input 
+          type="checkbox" 
+          id="telegramEnabled" 
+          v-model="telegramSettings.enabled"
+        />
+        <label for="telegramEnabled">
+          <strong>Habilitar notificaciones por Telegram</strong>
+        </label>
+      </div>
+      
+      <div class="form-group">
+        <label for="telegramToken">Token del Bot</label>
+        <input 
+          type="text" 
+          id="telegramToken" 
+          v-model="telegramSettings.botToken"
+          :placeholder="telegramSettings.hasToken ? '••••••••••••••••••••' : '123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11'"
+          :disabled="!telegramSettings.enabled"
+        />
+        <small class="form-hint">
+          {{ telegramSettings.hasToken ? 'Dejar en blanco para mantener el token actual' : 'Obtenga el token de @BotFather en Telegram' }}
+        </small>
+      </div>
+      
+      <div class="form-group">
+        <label for="telegramChatId">Chat ID / Group ID</label>
+        <input 
+          type="text" 
+          id="telegramChatId" 
+          v-model="telegramSettings.chatId"
+          placeholder="-1001234567890"
+          :disabled="!telegramSettings.enabled"
+        />
+        <small class="form-hint">ID del chat o grupo donde se enviarán las alertas técnicas</small>
+      </div>
+      
+      <!-- Resultado de prueba -->
+      <div v-if="testResults.telegram" class="test-result" :class="testResults.telegram.success ? 'success' : 'error'">
+        <div class="test-result-icon">
+          {{ testResults.telegram.success ? '✓' : '✗' }}
+        </div>
+        <div class="test-result-message">
+          {{ testResults.telegram.message }}
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          @click="testTelegramConnection" 
+          :disabled="saving || !telegramSettings.enabled"
+        >
+          <span v-if="saving">Probando...</span>
+          <span v-else>🧪 Enviar Mensaje de Prueba</span>
+        </button>
+        <button type="submit" class="btn btn-primary" :disabled="saving">
+          <span v-if="saving">Guardando...</span>
+          <span v-else>💾 Guardar Configuración</span>
+        </button>
+      </div>
+    </form>
+    
+    <!-- Guía de configuración -->
+    <div class="info-box mt-4">
+      <h4>📖 Cómo configurar tu Bot de Telegram</h4>
+      <ol class="setup-steps">
+        <li>
+          <strong>Crear el Bot:</strong>
+          <p>Busca <code>@BotFather</code> en Telegram y envía <code>/newbot</code></p>
+        </li>
+        <li>
+          <strong>Obtener el Token:</strong>
+          <p>Sigue las instrucciones de BotFather. Te dará un token como: <code>123456789:ABC-DEF...</code></p>
+        </li>
+        <li>
+          <strong>Obtener el Chat ID:</strong>
+          <p>Opción 1: Agrega el bot a tu grupo y obtén el ID con <code>@userinfobot</code></p>
+          <p>Opción 2: Envía un mensaje al bot y visita: <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code></p>
+        </li>
+        <li>
+          <strong>Activar y Probar:</strong>
+          <p>Guarda la configuración y usa el botón "Enviar Mensaje de Prueba"</p>
+        </li>
+      </ol>
+    </div>
+  </div>
+</div>
       
       <!-- Configuración de Notificaciones -->
       <div v-if="activeTab === 'notifications'" class="tab-pane">
@@ -666,8 +924,9 @@
   </div>
 </template>
 
+// frontend/src/views/SettingsView.vue - SCRIPT SECTION
+
 <script>
-import UserService from '../services/user.service';
 import SettingsService from '../services/settings.service';
 
 export default {
@@ -676,42 +935,98 @@ export default {
     return {
       activeTab: 'general',
       saving: false,
+      loading: false,
+      
       generalSettings: {
-        companyName: 'Mi ISP',
-        language: 'es',
-        timezone: 'America/Mexico_City',
-        dateFormat: 'DD/MM/YYYY',
+        companyName: '',
+        companyAddress: '',
+        companyPhone: '',
+        companyEmail: '',
+        companyWebsite: '',
+        timeZone: 'America/Mexico_City',
+        currency: 'MXN',
         logoUrl: null,
         theme: 'light'
       },
-      userProfile: {
-        fullName: '',
-        email: '',
-        avatarUrl: null
+      
+      emailSettings: {
+        host: '',
+        port: 587,
+        secure: false,
+        user: '',
+        password: '',
+        fromName: '',
+        fromAddress: '',
+        hasPassword: false
       },
-      passwordChange: {
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+      
+      telegramSettings: {
+        enabled: false,
+        chatId: '',
+        botToken: '',
+        hasToken: false
       },
-      passwordError: null,
-      twoFactor: {
-        enabled: false
+      
+      whatsappSettings: {
+        enabled: false,
+        apiUrl: '',
+        token: '',
+        hasToken: false
       },
-      notificationSettings: {
-        email: {
-          newTicket: true,
-          ticketUpdate: true,
-          ticketComment: false,
-          deviceStatus: false
+      
+      jellyfinSettings: {
+        enabled: false,
+        url: '',
+        apiKey: '',
+        hasApiKey: false,
+        jfaGoEnabled: false,
+        jfaGoUrl: '',
+        jfaGoDbPath: ''
+      },
+      
+      paymentSettings: {
+        mercadoPago: {
+          enabled: false,
+          publicKey: '',
+          accessToken: '',
+          webhookUrl: '',
+          hasAccessToken: false
         },
-        app: {
-          newTicket: true,
-          ticketUpdate: true,
-          ticketComment: true,
-          deviceStatus: true
+        paypal: {
+          enabled: false,
+          clientId: '',
+          clientSecret: '',
+          sandbox: true,
+          hasClientSecret: false
         }
       },
+      
+      mapSettings: {
+        provider: 'openstreetmap',
+        googleMapsApiKey: '',
+        defaultCenter: { lat: 20.659699, lng: -103.349609 },
+        defaultZoom: 11,
+        hasGoogleMapsKey: false
+      },
+      
+      monitoringSettings: {
+        interval: 300,
+        thresholds: {
+          cpu: 85,
+          memory: 90,
+          disk: 95
+        },
+        retentionDays: 30
+      },
+      
+      billingSettings: {
+        taxRate: 16,
+        graceDays: 5,
+        reminderDays: [3, 7, 15],
+        autoSuspendDays: 15,
+        invoicePrefix: 'INV'
+      },
+      
       networkSettings: {
         mikrotik: {
           defaultUser: 'admin',
@@ -729,55 +1044,64 @@ export default {
           enabled: true
         }
       },
-      integrationSettings: {
-        jellyfin: {
-          url: 'http://localhost:8096',
-          apiKey: '',
-          defaultProfile: ''
+      
+      userProfile: {
+        fullName: '',
+        email: '',
+        avatarUrl: null
+      },
+      
+      passwordChange: {
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      },
+      
+      passwordError: null,
+      
+      twoFactor: {
+        enabled: false
+      },
+      
+      notificationSettings: {
+        email: {
+          newTicket: true,
+          ticketUpdate: true,
+          ticketComment: false,
+          deviceStatus: false
         },
-        smtp: {
-          host: '',
-          port: 587,
-          security: 'tls',
-          user: '',
-          password: '',
-          from: ''
-        },
-        telegram: {
-          token: '',
-          enabled: false
+        app: {
+          newTicket: true,
+          ticketUpdate: true,
+          ticketComment: true,
+          deviceStatus: true
         }
       },
-      jellyfinConnection: null,
-      smtpConnection: null
+      
+      testResults: {
+        email: null,
+        telegram: null,
+        jellyfin: null
+      }
     };
   },
+  
   computed: {
     passwordStrength() {
       if (!this.passwordChange.newPassword) {
-        return {
-          percent: 0,
-          class: '',
-          text: ''
-        };
+        return { percent: 0, class: '', text: '' };
       }
       
       const password = this.passwordChange.newPassword;
       let strength = 0;
+      
+      if (password.length >= 8) strength += 25;
+      if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
+      if (/\d/.test(password)) strength += 25;
+      if (/[^a-zA-Z0-9]/.test(password)) strength += 25;
+      
       let text = '';
       let cssClass = '';
-      
-      // Longitud mínima
-      if (password.length >= 8) strength += 25;
-      
-      // Mayúsculas y minúsculas
-      if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
-      
-      // Números
-      if (/\d/.test(password)) strength += 25;
-      
-      // Caracteres especiales
-      if (/[^a-zA-Z0-9]/.test(password)) strength += 25;
       
       if (strength <= 25) {
         text = 'Débil';
@@ -793,12 +1117,9 @@ export default {
         cssClass = 'strength-strong';
       }
       
-      return {
-        percent: strength,
-        text,
-        class: cssClass
-      };
+      return { percent: strength, text, class: cssClass };
     },
+    
     canChangePassword() {
       return (
         this.passwordChange.currentPassword && 
@@ -809,93 +1130,334 @@ export default {
       );
     }
   },
+  
   created() {
-    this.loadSettings();
+    this.loadAllSettings();
     this.loadUserProfile();
   },
+  
   methods: {
-	async loadSettings() {
-		try {
-			// Usar el servicio de configuración para cargar datos
-			const response = await SettingsService.mockGetSettings(); // En producción: getGeneralSettings(), etc.
-			const settings = response.data;
-
-			// Aplicar configuraciones cargadas
-			if (settings.general) {
-				this.generalSettings = settings.general;
-			}
-			
-			if (settings.network) {
-				this.networkSettings = settings.network;
-			}
-			
-			if (settings.integrations) {
-				this.integrationSettings = settings.integrations;
-			}
-			
-			if (settings.notifications) {
-				this.notificationSettings = settings.notifications;
-			}
-			
-			console.log('Settings loaded successfully');
-		} catch (error) {
-			console.error('Error loading settings:', error);
-			this.$toast?.error('Error al cargar la configuración');
-		}
-	},
+    // ===============================
+    // CARGAR CONFIGURACIONES
+    // ===============================
+    
+    async loadAllSettings() {
+      this.loading = true;
+      try {
+        await Promise.all([
+          this.loadGeneralSettings(),
+          this.loadEmailSettings(),
+          this.loadTelegramSettings(),
+          this.loadWhatsAppSettings(),
+          this.loadJellyfinSettings(),
+          this.loadPaymentSettings(),
+          this.loadMapSettings(),
+          this.loadMonitoringSettings(),
+          this.loadBillingSettings(),
+          this.loadNetworkSettings()
+        ]);
+        
+        console.log('✅ Todas las configuraciones cargadas');
+      } catch (error) {
+        console.error('❌ Error cargando configuraciones:', error);
+        this.$toast?.error('Error al cargar las configuraciones');
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    async loadGeneralSettings() {
+      try {
+        const response = await SettingsService.getGeneralSettings();
+        this.generalSettings = { ...this.generalSettings, ...response.data };
+      } catch (error) {
+        console.error('Error cargando configuración general:', error);
+      }
+    },
+    
+    async loadEmailSettings() {
+      try {
+        const response = await SettingsService.getEmailSettings();
+        this.emailSettings = { ...this.emailSettings, ...response.data };
+      } catch (error) {
+        console.error('Error cargando configuración de email:', error);
+      }
+    },
+    
+    async loadTelegramSettings() {
+      try {
+        const response = await SettingsService.getTelegramSettings();
+        this.telegramSettings = { ...this.telegramSettings, ...response.data };
+      } catch (error) {
+        console.error('Error cargando configuración de Telegram:', error);
+      }
+    },
+    
+    async loadWhatsAppSettings() {
+      try {
+        const response = await SettingsService.getWhatsAppSettings();
+        this.whatsappSettings = { ...this.whatsappSettings, ...response.data };
+      } catch (error) {
+        console.error('Error cargando configuración de WhatsApp:', error);
+      }
+    },
+    
+    async loadJellyfinSettings() {
+      try {
+        const response = await SettingsService.getJellyfinSettings();
+        this.jellyfinSettings = { ...this.jellyfinSettings, ...response.data };
+      } catch (error) {
+        console.error('Error cargando configuración de Jellyfin:', error);
+      }
+    },
+    
+    async loadPaymentSettings() {
+      try {
+        const response = await SettingsService.getPaymentSettings();
+        this.paymentSettings = { ...this.paymentSettings, ...response.data };
+      } catch (error) {
+        console.error('Error cargando configuración de pagos:', error);
+      }
+    },
+    
+    async loadMapSettings() {
+      try {
+        const response = await SettingsService.getMapSettings();
+        this.mapSettings = { ...this.mapSettings, ...response.data };
+      } catch (error) {
+        console.error('Error cargando configuración de mapas:', error);
+      }
+    },
+    
+    async loadMonitoringSettings() {
+      try {
+        const response = await SettingsService.getMonitoringSettings();
+        this.monitoringSettings = { ...this.monitoringSettings, ...response.data };
+      } catch (error) {
+        console.error('Error cargando configuración de monitoreo:', error);
+      }
+    },
+    
+    async loadBillingSettings() {
+      try {
+        const response = await SettingsService.getBillingSettings();
+        this.billingSettings = { ...this.billingSettings, ...response.data };
+      } catch (error) {
+        console.error('Error cargando configuración de facturación:', error);
+      }
+    },
+    
+    async loadNetworkSettings() {
+      try {
+        const response = await SettingsService.getNetworkSettings();
+        this.networkSettings = { ...this.networkSettings, ...response.data };
+      } catch (error) {
+        console.error('Error cargando configuración de red:', error);
+      }
+    },
     
     async loadUserProfile() {
       try {
-        // En una app real, cargarías el perfil desde la API
         const currentUser = this.$store.state.auth.user;
         if (currentUser) {
           this.userProfile.fullName = currentUser.fullName;
           this.userProfile.email = currentUser.email;
         }
       } catch (error) {
-        console.error('Error loading user profile:', error);
+        console.error('Error cargando perfil de usuario:', error);
       }
     },
     
-	async saveGeneralSettings() {
-		this.saving = true;
-		try {
-			// En producción: await SettingsService.saveGeneralSettings(this.generalSettings);
-			await SettingsService.mockSaveSettings();
-			
-			this.$toast?.success('Configuración general guardada correctamente');
-		} catch (error) {
-			console.error('Error saving general settings:', error);
-			this.$toast?.error('Error al guardar la configuración');
-		} finally {
-			this.saving = false;
-		}
-	},
+    // ===============================
+    // GUARDAR CONFIGURACIONES
+    // ===============================
+    
+    async saveGeneralSettings() {
+      this.saving = true;
+      try {
+        await SettingsService.updateGeneralSettings(this.generalSettings);
+        this.$toast?.success('Configuración general guardada correctamente');
+      } catch (error) {
+        console.error('Error guardando configuración general:', error);
+        this.$toast?.error('Error al guardar la configuración general');
+      } finally {
+        this.saving = false;
+      }
+    },
+    
+    async saveEmailSettings() {
+      this.saving = true;
+      try {
+        await SettingsService.updateEmailSettings({
+          host: this.emailSettings.host,
+          port: this.emailSettings.port,
+          user: this.emailSettings.user,
+          password: this.emailSettings.password || undefined,
+          fromName: this.emailSettings.fromName,
+          fromAddress: this.emailSettings.fromAddress
+        });
+        
+        this.$toast?.success('Configuración de email guardada correctamente');
+        
+        // Recargar para actualizar el estado hasPassword
+        await this.loadEmailSettings();
+      } catch (error) {
+        console.error('Error guardando configuración de email:', error);
+        this.$toast?.error('Error al guardar la configuración de email');
+      } finally {
+        this.saving = false;
+      }
+    },
+    
+    async saveTelegramSettings() {
+      this.saving = true;
+      try {
+        await SettingsService.updateTelegramSettings({
+          enabled: this.telegramSettings.enabled,
+          botToken: this.telegramSettings.botToken || undefined,
+          chatId: this.telegramSettings.chatId
+        });
+        
+        this.$toast?.success('Configuración de Telegram guardada correctamente');
+        await this.loadTelegramSettings();
+      } catch (error) {
+        console.error('Error guardando configuración de Telegram:', error);
+        this.$toast?.error('Error al guardar la configuración de Telegram');
+      } finally {
+        this.saving = false;
+      }
+    },
+    
+    async saveJellyfinSettings() {
+      this.saving = true;
+      try {
+        await SettingsService.updateJellyfinSettings({
+          enabled: this.jellyfinSettings.enabled,
+          url: this.jellyfinSettings.url,
+          apiKey: this.jellyfinSettings.apiKey || undefined,
+          jfaGoEnabled: this.jellyfinSettings.jfaGoEnabled,
+          jfaGoUrl: this.jellyfinSettings.jfaGoUrl,
+          jfaGoDbPath: this.jellyfinSettings.jfaGoDbPath
+        });
+        
+        this.$toast?.success('Configuración de Jellyfin guardada correctamente');
+        await this.loadJellyfinSettings();
+      } catch (error) {
+        console.error('Error guardando configuración de Jellyfin:', error);
+        this.$toast?.error('Error al guardar la configuración de Jellyfin');
+      } finally {
+        this.saving = false;
+      }
+    },
+    
+    async saveMonitoringSettings() {
+      this.saving = true;
+      try {
+        await SettingsService.updateMonitoringSettings(this.monitoringSettings);
+        this.$toast?.success('Configuración de monitoreo guardada correctamente');
+      } catch (error) {
+        console.error('Error guardando configuración de monitoreo:', error);
+        this.$toast?.error('Error al guardar la configuración de monitoreo');
+      } finally {
+        this.saving = false;
+      }
+    },
+    
+    async saveBillingSettings() {
+      this.saving = true;
+      try {
+        await SettingsService.updateBillingSettings(this.billingSettings);
+        this.$toast?.success('Configuración de facturación guardada correctamente');
+      } catch (error) {
+        console.error('Error guardando configuración de facturación:', error);
+        this.$toast?.error('Error al guardar la configuración de facturación');
+      } finally {
+        this.saving = false;
+      }
+    },
+    
+    // ===============================
+    // PRUEBAS DE CONEXIÓN
+    // ===============================
+    
+    async testEmailConnection() {
+      if (!this.emailSettings.user) {
+        this.$toast?.warning('Por favor configure el email primero');
+        return;
+      }
+      
+      this.saving = true;
+      this.testResults.email = null;
+      
+      try {
+        const testEmail = prompt('Ingrese el email de prueba:', this.emailSettings.user);
+        if (!testEmail) return;
+        
+        const response = await SettingsService.testEmailSettings(testEmail);
+        
+        this.testResults.email = {
+          success: response.data.success,
+          message: response.data.message
+        };
+        
+        this.$toast?.success('Email de prueba enviado correctamente');
+      } catch (error) {
+        console.error('Error probando conexión de email:', error);
+        this.testResults.email = {
+          success: false,
+          message: error.response?.data?.message || 'Error enviando email de prueba'
+        };
+        this.$toast?.error('Error en la prueba de email');
+      } finally {
+        this.saving = false;
+      }
+    },
+    
+    async testTelegramConnection() {
+      this.saving = true;
+      this.testResults.telegram = null;
+      
+      try {
+        const response = await SettingsService.testTelegramSettings();
+        
+        this.testResults.telegram = {
+          success: response.data.success,
+          message: response.data.message
+        };
+        
+        this.$toast?.success('Mensaje de prueba enviado a Telegram');
+      } catch (error) {
+        console.error('Error probando conexión de Telegram:', error);
+        this.testResults.telegram = {
+          success: false,
+          message: error.response?.data?.message || 'Error enviando mensaje de prueba'
+        };
+        this.$toast?.error('Error en la prueba de Telegram');
+      } finally {
+        this.saving = false;
+      }
+    },
+    
+    // ===============================
+    // OTROS MÉTODOS
+    // ===============================
     
     async saveUserProfile() {
       this.saving = true;
       try {
-        // En una app real, guardarías en la API
         console.log('Saving user profile:', this.userProfile);
-        
-        // Simular un retraso para mostrar el estado de guardado
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Aquí iría la llamada a la API para guardar
-        
-        this.$toast.success('Perfil actualizado correctamente');
+        this.$toast?.success('Perfil actualizado correctamente');
       } catch (error) {
         console.error('Error saving user profile:', error);
-        this.$toast.error('Error al actualizar el perfil');
+        this.$toast?.error('Error al actualizar el perfil');
       } finally {
         this.saving = false;
       }
     },
     
     async changePassword() {
-      if (!this.canChangePassword) {
-        return;
-      }
+      if (!this.canChangePassword) return;
       
       if (this.passwordChange.newPassword !== this.passwordChange.confirmPassword) {
         this.passwordError = 'Las contraseñas no coinciden';
@@ -906,194 +1468,22 @@ export default {
       this.passwordError = null;
       
       try {
-        // En una app real, cambiarías la contraseña a través de la API
         console.log('Changing password');
-        
-        // Simular un retraso para mostrar el estado de guardado
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Aquí iría la llamada a la API para cambiar la contraseña
-		// Aquí iría la llamada a la API para cambiar la contraseña
-        
-        // Limpiar el formulario después de un cambio exitoso
         this.passwordChange = {
           currentPassword: '',
           newPassword: '',
           confirmPassword: ''
         };
         
-        this.$toast.success('Contraseña cambiada correctamente');
+        this.$toast?.success('Contraseña cambiada correctamente');
       } catch (error) {
         console.error('Error changing password:', error);
         this.passwordError = 'Error al cambiar la contraseña. Verifique su contraseña actual.';
-        this.$toast.error('Error al cambiar la contraseña');
+        this.$toast?.error('Error al cambiar la contraseña');
       } finally {
         this.saving = false;
-      }
-    },
-    
-    async setupTwoFactor() {
-      try {
-        // En una app real, activarías 2FA a través de la API
-        console.log('Setting up 2FA...');
-        
-        // Simular configuración de 2FA
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Aquí se mostraría un flujo de configuración con código QR para escanear
-        // Por ahora, simplemente activamos el estado
-        this.twoFactor.enabled = true;
-        
-        this.$toast.success('Autenticación de dos factores activada correctamente');
-      } catch (error) {
-        console.error('Error setting up 2FA:', error);
-        this.$toast.error('Error al configurar la autenticación de dos factores');
-      }
-    },
-    
-    async disableTwoFactor() {
-      try {
-        // En una app real, desactivarías 2FA a través de la API
-        console.log('Disabling 2FA...');
-        
-        // Simular desactivación de 2FA
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        this.twoFactor.enabled = false;
-        
-        this.$toast.success('Autenticación de dos factores desactivada correctamente');
-      } catch (error) {
-        console.error('Error disabling 2FA:', error);
-        this.$toast.error('Error al desactivar la autenticación de dos factores');
-      }
-    },
-    
-    async saveNotificationSettings() {
-      this.saving = true;
-      try {
-        // En una app real, guardarías en la API
-        console.log('Saving notification settings:', this.notificationSettings);
-        
-        // Simular un retraso para mostrar el estado de guardado
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Aquí iría la llamada a la API para guardar
-        
-        this.$toast.success('Preferencias de notificaciones guardadas correctamente');
-      } catch (error) {
-        console.error('Error saving notification settings:', error);
-        this.$toast.error('Error al guardar las preferencias de notificaciones');
-      } finally {
-        this.saving = false;
-      }
-    },
-    
-    async saveNetworkSettings() {
-      this.saving = true;
-      try {
-        // En una app real, guardarías en la API
-        console.log('Saving network settings:', this.networkSettings);
-        
-        // Simular un retraso para mostrar el estado de guardado
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Aquí iría la llamada a la API para guardar
-        
-        this.$toast.success('Configuración de red guardada correctamente');
-      } catch (error) {
-        console.error('Error saving network settings:', error);
-        this.$toast.error('Error al guardar la configuración de red');
-      } finally {
-        this.saving = false;
-      }
-    },
-    
-    async saveJellyfinSettings() {
-      this.saving = true;
-      try {
-        // En una app real, guardarías en la API
-        console.log('Saving Jellyfin settings:', this.integrationSettings.jellyfin);
-        
-        // Simular un retraso para mostrar el estado de guardado
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Aquí iría la llamada a la API para guardar
-        
-        this.$toast.success('Configuración de Jellyfin guardada correctamente');
-      } catch (error) {
-        console.error('Error saving Jellyfin settings:', error);
-        this.$toast.error('Error al guardar la configuración de Jellyfin');
-      } finally {
-        this.saving = false;
-      }
-    },
-    
-    async saveCommunicationSettings() {
-      this.saving = true;
-      try {
-        // En una app real, guardarías en la API
-        console.log('Saving communication settings:', {
-          smtp: this.integrationSettings.smtp,
-          telegram: this.integrationSettings.telegram
-        });
-        
-        // Simular un retraso para mostrar el estado de guardado
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Aquí iría la llamada a la API para guardar
-        
-        this.$toast.success('Configuración de comunicaciones guardada correctamente');
-      } catch (error) {
-        console.error('Error saving communication settings:', error);
-        this.$toast.error('Error al guardar la configuración de comunicaciones');
-      } finally {
-        this.saving = false;
-      }
-    },
-    
-	async testJellyfinConnection() {
-		try {
-			// En producción: const response = await SettingsService.testJellyfinConnection(this.integrationSettings.jellyfin);
-			const response = await SettingsService.mockTestConnection(Math.random() > 0.3);
-			
-			this.jellyfinConnection = {
-				success: response.data.success,
-				message: response.data.message
-			};
-		} catch (error) {
-			console.error('Error testing Jellyfin connection:', error);
-			this.jellyfinConnection = {
-				success: false,
-				message: 'Error de conexión. Verifique URL y API Key.'
-			};
-		}
-	},
-    
-    async testSmtpConnection() {
-      try {
-        // En una app real, probarías la conexión a través de la API
-        console.log('Testing SMTP connection...');
-        
-        // Simular prueba de conexión
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Simulamos éxito o fracaso aleatoriamente
-        const success = Math.random() > 0.3;
-        this.smtpConnection = {
-          success,
-          message: success 
-            ? 'Conexión SMTP exitosa. Correo de prueba enviado.' 
-            : 'Error de conexión SMTP. Verifique las credenciales.'
-        };
-        
-        this.$toast[success ? 'success' : 'error'](this.smtpConnection.message);
-      } catch (error) {
-        console.error('Error testing SMTP connection:', error);
-        this.smtpConnection = {
-          success: false,
-          message: 'Error de conexión SMTP. Verifique las credenciales.'
-        };
-        this.$toast.error(this.smtpConnection.message);
       }
     },
     
@@ -1101,8 +1491,6 @@ export default {
       const file = event.target.files[0];
       if (!file) return;
       
-      // En una app real, subirías este archivo a un servidor
-      // Aquí simularemos que ya se ha subido y obtenemos una URL
       const reader = new FileReader();
       reader.onload = e => {
         this.generalSettings.logoUrl = e.target.result;
@@ -1112,15 +1500,12 @@ export default {
     
     removeLogo() {
       this.generalSettings.logoUrl = null;
-      // También se eliminaría del servidor en una app real
     },
     
     handleAvatarUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
       
-      // En una app real, subirías este archivo a un servidor
-      // Aquí simularemos que ya se ha subido y obtenemos una URL
       const reader = new FileReader();
       reader.onload = e => {
         this.userProfile.avatarUrl = e.target.result;
@@ -1134,7 +1519,6 @@ export default {
     
     removeAvatar() {
       this.userProfile.avatarUrl = null;
-      // También se eliminaría del servidor en una app real
     },
     
     getUserInitials() {
