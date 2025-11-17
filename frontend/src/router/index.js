@@ -1248,13 +1248,26 @@ const routes = [
   },
 
   // ===============================
+  // CALENDARIO
+  // ===============================
+  {
+    path: '/calendar',
+    name: 'Calendar',
+    component: () => import('@/views/calendar/CalendarView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Calendario'
+    }
+  },
+
+  // ===============================
   // a??RUTA 404 Y MANEJO DE ERRORES
   // ===============================
   /*{
     path: '/404',
     name: 'NotFound',
     component: Dashboard, // Usar Dashboard temporalmente hasta crear NotFound.vue
-    meta: { 
+    meta: {
       title: 'P??gina no encontrada'
     }
   },
