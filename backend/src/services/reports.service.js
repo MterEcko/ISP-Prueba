@@ -1,8 +1,27 @@
 // backend/src/services/reports.service.js - VERSIÓN COMPLETA ACTUALIZADA
+const PDFDocument = require('pdfkit');
+const ExcelJS = require('exceljs');
 const db = require('../models');
 const { Op } = require('sequelize');
+const fs = require('fs');
+const path = require('path');
 
 class ReportsService {
+  constructor() {
+    // Directorio temporal para archivos generados
+    this.tempDir = path.join(__dirname, '../../temp/reports');
+    this._ensureTempDir();
+  }
+
+  /**
+   * Asegura que el directorio temporal existe
+   * @private
+   */
+  _ensureTempDir() {
+    if (!fs.existsSync(this.tempDir)) {
+      fs.mkdirSync(this.tempDir, { recursive: true });
+    }
+  }
 
   /**
    * Recopila y unifica el historial de actividad de un cliente desde múltiples tablas.
@@ -1312,6 +1331,349 @@ async getClientComparisons(clientId) {
     throw error;
   }
 }
+
+  // ========================================
+  // MÉTODOS DE EXPORTACIÓN A PDF Y EXCEL
+  // ========================================
+
+  /**
+   * Genera reporte de clientes en PDF
+   * @param {Object} filters - Filtros de búsqueda
+   * @returns {Promise<Buffer>} - Buffer del PDF
+   */
+  async generateClientsPDF(filters = {}) {
+    const clients = await this._fetchClients(filters);
+
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+        const chunks = [];
+
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        // Header
+        doc.fontSize(20).text('Reporte de Clientes', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(10).text(`Generado: ${new Date().toLocaleDateString('es-MX')}`, { align: 'center' });
+        doc.moveDown(2);
+
+        // Totales
+        doc.fontSize(14).text(`Total de clientes: ${clients.length}`, { bold: true });
+        doc.moveDown();
+
+        // Tabla de clientes
+        doc.fontSize(10);
+        const tableTop = doc.y;
+        const itemHeight = 20;
+
+        // Headers
+        doc.font('Helvetica-Bold');
+        doc.text('ID', 50, tableTop, { width: 40 });
+        doc.text('Nombre', 90, tableTop, { width: 150 });
+        doc.text('Email', 240, tableTop, { width: 150 });
+        doc.text('Estado', 390, tableTop, { width: 80 });
+
+        doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
+
+        // Datos
+        doc.font('Helvetica');
+        let currentY = tableTop + 20;
+
+        clients.forEach((client) => {
+          if (currentY > 700) {
+            doc.addPage();
+            currentY = 50;
+          }
+
+          doc.text(client.id, 50, currentY, { width: 40 });
+          doc.text(client.nombre || 'N/A', 90, currentY, { width: 150 });
+          doc.text(client.email || 'N/A', 240, currentY, { width: 150 });
+          doc.text(client.estado || 'N/A', 390, currentY, { width: 80 });
+
+          currentY += itemHeight;
+        });
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Genera reporte de clientes en Excel
+   * @param {Object} filters - Filtros de búsqueda
+   * @returns {Promise<Buffer>} - Buffer del Excel
+   */
+  async generateClientsExcel(filters = {}) {
+    const clients = await this._fetchClients(filters);
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Sistema ISP';
+    workbook.created = new Date();
+
+    const worksheet = workbook.addWorksheet('Clientes');
+
+    // Configurar columnas
+    worksheet.columns = [
+      { header: 'ID', key: 'id', width: 10 },
+      { header: 'Nombre', key: 'nombre', width: 30 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Teléfono', key: 'telefono', width: 15 },
+      { header: 'Dirección', key: 'direccion', width: 40 },
+      { header: 'Estado', key: 'estado', width: 15 },
+      { header: 'Fecha Registro', key: 'createdAt', width: 15 }
+    ];
+
+    // Estilo del header
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF4472C4' }
+    };
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+    // Agregar datos
+    clients.forEach(client => {
+      worksheet.addRow({
+        id: client.id,
+        nombre: client.nombre || 'N/A',
+        email: client.email || 'N/A',
+        telefono: client.telefono || 'N/A',
+        direccion: client.direccion || 'N/A',
+        estado: client.estado || 'N/A',
+        createdAt: client.createdAt ? new Date(client.createdAt).toLocaleDateString('es-MX') : 'N/A'
+      });
+    });
+
+    // Auto-filtros
+    worksheet.autoFilter = {
+      from: 'A1',
+      to: 'G1'
+    };
+
+    return workbook.xlsx.writeBuffer();
+  }
+
+  /**
+   * Genera reporte de pagos en PDF
+   * @param {Object} filters - Filtros de búsqueda
+   * @returns {Promise<Buffer>} - Buffer del PDF
+   */
+  async generatePaymentsPDF(filters = {}) {
+    const payments = await this._fetchPayments(filters);
+
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+        const chunks = [];
+
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        // Header
+        doc.fontSize(20).text('Reporte de Pagos', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(10).text(`Generado: ${new Date().toLocaleDateString('es-MX')}`, { align: 'center' });
+        doc.moveDown(2);
+
+        // Calcular totales
+        const totalPagos = payments.length;
+        const totalMonto = payments.reduce((sum, p) => sum + parseFloat(p.monto || p.amount || 0), 0);
+
+        // Resumen
+        doc.fontSize(14).text('Resumen:', { underline: true });
+        doc.fontSize(10);
+        doc.text(`Total de pagos: ${totalPagos}`);
+        doc.text(`Monto total: $${totalMonto.toFixed(2)}`);
+        doc.moveDown(2);
+
+        // Tabla de pagos
+        const tableTop = doc.y;
+        const itemHeight = 20;
+
+        // Headers
+        doc.font('Helvetica-Bold');
+        doc.text('ID', 50, tableTop, { width: 30 });
+        doc.text('Cliente', 80, tableTop, { width: 140 });
+        doc.text('Monto', 220, tableTop, { width: 60 });
+        doc.text('Estado', 280, tableTop, { width: 70 });
+        doc.text('Fecha', 350, tableTop, { width: 80 });
+
+        doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
+
+        // Datos
+        doc.font('Helvetica');
+        let currentY = tableTop + 20;
+
+        payments.forEach(payment => {
+          if (currentY > 700) {
+            doc.addPage();
+            currentY = 50;
+          }
+
+          doc.text(payment.id, 50, currentY, { width: 30 });
+          doc.text(payment.Client?.nombre || 'N/A', 80, currentY, { width: 140 });
+          doc.text(`$${parseFloat(payment.monto || payment.amount || 0).toFixed(2)}`, 220, currentY, { width: 60 });
+          doc.text(payment.estado || payment.status || 'N/A', 280, currentY, { width: 70 });
+          doc.text(
+            payment.fecha_pago || payment.paymentDate ? new Date(payment.fecha_pago || payment.paymentDate).toLocaleDateString('es-MX') : 'N/A',
+            350,
+            currentY,
+            { width: 80 }
+          );
+
+          currentY += itemHeight;
+        });
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Genera reporte de pagos en Excel
+   * @param {Object} filters - Filtros de búsqueda
+   * @returns {Promise<Buffer>} - Buffer del Excel
+   */
+  async generatePaymentsExcel(filters = {}) {
+    const payments = await this._fetchPayments(filters);
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Sistema ISP';
+    workbook.created = new Date();
+
+    const worksheet = workbook.addWorksheet('Pagos');
+
+    // Configurar columnas
+    worksheet.columns = [
+      { header: 'ID', key: 'id', width: 10 },
+      { header: 'Cliente', key: 'cliente', width: 30 },
+      { header: 'Monto', key: 'monto', width: 15 },
+      { header: 'Método de Pago', key: 'metodo', width: 20 },
+      { header: 'Estado', key: 'estado', width: 15 },
+      { header: 'Fecha de Pago', key: 'fecha', width: 15 },
+      { header: 'Referencia', key: 'referencia', width: 25 }
+    ];
+
+    // Estilo del header
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF70AD47' }
+    };
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+    // Agregar datos
+    payments.forEach(payment => {
+      worksheet.addRow({
+        id: payment.id,
+        cliente: payment.Client?.nombre || 'N/A',
+        monto: parseFloat(payment.monto || payment.amount || 0),
+        metodo: payment.metodo_pago || payment.paymentMethod || 'N/A',
+        estado: payment.estado || payment.status || 'N/A',
+        fecha: payment.fecha_pago || payment.paymentDate ? new Date(payment.fecha_pago || payment.paymentDate).toLocaleDateString('es-MX') : 'N/A',
+        referencia: payment.referencia || payment.reference || 'N/A'
+      });
+    });
+
+    // Formato de moneda para la columna de monto
+    worksheet.getColumn('monto').numFmt = '"$"#,##0.00';
+
+    // Auto-filtros
+    worksheet.autoFilter = {
+      from: 'A1',
+      to: 'G1'
+    };
+
+    // Agregar resumen al final
+    const totalRow = worksheet.rowCount + 2;
+    worksheet.getCell(`A${totalRow}`).value = 'TOTAL:';
+    worksheet.getCell(`A${totalRow}`).font = { bold: true };
+    worksheet.getCell(`C${totalRow}`).value = {
+      formula: `SUM(C2:C${worksheet.rowCount - 1})`
+    };
+    worksheet.getCell(`C${totalRow}`).font = { bold: true };
+    worksheet.getCell(`C${totalRow}`).numFmt = '"$"#,##0.00';
+
+    return workbook.xlsx.writeBuffer();
+  }
+
+  /**
+   * Obtiene clientes con filtros
+   * @private
+   */
+  async _fetchClients(filters) {
+    const where = {};
+
+    if (filters.estado) {
+      where.estado = filters.estado;
+    }
+
+    if (filters.dateFrom || filters.dateTo) {
+      where.createdAt = {};
+      if (filters.dateFrom) {
+        where.createdAt[Op.gte] = new Date(filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        where.createdAt[Op.lte] = new Date(filters.dateTo);
+      }
+    }
+
+    return await db.Client.findAll({
+      where,
+      order: [['id', 'DESC']],
+      limit: filters.limit || 1000
+    });
+  }
+
+  /**
+   * Obtiene pagos con filtros
+   * @private
+   */
+  async _fetchPayments(filters) {
+    const where = {};
+
+    if (filters.estado) {
+      where.estado = filters.estado;
+      where.status = filters.estado;
+    }
+
+    if (filters.metodo_pago) {
+      where.metodo_pago = filters.metodo_pago;
+    }
+
+    if (filters.dateFrom || filters.dateTo) {
+      where.fecha_pago = {};
+      where.paymentDate = {};
+      if (filters.dateFrom) {
+        where.fecha_pago[Op.gte] = new Date(filters.dateFrom);
+        where.paymentDate[Op.gte] = new Date(filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        where.fecha_pago[Op.lte] = new Date(filters.dateTo);
+        where.paymentDate[Op.lte] = new Date(filters.dateTo);
+      }
+    }
+
+    return await db.Payment.findAll({
+      where,
+      include: [{
+        model: db.Client,
+        attributes: ['id', 'nombre'],
+        required: false
+      }],
+      order: [['createdAt', 'DESC']],
+      limit: filters.limit || 1000
+    });
+  }
 }
 
 module.exports = new ReportsService();

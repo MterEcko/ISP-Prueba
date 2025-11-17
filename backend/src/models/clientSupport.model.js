@@ -1,4 +1,4 @@
-// backend/src/models/clientSupport.model.js (29/5/25 → ACTUALIZADO)
+// backend/src/models/clientSupport.model.js (ACTUALIZADO)
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -18,39 +18,70 @@ module.exports = (sequelize) => {
     },
     ticketId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
       references: {
         model: 'Tickets',
         key: 'id'
-      }
+      },
+      comment: 'Ticket relacionado (opcional)'
     },
-    issueType: {
-      type: DataTypes.STRING,
-      allowNull: false
+    supportType: {
+      type: DataTypes.ENUM('technical', 'billing', 'sales', 'general'),
+      allowNull: false,
+      comment: 'Tipo de soporte'
+    },
+    category: {
+      type: DataTypes.STRING(100),
+      defaultValue: 'general',
+      comment: 'Categoría del problema'
     },
     description: {
       type: DataTypes.TEXT,
-      allowNull: false
+      comment: 'Descripción del problema o consulta'
+    },
+    handledBy: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'Users',
+        key: 'id'
+      },
+      comment: 'Usuario que atendió el soporte'
     },
     status: {
-      type: DataTypes.ENUM('pending', 'inProgress', 'resolved'),
-      defaultValue: 'pending'
+      type: DataTypes.ENUM('open', 'in_progress', 'resolved', 'closed'),
+      defaultValue: 'open'
     },
-    photos: {
-      type: DataTypes.JSON,
-      defaultValue: [],
-      comment: 'URLs de fotos del problema'
+    resolution: {
+      type: DataTypes.TEXT,
+      comment: 'Descripción de la resolución'
     },
-    comments: {
-      type: DataTypes.JSON,
-      defaultValue: [],
-      comment: 'Comentarios del técnico'
+    resolvedBy: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'Users',
+        key: 'id'
+      },
+      comment: 'Usuario que resolvió el caso'
     },
-    resolutionNotes: {
-      type: DataTypes.TEXT
+    resolvedDate: {
+      type: DataTypes.DATE,
+      comment: 'Fecha de resolución'
     },
-    resolvedAt: {
-      type: DataTypes.DATE
+    followUpRequired: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: 'Requiere seguimiento'
+    },
+    followUpDate: {
+      type: DataTypes.DATE,
+      comment: 'Fecha para seguimiento'
+    },
+    rating: {
+      type: DataTypes.INTEGER,
+      validate: {
+        min: 1,
+        max: 5
+      },
+      comment: 'Calificación del cliente (1-5)'
     }
   }, {
     tableName: 'ClientSupports',

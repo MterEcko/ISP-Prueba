@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Home from '../views/Home.vue';
 import Login from '../views/Login.vue';
 import Dashboard from '../views/Dashboard.vue';
+import MetricsDashboard from '../views/MetricsDashboard.vue';
 import ClientList from '../views/ClientList.vue';
 import ClientDetail from '../views/ClientDetail.vue';
 import ClientForm from '../views/ClientForm.vue';
@@ -47,6 +48,13 @@ import InventoryManagementView from '../views/inventory/InventoryManagementView.
 import InventoryBatchForm from '../views/inventory/InventoryBatchForm.vue';
 import InventoryBatchRegisterForm from '../views/inventory/BatchRegisterForm.vue';
 
+// Importaciones para licencias
+import LicenseManagementView from '../views/license/LicenseManagementView.vue';
+
+// Importaciones para plugins
+import PluginManagementView from '../views/plugins/PluginManagementView.vue';
+import PluginMarketplaceView from '../views/plugins/PluginMarketplaceView.vue';
+
 
 import InventoryDashboard from '../views/inventory/InventoryDashboard';
 
@@ -82,6 +90,9 @@ import ClientBillingConfig from '../views/ClientBillingConfig.vue';
 import BillingReports from '../views/BillingReports.vue';
 import OverdueInvoices from '../views/OverdueInvoices.vue';
 import PaymentGateways from '../views/PaymentGateways.vue';
+import ReportsExport from '../views/ReportsExport.vue';
+import CoverageMap from '../views/CoverageMap.vue';
+import VideoCall from '../views/VideoCall.vue';
 // ===== IMPORTACIONES PARA SUSCRIPCIONES =====
 import SubscriptionForm from '../components/SubscriptionForm.vue';
 import SubscriptionFormIntelligent from '../components/SubscriptionFormIntelligent.vue';
@@ -119,6 +130,12 @@ const routes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/metrics-dashboard',
+    name: 'MetricsDashboard',
+    component: MetricsDashboard,
     meta: { requiresAuth: true }
   },
   {
@@ -372,16 +389,108 @@ const routes = [
   path: '/billing/gateways',
   name: 'PaymentGateways',
   component: PaymentGateways,
-  meta: { 
+  meta: {
     requiresAuth: true,
     title: 'Pasarelas de Pago'
   }
 },
 
+// Exportar reportes (PDF/Excel)
+{
+  path: '/reports/export',
+  name: 'ReportsExport',
+  component: ReportsExport,
+  meta: {
+    requiresAuth: true,
+    title: 'Exportar Reportes'
+  }
+},
+
+// Mapa de cobertura geográfica
+{
+  path: '/coverage-map',
+  name: 'CoverageMap',
+  component: CoverageMap,
+  meta: {
+    requiresAuth: true,
+    title: 'Mapa de Cobertura'
+  }
+},
+
+// Videollamadas
+{
+  path: '/video-call',
+  name: 'VideoCall',
+  component: VideoCall,
+  meta: {
+    requiresAuth: true,
+    title: 'Videollamadas'
+  }
+},
+
+  // ===============================
+  // RUTAS DEL PORTAL DEL CLIENTE
+  // ===============================
+
+  // Dashboard principal del portal del cliente
+  {
+    path: '/client-portal/dashboard',
+    name: 'ClientPortalDashboard',
+    component: () => import('../views/ClientPortal/ClientPortalDashboard.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Mi Portal'
+    }
+  },
+
+  // Facturas del cliente
+  {
+    path: '/client-portal/invoices',
+    name: 'ClientPortalInvoices',
+    component: () => import('../views/ClientPortal/ClientPortalInvoices.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Mis Facturas'
+    }
+  },
+
+  // Tickets de soporte del cliente
+  {
+    path: '/client-portal/tickets',
+    name: 'ClientPortalTickets',
+    component: () => import('../views/ClientPortal/ClientPortalTickets.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Mis Tickets'
+    }
+  },
+
+  // Perfil del cliente
+  {
+    path: '/client-portal/profile',
+    name: 'ClientPortalProfile',
+    component: () => import('../views/ClientPortal/ClientPortalProfile.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Mi Perfil'
+    }
+  },
+
+  // Consumo/uso del cliente
+  {
+    path: '/client-portal/usage',
+    name: 'ClientPortalUsage',
+    component: () => import('../views/ClientPortal/ClientPortalUsage.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Mi Consumo'
+    }
+  },
+
   // ===============================
   // e??? RUTAS PARA SUSCRIPCIONES INTELIGENTES
   // ===============================
-  
+
   // 1. NUEVA SUSCRIPCI?��N (Detecci?3n autom??tica si ya tiene suscripciones)
   {
     path: '/clients/:clientId/subscription/new',
@@ -1241,13 +1350,79 @@ const routes = [
   },
 
   // ===============================
+  // CALENDARIO
+  // ===============================
+  {
+    path: '/calendar',
+    name: 'Calendar',
+    component: () => import('@/views/calendar/CalendarView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Calendario'
+    }
+  },
+
+  // ===============================
+  // CHAT
+  // ===============================
+  {
+    path: '/chat',
+    name: 'Chat',
+    component: () => import('@/views/chat/ChatView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Mensajes'
+    }
+  },
+
+  // ===============================
+  // STORE (Marketplace de Plugins)
+  // ===============================
+  {
+    path: '/store/dashboard',
+    name: 'StoreDashboard',
+    component: () => import('@/views/store/StoreDashboard.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Dashboard de Ganancias'
+    }
+  },
+  {
+    path: '/store/customers',
+    name: 'StoreCustomers',
+    component: () => import('@/views/store/StoreCustomerList.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Clientes del Store'
+    }
+  },
+  {
+    path: '/store/orders',
+    name: 'StoreOrders',
+    component: () => import('@/views/store/StoreOrderList.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Órdenes del Store'
+    }
+  },
+  {
+    path: '/plugins/upload',
+    name: 'PluginUpload',
+    component: () => import('@/views/plugins/PluginUploadView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Subir Plugin'
+    }
+  },
+
+  // ===============================
   // a??RUTA 404 Y MANEJO DE ERRORES
   // ===============================
   /*{
     path: '/404',
     name: 'NotFound',
     component: Dashboard, // Usar Dashboard temporalmente hasta crear NotFound.vue
-    meta: { 
+    meta: {
       title: 'P??gina no encontrada'
     }
   },

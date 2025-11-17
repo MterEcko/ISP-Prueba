@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Licencias - ISP-Prueba Store</title>
+  <link rel="stylesheet" href="/dashboard/static/css/dashboard.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>ISP-Prueba Store</h1>
+        <p>Panel de Administración</p>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a href="/dashboard">
+          <span class="icon">📊</span> Dashboard
+        </a></li>
+        <li><a href="/dashboard/installations">
+          <span class="icon">💻</span> Instalaciones
+        </a></li>
+        <li><a href="/dashboard/licenses" class="active">
+          <span class="icon">🔑</span> Licencias
+        </a></li>
+        <li><a href="/dashboard/plugins">
+          <span class="icon">🧩</span> Plugins
+        </a></li>
+        <li><a href="/dashboard/map">
+          <span class="icon">🗺️</span> Mapa
+        </a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h2>Licencias</h2>
+        <p>Gestiona las licencias del sistema</p>
+      </div>
+
+      <!-- Actions -->
+      <div style="margin-bottom: 20px;">
+        <button class="btn btn-primary" onclick="showCreateLicenseDialog()">➕ Generar Nueva Licencia</button>
+      </div>
+
+      <!-- Data Table -->
+      <div class="data-table">
+        <div class="table-header">
+          <h3>Todas las Licencias</h3>
+          <div class="search-box">
+            <span>🔍</span>
+            <input type="text" id="searchInput" placeholder="Buscar por clave de licencia...">
+          </div>
+        </div>
+        <div id="licensesTable">
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>Cargando licencias...</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create License Dialog (Simple Modal) -->
+  <div id="createLicenseDialog" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%;">
+      <h3 style="margin-bottom: 20px;">Generar Nueva Licencia</h3>
+
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Tipo de Plan</label>
+        <select id="planType" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+          <option value="basic">Basic (50 clientes)</option>
+          <option value="premium">Premium (200 clientes)</option>
+          <option value="enterprise">Enterprise (Ilimitado)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Duración (días)</label>
+        <input type="number" id="durationDays" value="365" min="1" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 5px; font-weight: 500;">
+          <input type="checkbox" id="neverExpires"> Nunca expira
+        </label>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn" onclick="hideCreateLicenseDialog()" style="background: #999;">Cancelar</button>
+        <button class="btn btn-primary" onclick="createLicense()">Generar Licencia</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = window.location.origin + '/api';
+    let allLicenses = [];
+
+    async function loadLicenses() {
+      try {
+        const response = await fetch(`${API_URL}/licenses`);
+        const data = await response.json();
+
+        if (data.success) {
+          allLicenses = data.data;
+          renderLicenses(allLicenses);
+        }
+      } catch (error) {
+        console.error('Error loading licenses:', error);
+        document.getElementById('licensesTable').innerHTML = `
+          <div class="loading">
+            <p style="color: #e74c3c;">❌ Error al cargar las licencias</p>
+          </div>
+        `;
+      }
+    }
+
+    function renderLicenses(licenses) {
+      const tableDiv = document.getElementById('licensesTable');
+
+      if (!licenses || licenses.length === 0) {
+        tableDiv.innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">No hay licencias registradas</p>';
+        return;
+      }
+
+      tableDiv.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Clave de Licencia</th>
+              <th>Tipo de Plan</th>
+              <th>Estado</th>
+              <th>Límite de Clientes</th>
+              <th>Asignada a</th>
+              <th>Expira</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${licenses.map(lic => `
+              <tr>
+                <td>
+                  <code style="font-size: 12px;">${lic.licenseKey}</code>
+                  ${lic.isMasterLicense ? '<br><span class="badge badge-danger">⭐ MASTER</span>' : ''}
+                </td>
+                <td><span class="badge badge-info">${getPlanText(lic.planType)}</span></td>
+                <td><span class="badge badge-${getStatusBadgeClass(lic.status)}">${getStatusText(lic.status)}</span></td>
+                <td>${lic.clientLimit ? `<strong>${lic.clientLimit}</strong> clientes` : '♾️ Ilimitado'}</td>
+                <td>
+                  ${lic.Installation ? `
+                    <strong>${lic.Installation.companyName}</strong><br>
+                    <small>${lic.boundToHardwareId ? lic.boundToHardwareId.substring(0, 16) + '...' : ''}</small>
+                  ` : '<span style="color: #999;">No asignada</span>'}
+                </td>
+                <td>
+                  ${lic.expiresAt ? `
+                    ${new Date(lic.expiresAt) > new Date() ?
+                      `${formatDate(lic.expiresAt)}` :
+                      '<span style="color: #e74c3c;">⚠️ Expirada</span>'
+                    }
+                  ` : '♾️ Nunca'}
+                </td>
+                <td>
+                  ${lic.status === 'active' && !lic.isMasterLicense ?
+                    `<button class="btn btn-danger btn-sm" onclick="revokeLicense('${lic.id}', '${lic.licenseKey}')">❌ Revocar</button>` :
+                    ''
+                  }
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function showCreateLicenseDialog() {
+      document.getElementById('createLicenseDialog').style.display = 'flex';
+    }
+
+    function hideCreateLicenseDialog() {
+      document.getElementById('createLicenseDialog').style.display = 'none';
+    }
+
+    async function createLicense() {
+      const planType = document.getElementById('planType').value;
+      const durationDays = parseInt(document.getElementById('durationDays').value);
+      const neverExpires = document.getElementById('neverExpires').checked;
+
+      const licenseData = {
+        planType,
+        expiresInDays: neverExpires ? null : durationDays
+      };
+
+      try {
+        const response = await fetch(`${API_URL}/licenses/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(licenseData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert(`✅ Licencia generada correctamente:\n\n${data.data.licenseKey}\n\nCopia esta clave y guárdala en un lugar seguro.`);
+          hideCreateLicenseDialog();
+          loadLicenses();
+        } else {
+          alert(`❌ Error: ${data.message}`);
+        }
+      } catch (error) {
+        console.error('Error creating license:', error);
+        alert('❌ Error al generar la licencia');
+      }
+    }
+
+    async function revokeLicense(id, licenseKey) {
+      if (!confirm(`¿Estás seguro de revocar la licencia ${licenseKey.substring(0, 16)}...?`)) return;
+
+      try {
+        const response = await fetch(`${API_URL}/licenses/${id}/revoke`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert(`✅ Licencia revocada correctamente`);
+          loadLicenses();
+        } else {
+          alert(`❌ Error: ${data.message}`);
+        }
+      } catch (error) {
+        console.error('Error revoking license:', error);
+        alert('❌ Error al revocar la licencia');
+      }
+    }
+
+    function getPlanText(planType) {
+      const plans = {
+        freemium: 'Freemium',
+        basic: 'Basic',
+        premium: 'Premium',
+        enterprise: 'Enterprise',
+        master: 'MASTER'
+      };
+      return plans[planType] || planType;
+    }
+
+    function getStatusBadgeClass(status) {
+      const classes = {
+        active: 'success',
+        expired: 'danger',
+        revoked: 'danger',
+        pending: 'warning'
+      };
+      return classes[status] || 'info';
+    }
+
+    function getStatusText(status) {
+      const texts = {
+        active: 'Activa',
+        expired: 'Expirada',
+        revoked: 'Revocada',
+        pending: 'Pendiente'
+      };
+      return texts[status] || status;
+    }
+
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    // Toggle never expires checkbox
+    document.getElementById('neverExpires').addEventListener('change', (e) => {
+      document.getElementById('durationDays').disabled = e.target.checked;
+    });
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      const filtered = allLicenses.filter(lic =>
+        lic.licenseKey.toLowerCase().includes(searchTerm) ||
+        (lic.Installation && lic.Installation.companyName.toLowerCase().includes(searchTerm))
+      );
+      renderLicenses(filtered);
+    });
+
+    // Load licenses on page load
+    loadLicenses();
+
+    // Auto-refresh every 60 seconds
+    setInterval(loadLicenses, 60000);
+  </script>
+</body>
+</html>

@@ -4,6 +4,8 @@ const SystemPlugin = db.SystemPlugin;
 const logger = require('../utils/logger');
 const fs = require('fs');
 const path = require('path');
+const pluginConfigEncryption = require('../services/pluginConfigEncryption.service');
+const pluginAudit = require('../services/pluginAudit.service');
 
 class SystemPluginController {
   constructor() {
@@ -283,7 +285,10 @@ class SystemPluginController {
       }
       
       logger.info(`Plugin ${name} registrado exitosamente`);
-      
+
+      // Auditoría
+      await pluginAudit.logPluginCreated(newPlugin, req);
+
       return res.status(201).json({
         success: true,
         data: newPlugin,
@@ -418,19 +423,23 @@ class SystemPluginController {
         });
       }
 
-      // Activar plugin
+      // Activar plugin (medir tiempo)
+      const startTime = Date.now();
       await this._activatePlugin(plugin);
-      
-      await plugin.update({ 
+
+      await plugin.update({
         active: true,
         configuration: {
           ...plugin.configuration,
           activatedAt: new Date().toISOString()
         }
       });
-      
+
       logger.info(`Plugin ${plugin.name} activado exitosamente`);
-      
+
+      // Auditoría
+      await pluginAudit.logPluginActivated(plugin, req, startTime);
+
       return res.status(200).json({
         success: true,
         data: plugin,
@@ -486,19 +495,23 @@ class SystemPluginController {
         });
       }
       
-      // Desactivar plugin
+      // Desactivar plugin (medir tiempo)
+      const startTime = Date.now();
       await this._deactivatePlugin(plugin);
-      
-      await plugin.update({ 
+
+      await plugin.update({
         active: false,
         configuration: {
           ...plugin.configuration,
           deactivatedAt: new Date().toISOString()
         }
       });
-      
+
       logger.info(`Plugin ${plugin.name} desactivado exitosamente`);
-      
+
+      // Auditoría
+      await pluginAudit.logPluginDeactivated(plugin, req, startTime);
+
       return res.status(200).json({
         success: true,
         data: plugin,
@@ -652,9 +665,9 @@ class SystemPluginController {
   getPluginConfig = async (req, res) => {
     try {
       const { id } = req.params;
-      
+
       const plugin = await SystemPlugin.findByPk(id);
-      
+
       if (!plugin) {
         return res.status(404).json({
           success: false,
@@ -670,13 +683,22 @@ class SystemPluginController {
       } catch (error) {
         logger.warn(`No se pudo obtener esquema de configuración: ${error.message}`);
       }
-      
+
+      // Desencriptar y enmascarar configuración sensible para enviar al cliente
+      let safeConfig = plugin.configuration;
+      if (safeConfig && typeof safeConfig === 'object') {
+        // Primero desencriptar
+        const decrypted = pluginConfigEncryption.decryptConfig(safeConfig, configSchema);
+        // Luego enmascarar para mostrar de forma segura
+        safeConfig = pluginConfigEncryption.maskConfig(decrypted, configSchema);
+      }
+
       return res.status(200).json({
         success: true,
         data: {
           pluginId: plugin.id,
           pluginName: plugin.name,
-          configuration: plugin.configuration,
+          configuration: safeConfig,
           configSchema
         },
         message: 'Configuración obtenida exitosamente'
@@ -716,9 +738,13 @@ class SystemPluginController {
         });
       }
 
-      // Validar configuración si existe un esquema
+      // Obtener esquema de configuración del plugin
+      let configSchema = null;
       try {
         const pluginInfo = await this._getPluginInfo(plugin.name);
+        configSchema = pluginInfo.configSchema || null;
+
+        // Validar configuración si existe validador
         if (pluginInfo.validateConfig && typeof pluginInfo.validateConfig === 'function') {
           const validation = pluginInfo.validateConfig(configuration);
           if (!validation.valid) {
@@ -733,22 +759,43 @@ class SystemPluginController {
         logger.warn(`No se pudo validar configuración: ${error.message}`);
       }
 
-      // Actualizar configuración
+      // Encriptar campos sensibles en la configuración
+      let encryptedConfig = configuration;
+      try {
+        encryptedConfig = pluginConfigEncryption.encryptConfig(configuration, configSchema);
+        logger.info(`🔒 Configuración sensible encriptada para plugin: ${plugin.name}`);
+      } catch (error) {
+        logger.error(`Error encriptando configuración: ${error.message}`);
+        return res.status(500).json({
+          success: false,
+          message: 'Error al procesar configuración sensible'
+        });
+      }
+
+      // Guardar configuración anterior para auditoría
+      const previousConfig = { ...plugin.configuration };
+
+      // Actualizar configuración con datos encriptados
+      const updatedConfig = {
+        ...plugin.configuration,
+        ...encryptedConfig,
+        updatedAt: new Date().toISOString(),
+        updatedBy: req.userId || 'system'
+      };
+
       await plugin.update({
-        configuration: {
-          ...plugin.configuration,
-          ...configuration,
-          updatedAt: new Date().toISOString(),
-          updatedBy: req.userId || 'system'
-        }
+        configuration: updatedConfig
       });
 
       // Si el plugin está activo, notificar el cambio de configuración
+      // IMPORTANTE: Pasar configuración DESENCRIPTADA al plugin
       if (plugin.active && this.activePlugins.has(plugin.name)) {
         try {
           const activePlugin = this.activePlugins.get(plugin.name);
           if (activePlugin.onConfigUpdate && typeof activePlugin.onConfigUpdate === 'function') {
-            await activePlugin.onConfigUpdate(plugin.configuration);
+            // Desencriptar antes de notificar al plugin
+            const decryptedConfig = pluginConfigEncryption.decryptConfig(updatedConfig, configSchema);
+            await activePlugin.onConfigUpdate(decryptedConfig);
           }
         } catch (error) {
           logger.warn(`Error notificando cambio de configuración al plugin: ${error.message}`);
@@ -756,7 +803,10 @@ class SystemPluginController {
       }
       
       logger.info(`Configuración del plugin ${plugin.name} actualizada`);
-      
+
+      // Auditoría de cambio de configuración
+      await pluginAudit.logConfigUpdated(plugin, previousConfig, configuration, req);
+
       return res.status(200).json({
         success: true,
         data: plugin,
@@ -932,7 +982,7 @@ class SystemPluginController {
   async _activatePlugin(plugin) {
     try {
       const pluginPath = path.join(this.pluginsPath, plugin.name);
-      
+
       // Verificar que existe
       if (!fs.existsSync(pluginPath)) {
         throw new Error(`Plugin ${plugin.name} no encontrado en ${pluginPath}`);
@@ -945,7 +995,7 @@ class SystemPluginController {
       }
 
       const pluginController = require(controllerPath);
-      
+
       // Verificar métodos requeridos (pueden variar según el tipo de plugin)
       const requiredMethods = this._getRequiredMethodsForCategory(plugin.category);
       for (const method of requiredMethods) {
@@ -954,14 +1004,29 @@ class SystemPluginController {
         }
       }
 
-      // Inicializar plugin si tiene método de inicialización
+      // Desencriptar configuración antes de inicializar el plugin
+      let decryptedConfig = plugin.configuration;
+      try {
+        // Obtener esquema para desencriptación correcta
+        const pluginInfo = await this._getPluginInfo(plugin.name);
+        const configSchema = pluginInfo.configSchema || null;
+
+        // Desencriptar campos sensibles
+        decryptedConfig = pluginConfigEncryption.decryptConfig(plugin.configuration, configSchema);
+        logger.info(`🔓 Configuración desencriptada para plugin: ${plugin.name}`);
+      } catch (error) {
+        logger.warn(`No se pudo desencriptar configuración para ${plugin.name}: ${error.message}`);
+        // Continuar con configuración original si falla desencriptación
+      }
+
+      // Inicializar plugin con configuración DESENCRIPTADA
       if (pluginController.initialize && typeof pluginController.initialize === 'function') {
-        await pluginController.initialize(plugin.configuration);
+        await pluginController.initialize(decryptedConfig);
       }
 
       // Almacenar plugin activo
       this.activePlugins.set(plugin.name, pluginController);
-      
+
       logger.info(`Plugin ${plugin.name} activado exitosamente`);
 
     } catch (error) {

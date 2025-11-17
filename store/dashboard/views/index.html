@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - ISP-Prueba Store</title>
+  <link rel="stylesheet" href="/dashboard/static/css/dashboard.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>ISP-Prueba Store</h1>
+        <p>Panel de Administración</p>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a href="/dashboard" class="active">
+          <span class="icon">📊</span> Dashboard
+        </a></li>
+        <li><a href="/dashboard/installations">
+          <span class="icon">💻</span> Instalaciones
+        </a></li>
+        <li><a href="/dashboard/licenses">
+          <span class="icon">🔑</span> Licencias
+        </a></li>
+        <li><a href="/dashboard/plugins">
+          <span class="icon">🧩</span> Plugins
+        </a></li>
+        <li><a href="/dashboard/map">
+          <span class="icon">🗺️</span> Mapa
+        </a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h2>Dashboard General</h2>
+        <p>Resumen del sistema de licencias y marketplace</p>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Cargando estadísticas...</p>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="data-table">
+        <div class="table-header">
+          <h3>Actividad Reciente</h3>
+        </div>
+        <div id="recentActivity">
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>Cargando actividad...</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API_URL = window.location.origin + '/api';
+
+    async function loadDashboard() {
+      try {
+        const response = await fetch(`${API_URL}/analytics/dashboard`);
+        const data = await response.json();
+
+        if (data.success) {
+          renderStats(data.data.stats);
+          renderRecentActivity(data.data.recentInstallations);
+        }
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+        document.getElementById('statsGrid').innerHTML = `
+          <div class="loading">
+            <p style="color: #e74c3c;">❌ Error al cargar los datos</p>
+          </div>
+        `;
+      }
+    }
+
+    function renderStats(stats) {
+      const statsGrid = document.getElementById('statsGrid');
+      statsGrid.innerHTML = `
+        <!-- Instalaciones -->
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Total Instalaciones</span>
+            <div class="stat-card-icon" style="background: #e3f2fd; color: #2196f3;">💻</div>
+          </div>
+          <div class="stat-card-value">${stats.installations.total}</div>
+          <div class="stat-card-change">
+            ${stats.installations.active} activas • ${stats.installations.online} en línea
+          </div>
+        </div>
+
+        <!-- Licencias -->
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Licencias Activas</span>
+            <div class="stat-card-icon" style="background: #e8f5e9; color: #4caf50;">🔑</div>
+          </div>
+          <div class="stat-card-value">${stats.licenses.active}</div>
+          <div class="stat-card-change">
+            ${stats.licenses.total} totales • ${stats.licenses.expired} expiradas
+          </div>
+        </div>
+
+        <!-- Plugins -->
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Plugins Disponibles</span>
+            <div class="stat-card-icon" style="background: #f3e5f5; color: #9c27b0;">🧩</div>
+          </div>
+          <div class="stat-card-value">${stats.plugins.total}</div>
+          <div class="stat-card-change">
+            ${stats.plugins.totalDownloads} descargas totales
+          </div>
+        </div>
+
+        <!-- Instalaciones Bloqueadas -->
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Instalaciones Bloqueadas</span>
+            <div class="stat-card-icon" style="background: #ffebee; color: #f44336;">🚫</div>
+          </div>
+          <div class="stat-card-value">${stats.installations.blocked || 0}</div>
+          <div class="stat-card-change ${stats.installations.blocked > 0 ? 'negative' : ''}">
+            Requieren atención
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRecentActivity(installations) {
+      const activityDiv = document.getElementById('recentActivity');
+
+      if (!installations || installations.length === 0) {
+        activityDiv.innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">No hay actividad reciente</p>';
+        return;
+      }
+
+      activityDiv.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Hardware ID</th>
+              <th>Estado</th>
+              <th>Ubicación</th>
+              <th>Último Heartbeat</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${installations.map(inst => `
+              <tr>
+                <td><strong>${inst.companyName}</strong></td>
+                <td><code style="font-size: 11px;">${inst.hardwareId.substring(0, 16)}...</code></td>
+                <td>
+                  <span class="badge badge-${getBadgeClass(inst.status)}">${getStatusText(inst.status)}</span>
+                  ${inst.isOnline ? '<span class="badge badge-success">En línea</span>' : ''}
+                </td>
+                <td>${inst.currentCity || 'Desconocida'}, ${inst.currentCountry || 'N/A'}</td>
+                <td>${formatDate(inst.lastHeartbeat)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function getBadgeClass(status) {
+      const classes = {
+        active: 'success',
+        blocked: 'danger',
+        suspended: 'warning',
+        inactive: 'info'
+      };
+      return classes[status] || 'info';
+    }
+
+    function getStatusText(status) {
+      const texts = {
+        active: 'Activo',
+        blocked: 'Bloqueado',
+        suspended: 'Suspendido',
+        inactive: 'Inactivo'
+      };
+      return texts[status] || status;
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'Nunca';
+      const date = new Date(dateString);
+      const now = new Date();
+      const diff = now - date;
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+
+      if (minutes < 1) return 'Hace un momento';
+      if (minutes < 60) return `Hace ${minutes} min`;
+      if (hours < 24) return `Hace ${hours} hrs`;
+      return `Hace ${days} días`;
+    }
+
+    // Load dashboard on page load
+    loadDashboard();
+
+    // Auto-refresh every 30 seconds
+    setInterval(loadDashboard, 30000);
+  </script>
+</body>
+</html>

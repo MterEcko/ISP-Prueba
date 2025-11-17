@@ -1,0 +1,123 @@
+{
+  "id": "mercadopago-payment-gateway",
+  "name": "MercadoPago Payment Gateway",
+  "slug": "mercadopago-payment-gateway",
+  "version": "2.1.5",
+  "description": "Integración completa con MercadoPago para procesar pagos de clientes en Argentina, Brasil, Chile, Colombia, México, Perú y Uruguay",
+  "longDescription": "Plugin oficial de MercadoPago que permite procesar pagos únicos, suscripciones recurrentes, webhooks automáticos y gestión de reembolsos. Compatible con todos los métodos de pago de MercadoPago: tarjetas de crédito, débito, efectivo en puntos de pago, y pagos en cuotas.",
+  "author": "ISP-Prueba Official",
+  "authorEmail": "plugins@ispprueba.com",
+  "category": "payment",
+  "price": 0,
+  "isFree": true,
+  "tags": ["payment", "mercadopago", "latam", "official", "gateway"],
+  "features": [
+    "Procesamiento de pagos únicos",
+    "Suscripciones recurrentes automáticas",
+    "Webhooks en tiempo real",
+    "Gestión de reembolsos",
+    "Soporte multi-país (AR, BR, CL, CO, MX, PE, UY)",
+    "Dashboard de transacciones",
+    "Reportes de pagos",
+    "Split payments para multi-sucursal"
+  ],
+  "requirements": {
+    "minVersion": "1.0.0",
+    "requiredLicense": "basic",
+    "phpVersion": null,
+    "nodeVersion": ">=14.0.0",
+    "dependencies": ["mercadopago"]
+  },
+  "screenshots": [
+    "/assets/mercadopago-1.png",
+    "/assets/mercadopago-2.png",
+    "/assets/mercadopago-3.png"
+  ],
+  "changelog": [
+    {
+      "version": "2.1.5",
+      "date": "2025-01-17",
+      "changes": [
+        "Corrección de bugs en webhooks",
+        "Mejora de rendimiento en procesamiento masivo",
+        "Actualización a MercadoPago SDK v2.0"
+      ]
+    },
+    {
+      "version": "2.1.0",
+      "date": "2024-12-10",
+      "changes": [
+        "Soporte para split payments",
+        "Nueva interfaz de configuración",
+        "Reportes exportables a PDF/Excel"
+      ]
+    }
+  ],
+  "configuration": {
+    "publicKey": {
+      "type": "string",
+      "label": "Public Key",
+      "required": true,
+      "description": "Tu clave pública de MercadoPago"
+    },
+    "accessToken": {
+      "type": "string",
+      "label": "Access Token",
+      "required": true,
+      "secret": true,
+      "description": "Tu access token de MercadoPago"
+    },
+    "webhookSecret": {
+      "type": "string",
+      "label": "Webhook Secret",
+      "required": false,
+      "secret": true,
+      "description": "Secret para validar webhooks"
+    },
+    "country": {
+      "type": "select",
+      "label": "País",
+      "required": true,
+      "options": ["AR", "BR", "CL", "CO", "MX", "PE", "UY"],
+      "default": "MX"
+    },
+    "enableSubscriptions": {
+      "type": "boolean",
+      "label": "Habilitar suscripciones",
+      "default": true
+    },
+    "testMode": {
+      "type": "boolean",
+      "label": "Modo de prueba",
+      "default": false
+    }
+  },
+  "hooks": {
+    "onInstall": "install.js",
+    "onUninstall": "uninstall.js",
+    "onActivate": "activate.js",
+    "onDeactivate": "deactivate.js"
+  },
+  "routes": [
+    {
+      "path": "/api/mercadopago/checkout",
+      "method": "POST",
+      "handler": "src/controllers/checkout.js"
+    },
+    {
+      "path": "/api/mercadopago/webhook",
+      "method": "POST",
+      "handler": "src/controllers/webhook.js"
+    },
+    {
+      "path": "/api/mercadopago/subscriptions",
+      "method": "GET",
+      "handler": "src/controllers/subscriptions.js"
+    }
+  ],
+  "permissions": [
+    "manage_payments",
+    "view_transactions",
+    "process_refunds"
+  ]
+}

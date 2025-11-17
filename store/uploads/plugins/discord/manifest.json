@@ -1,0 +1,53 @@
+{
+  "id": "discord-bot-notifications",
+  "name": "Discord Bot Notifications",
+  "slug": "discord-bot-notifications",
+  "version": "1.8.0",
+  "description": "Bot de Discord para notificaciones, alertas y comunicación con clientes",
+  "longDescription": "Integra un bot de Discord personalizado para enviar notificaciones a tus clientes, gestionar tickets de soporte, enviar alertas de red y mantener a tu equipo informado en tiempo real.",
+  "author": "ISP-Prueba Community",
+  "category": "communication",
+  "price": 0,
+  "isFree": true,
+  "tags": ["discord", "bot", "notifications", "free", "support"],
+  "features": [
+    "Bot de Discord personalizado",
+    "Notificaciones en tiempo real",
+    "Sistema de tickets",
+    "Comandos slash",
+    "Embeds personalizados",
+    "Roles y permisos",
+    "Logs de actividad",
+    "Webhooks"
+  ],
+  "requirements": {
+    "minVersion": "1.0.0",
+    "requiredLicense": "basic"
+  },
+  "configuration": {
+    "botToken": {
+      "type": "string",
+      "label": "Bot Token",
+      "required": true,
+      "secret": true,
+      "description": "Token del bot de Discord"
+    },
+    "guildId": {
+      "type": "string",
+      "label": "Server ID",
+      "required": true,
+      "description": "ID del servidor de Discord"
+    },
+    "notificationChannelId": {
+      "type": "string",
+      "label": "Canal de Notificaciones",
+      "required": true,
+      "description": "ID del canal para notificaciones"
+    },
+    "enableSlashCommands": {
+      "type": "boolean",
+      "label": "Slash Commands",
+      "default": true
+    }
+  }
+}

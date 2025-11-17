@@ -15,7 +15,10 @@
             <input type="text" placeholder="Buscar..." />
             <button>🔍</button>
           </div>
-          
+
+          <!-- Indicador de Licencia -->
+          <LicenseStatusIndicator />
+
           <div class="user-menu">
             <span class="user-name">{{ currentUser?.fullName }}</span>
             <div class="avatar">{{ getUserInitials() }}</div>
@@ -172,7 +175,13 @@
 </template>
 
 <script>
+import LicenseStatusIndicator from '@/components/license/LicenseStatusIndicator.vue';
+import telemetryService from '@/services/telemetry.service';
+
 export default {
+  components: {
+    LicenseStatusIndicator
+  },
   data() {
     return {
       sidebarCollapsed: false
@@ -193,13 +202,40 @@ export default {
       return this.$route.path.includes('/mikrotik');
     }
   },
+  mounted() {
+    // Iniciar telemetría cuando el componente se monta
+    if (this.isLoggedIn) {
+      this.$store.dispatch('license/loadLicenseFromStorage');
+      this.$store.dispatch('license/checkLicenseStatus');
+      telemetryService.startAutomaticTelemetry();
+
+      // Verificar si el sistema está bloqueado
+      if (telemetryService.isSystemBlocked()) {
+        alert(`⚠️ SISTEMA BLOQUEADO\n\n${telemetryService.getBlockReason()}\n\nContacte al administrador.`);
+      }
+    }
+  },
+  beforeUnmount() {
+    // Detener telemetría al desmontar
+    telemetryService.stopAutomaticTelemetry();
+  },
+  watch: {
+    isLoggedIn(newVal) {
+      if (newVal) {
+        this.$store.dispatch('license/loadLicenseFromStorage');
+        telemetryService.startAutomaticTelemetry();
+      } else {
+        telemetryService.stopAutomaticTelemetry();
+      }
+    }
+  },
   methods: {
     toggleSidebar() {
       this.sidebarCollapsed = !this.sidebarCollapsed;
     },
     getUserInitials() {
       if (!this.currentUser || !this.currentUser.fullName) return '??';
-      
+
       const names = this.currentUser.fullName.split(' ');
       if (names.length > 1) {
         return (names[0][0] + names[1][0]).toUpperCase();

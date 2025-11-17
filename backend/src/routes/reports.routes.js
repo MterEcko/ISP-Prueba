@@ -173,5 +173,70 @@ app.get(
   reportsController.getClientStatistics
 );
 
-  
+  // ========================================
+  // EXPORTACIÓN DE REPORTES (PDF/Excel)
+  // ========================================
+
+  /**
+   * @route    GET /api/reports/clients/pdf
+   * @desc     Exportar reporte de clientes en formato PDF
+   * @access   Privado (Admin/Manager)
+   * @query    estado - Filtrar por estado del cliente (activo, suspendido, etc.)
+   * @query    dateFrom - Fecha de inicio (formato: YYYY-MM-DD)
+   * @query    dateTo - Fecha de fin (formato: YYYY-MM-DD)
+   * @query    limit - Límite de registros (default: 1000)
+   */
+  app.get(
+    "/api/reports/clients/pdf",
+    [authJwt.verifyToken, authJwt.checkPermission("view_reports")],
+    reportsController.exportClientsPDF
+  );
+
+  /**
+   * @route    GET /api/reports/clients/excel
+   * @desc     Exportar reporte de clientes en formato Excel
+   * @access   Privado (Admin/Manager)
+   * @query    estado - Filtrar por estado del cliente (activo, suspendido, etc.)
+   * @query    dateFrom - Fecha de inicio (formato: YYYY-MM-DD)
+   * @query    dateTo - Fecha de fin (formato: YYYY-MM-DD)
+   * @query    limit - Límite de registros (default: 1000)
+   */
+  app.get(
+    "/api/reports/clients/excel",
+    [authJwt.verifyToken, authJwt.checkPermission("view_reports")],
+    reportsController.exportClientsExcel
+  );
+
+  /**
+   * @route    GET /api/reports/payments/pdf
+   * @desc     Exportar reporte de pagos en formato PDF
+   * @access   Privado (Admin/Manager/Contabilidad)
+   * @query    estado - Filtrar por estado del pago (completado, pendiente, etc.)
+   * @query    metodo_pago - Filtrar por método de pago (transfer, cash, etc.)
+   * @query    dateFrom - Fecha de inicio (formato: YYYY-MM-DD)
+   * @query    dateTo - Fecha de fin (formato: YYYY-MM-DD)
+   * @query    limit - Límite de registros (default: 1000)
+   */
+  app.get(
+    "/api/reports/payments/pdf",
+    [authJwt.verifyToken, authJwt.checkPermission("view_billing")],
+    reportsController.exportPaymentsPDF
+  );
+
+  /**
+   * @route    GET /api/reports/payments/excel
+   * @desc     Exportar reporte de pagos en formato Excel
+   * @access   Privado (Admin/Manager/Contabilidad)
+   * @query    estado - Filtrar por estado del pago (completado, pendiente, etc.)
+   * @query    metodo_pago - Filtrar por método de pago (transfer, cash, etc.)
+   * @query    dateFrom - Fecha de inicio (formato: YYYY-MM-DD)
+   * @query    dateTo - Fecha de fin (formato: YYYY-MM-DD)
+   * @query    limit - Límite de registros (default: 1000)
+   */
+  app.get(
+    "/api/reports/payments/excel",
+    [authJwt.verifyToken, authJwt.checkPermission("view_billing")],
+    reportsController.exportPaymentsExcel
+  );
+
 };

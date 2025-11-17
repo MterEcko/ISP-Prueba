@@ -16,7 +16,7 @@ module.exports = function(app) {
   // Obtener todos los plugins del sistema
   app.get(
     "/api/system-plugins",
-    //[authJwt.verifyToken],
+    [authJwt.verifyToken],
     systemPluginController.getAllPlugins
   );
 
@@ -26,7 +26,7 @@ module.exports = function(app) {
   // Inicializar todos los plugins activos
   app.post(
     "/api/system-plugins/initialize",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_plugins")],
+    [authJwt.verifyToken, authJwt.isAdminOrManager],
     systemPluginController.initializeAllPlugins
   );
 
@@ -36,7 +36,7 @@ module.exports = function(app) {
   // Obtener menús de plugins (si se necesita para el frontend)
   app.get(
     "/api/system-plugins/menu-items",
-    //[authJwt.verifyToken],
+    [authJwt.verifyToken],
     systemPluginController.getPluginMenuItems || function(req, res) {
       return res.status(200).json({
         success: true,
@@ -49,7 +49,7 @@ module.exports = function(app) {
   // Obtener permisos de plugins (si se necesita para el frontend)
   app.get(
     "/api/system-plugins/permissions",
-    //[authJwt.verifyToken],
+    [authJwt.verifyToken],
     systemPluginController.getPluginPermissions || function(req, res) {
       return res.status(200).json({
         success: true,
@@ -63,63 +63,63 @@ module.exports = function(app) {
   // Obtener plugins activos
   app.get(
     "/api/system-plugins/active",
-    //[authJwt.verifyToken],
+    [authJwt.verifyToken],
     systemPluginController.getActivePlugins
   );
 
   // Obtener plugins disponibles en el sistema de archivos
   app.get(
     "/api/system-plugins/available",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_plugins")],
+    [authJwt.verifyToken, authJwt.isAdminOrManager],
     systemPluginController.getAvailablePlugins
   );
 
   // Registrar/Crear nuevo plugin en la base de datos
   app.post(
     "/api/system-plugins",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_plugins")],
+    [authJwt.verifyToken, authJwt.isAdminOrManager],
     systemPluginController.createPlugin
   );
 
   // Obtener plugin por ID
   app.get(
     "/api/system-plugins/:id",
-    //[authJwt.verifyToken],
+    [authJwt.verifyToken],
     systemPluginController.getPluginById
   );
-  
+
   // Actualizar plugin
   app.put(
     "/api/system-plugins/:id",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_plugins")],
+    [authJwt.verifyToken, authJwt.isAdminOrManager],
     systemPluginController.updatePlugin
   );
 
   // Activar plugin
   app.post(
     "/api/system-plugins/:id/activate",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_plugins")],
+    [authJwt.verifyToken, authJwt.isAdminOrManager],
     systemPluginController.activatePlugin
   );
 
   // Desactivar plugin
   app.post(
     "/api/system-plugins/:id/deactivate",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_plugins")],
+    [authJwt.verifyToken, authJwt.isAdminOrManager],
     systemPluginController.deactivatePlugin
   );
 
   // Eliminar plugin
   app.delete(
     "/api/system-plugins/:id",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_plugins")],
+    [authJwt.verifyToken, authJwt.isAdmin],
     systemPluginController.deletePlugin
   );
 
   // Recargar plugin
   app.post(
     "/api/system-plugins/:id/reload",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_plugins")],
+    [authJwt.verifyToken, authJwt.isAdminOrManager],
     systemPluginController.reloadPlugin
   );
 
@@ -128,14 +128,14 @@ module.exports = function(app) {
   // Obtener configuración de plugin
   app.get(
     "/api/system-plugins/:id/config",
-    //[authJwt.verifyToken],
+    [authJwt.verifyToken],
     systemPluginController.getPluginConfig
   );
 
   // Actualizar configuración de plugin
   app.put(
     "/api/system-plugins/:id/config",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_plugins")],
+    [authJwt.verifyToken, authJwt.isAdminOrManager],
     systemPluginController.updatePluginConfig
   );
 

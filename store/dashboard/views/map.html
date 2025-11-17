@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa - ISP-Prueba Store</title>
+  <link rel="stylesheet" href="/dashboard/static/css/dashboard.css">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map {
+      height: 70vh;
+      min-height: 500px;
+    }
+    .leaflet-popup-content {
+      min-width: 250px;
+    }
+    .marker-info {
+      font-size: 13px;
+    }
+    .marker-info strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+    .marker-info p {
+      margin: 3px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>ISP-Prueba Store</h1>
+        <p>Panel de Administración</p>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a href="/dashboard">
+          <span class="icon">📊</span> Dashboard
+        </a></li>
+        <li><a href="/dashboard/installations">
+          <span class="icon">💻</span> Instalaciones
+        </a></li>
+        <li><a href="/dashboard/licenses">
+          <span class="icon">🔑</span> Licencias
+        </a></li>
+        <li><a href="/dashboard/plugins">
+          <span class="icon">🧩</span> Plugins
+        </a></li>
+        <li><a href="/dashboard/map" class="active">
+          <span class="icon">🗺️</span> Mapa
+        </a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h2>Mapa de Instalaciones</h2>
+        <p>Visualiza la ubicación geográfica de todas las instalaciones activas</p>
+      </div>
+
+      <!-- Map Stats -->
+      <div class="stats-grid" style="margin-bottom: 20px;">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Instalaciones Mapeadas</span>
+            <div class="stat-card-icon" style="background: #e3f2fd; color: #2196f3;">📍</div>
+          </div>
+          <div class="stat-card-value" id="mappedInstallations">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Países</span>
+            <div class="stat-card-icon" style="background: #e8f5e9; color: #4caf50;">🌍</div>
+          </div>
+          <div class="stat-card-value" id="countriesCount">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Instalaciones Online</span>
+            <div class="stat-card-icon" style="background: #f3e5f5; color: #9c27b0;">🟢</div>
+          </div>
+          <div class="stat-card-value" id="onlineInstallations">-</div>
+        </div>
+      </div>
+
+      <!-- Map Container -->
+      <div class="data-table" style="padding: 0;">
+        <div id="map"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const API_URL = window.location.origin + '/api';
+    let map;
+    let markers = [];
+
+    // Initialize map
+    function initMap() {
+      map = L.map('map').setView([20, 0], 2); // Center of the world
+
+      // Add tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18
+      }).addTo(map);
+    }
+
+    async function loadInstallationsMap() {
+      try {
+        const response = await fetch(`${API_URL}/analytics/map`);
+        const data = await response.json();
+
+        if (data.success) {
+          renderMap(data.data.installations);
+          updateMapStats(data.data);
+        }
+      } catch (error) {
+        console.error('Error loading map data:', error);
+      }
+    }
+
+    function renderMap(installations) {
+      // Clear existing markers
+      markers.forEach(marker => map.removeLayer(marker));
+      markers = [];
+
+      if (!installations || installations.length === 0) {
+        return;
+      }
+
+      // Add markers for each installation
+      installations.forEach(inst => {
+        if (!inst.currentLatitude || !inst.currentLongitude) return;
+
+        const markerColor = getMarkerColor(inst.status, inst.isOnline);
+        const icon = L.divIcon({
+          className: 'custom-marker',
+          html: `<div style="
+            background-color: ${markerColor};
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+          "></div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+
+        const marker = L.marker([inst.currentLatitude, inst.currentLongitude], { icon })
+          .addTo(map)
+          .bindPopup(createPopupContent(inst));
+
+        markers.push(marker);
+      });
+
+      // Fit map to show all markers
+      if (markers.length > 0) {
+        const group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.1));
+      }
+    }
+
+    function getMarkerColor(status, isOnline) {
+      if (status === 'blocked') return '#e74c3c'; // Red
+      if (!isOnline) return '#95a5a6'; // Gray
+      if (status === 'active') return '#27ae60'; // Green
+      if (status === 'suspended') return '#f39c12'; // Orange
+      return '#3498db'; // Blue
+    }
+
+    function createPopupContent(inst) {
+      const statusBadge = getStatusBadge(inst.status);
+      const onlineBadge = inst.isOnline ?
+        '<span class="badge badge-success">🟢 Online</span>' :
+        '<span class="badge badge-danger">🔴 Offline</span>';
+
+      return `
+        <div class="marker-info">
+          <strong>🏢 ${inst.companyName}</strong>
+          <p>${statusBadge} ${onlineBadge}</p>
+          <p>📍 ${inst.currentCity || 'Ciudad desconocida'}, ${inst.currentCountry || 'N/A'}</p>
+          <p>👥 Clientes: <strong>${inst.totalClients || 0}</strong></p>
+          <p>🔑 Licencia: ${inst.License ?
+            `<span class="badge badge-info">${inst.License.planType}</span>` :
+            '<span class="badge badge-warning">Sin licencia</span>'
+          }</p>
+          <p>⏰ Último heartbeat: ${formatDate(inst.lastHeartbeat)}</p>
+          ${inst.systemInfo ? `
+            <p style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">
+              💻 Sistema: ${inst.systemInfo.os || 'N/A'}<br>
+              🔧 Versión: ${inst.systemInfo.version || 'N/A'}
+            </p>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function getStatusBadge(status) {
+      const badges = {
+        active: '<span class="badge badge-success">✅ Activo</span>',
+        blocked: '<span class="badge badge-danger">🚫 Bloqueado</span>',
+        suspended: '<span class="badge badge-warning">⏸️ Suspendido</span>',
+        inactive: '<span class="badge badge-info">💤 Inactivo</span>'
+      };
+      return badges[status] || status;
+    }
+
+    function updateMapStats(data) {
+      const installations = data.installations || [];
+      const countries = new Set(installations.map(i => i.currentCountry).filter(c => c));
+      const onlineCount = installations.filter(i => i.isOnline).length;
+
+      document.getElementById('mappedInstallations').textContent = installations.length;
+      document.getElementById('countriesCount').textContent = countries.size;
+      document.getElementById('onlineInstallations').textContent = onlineCount;
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'Nunca';
+      const date = new Date(dateString);
+      const now = new Date();
+      const diff = now - date;
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+
+      if (minutes < 1) return 'Hace un momento';
+      if (minutes < 60) return `Hace ${minutes} min`;
+      if (hours < 24) return `Hace ${hours} hrs`;
+      return `Hace ${days} días`;
+    }
+
+    // Initialize map and load data
+    initMap();
+    loadInstallationsMap();
+
+    // Auto-refresh every 60 seconds
+    setInterval(loadInstallationsMap, 60000);
+  </script>
+</body>
+</html>

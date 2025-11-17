@@ -1,132 +1,53 @@
-
 // backend/src/routes/notification.routes.js
-const { authJwt } = require("../middleware");
-const notificationController = require("../controllers/notification.controller");
+const express = require('express');
+const router = express.Router();
+const notificationController = require('../controllers/notification.controller');
+const { authJwt } = require('../middleware');
 
 module.exports = function(app) {
-  app.use(function(req, res, next) {
-    res.header(
-      "Access-Control-Allow-Headers",
-      "x-access-token, Origin, Content-Type, Accept"
-    );
-    next();
-  });
+  app.use('/api/notifications', router);
 
-  // ==================== REGLAS DE NOTIFICACIÓN ====================
+  /**
+   * GET /api/notifications
+   * Obtiene las notificaciones del usuario autenticado
+   * Requiere: Usuario autenticado
+   */
+  router.get('/', [authJwt.verifyToken], notificationController.getMyNotifications);
 
-  // Obtener todas las reglas
-  app.get(
-    "/api/notification-rules",
-    //[authJwt.verifyToken],
-    notificationController.getAllRules
-  );
+  /**
+   * PUT /api/notifications/:id/read
+   * Marca una notificación como leída
+   * Requiere: Usuario autenticado
+   */
+  router.put('/:id/read', [authJwt.verifyToken], notificationController.markAsRead);
 
-  // Obtener regla por ID
-  app.get(
-    "/api/notification-rules/:id",
-    //[authJwt.verifyToken],
-    notificationController.getRuleById
-  );
+  /**
+   * PUT /api/notifications/read-all
+   * Marca todas las notificaciones como leídas
+   * Requiere: Usuario autenticado
+   */
+  router.put('/read-all', [authJwt.verifyToken], notificationController.markAllAsRead);
 
-  // Crear nueva regla
-  app.post(
-    "/api/notification-rules",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
-    notificationController.createRule
-  );
+  /**
+   * PUT /api/notifications/:id/archive
+   * Archiva una notificación
+   * Requiere: Usuario autenticado
+   */
+  router.put('/:id/archive', [authJwt.verifyToken], notificationController.archiveNotification);
 
-  // Actualizar regla
-  app.put(
-    "/api/notification-rules/:id",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
-    notificationController.updateRule
-  );
+  /**
+   * POST /api/notifications/test
+   * Crea una notificación de prueba
+   * Requiere: Admin
+   */
+  router.post('/test', [authJwt.verifyToken, authJwt.isAdmin], notificationController.createTestNotification);
 
-  // Eliminar regla
-  app.delete(
-    "/api/notification-rules/:id",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
-    notificationController.deleteRule
-  );
+  /**
+   * POST /api/notifications/cleanup
+   * Limpia notificaciones expiradas y archivadas antiguas
+   * Requiere: Admin
+   */
+  router.post('/cleanup', [authJwt.verifyToken, authJwt.isAdmin], notificationController.cleanupNotifications);
 
-  // Activar/desactivar regla
-  app.post(
-    "/api/notification-rules/:id/toggle",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
-    notificationController.toggleRule
-  );
-
-  // Probar regla
-  app.post(
-    "/api/notification-rules/:id/test",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
-    notificationController.testRule
-  );
-
-  // ==================== EVENTOS DE COMUNICACIÓN ====================
-
-  // Obtener eventos
-  app.get(
-    "/api/communication-events",
-    //[authJwt.verifyToken],
-    notificationController.getEvents
-  );
-
-  // Crear evento manual
-  app.post(
-    "/api/communication-events",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
-    notificationController.createEvent
-  );
-
-  // Procesar eventos pendientes
-  app.post(
-    "/api/communication-events/process",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_notifications")],
-    notificationController.processEvents
-  );
-
-  // ==================== CONTACTOS DE COMUNICACIÓN ====================
-
-  // Obtener contactos de cliente
-  app.get(
-    "/api/clients/:clientId/contacts",
-    //[authJwt.verifyToken],
-    notificationController.getClientContacts
-  );
-
-  // Crear contacto para cliente
-  app.post(
-    "/api/clients/:clientId/contacts",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
-    notificationController.createClientContact
-  );
-
-  // Actualizar contacto
-  app.put(
-    "/api/contacts/:id",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
-    notificationController.updateContact
-  );
-
-  // Eliminar contacto
-  app.delete(
-    "/api/contacts/:id",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
-    notificationController.deleteContact
-  );
-
-  // Verificar contacto
-  app.post(
-    "/api/contacts/:id/verify",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
-    notificationController.verifyContact
-  );
-
-  // Actualizar preferencias de contacto
-  app.put(
-    "/api/contacts/:id/preferences",
-    //[authJwt.verifyToken],
-    notificationController.updateContactPreferences
-  );
+  console.log('✅ Rutas de notificaciones configuradas');
 };

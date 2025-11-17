@@ -1,0 +1,154 @@
+{
+  "plans": [
+    {
+      "id": "basic",
+      "name": "Básico",
+      "planType": "basic",
+      "clientLimit": 50,
+      "price": {
+        "monthly": 29.99,
+        "yearly": 299.99,
+        "currency": "USD"
+      },
+      "features": {
+        "unlimited_clients": false,
+        "unlimited_users": false,
+        "unlimited_plugins": false,
+        "plugin_marketplace": true,
+        "advanced_inventory": false,
+        "advanced_billing": true,
+        "advanced_reports": false,
+        "api_access": false,
+        "white_label": false,
+        "priority_support": false,
+        "custom_integrations": false,
+        "multi_branch": false,
+        "advanced_security": false,
+        "backup_restore": true,
+        "audit_logs": false
+      },
+      "description": "Ideal para pequeñas empresas que están comenzando",
+      "highlights": [
+        "Hasta 50 clientes",
+        "Facturación básica",
+        "Acceso al marketplace",
+        "Backup automático",
+        "Soporte por email"
+      ]
+    },
+    {
+      "id": "medium",
+      "name": "Medio",
+      "planType": "premium",
+      "clientLimit": 200,
+      "price": {
+        "monthly": 79.99,
+        "yearly": 799.99,
+        "currency": "USD"
+      },
+      "features": {
+        "unlimited_clients": false,
+        "unlimited_users": false,
+        "unlimited_plugins": false,
+        "plugin_marketplace": true,
+        "advanced_inventory": true,
+        "advanced_billing": true,
+        "advanced_reports": true,
+        "api_access": true,
+        "white_label": false,
+        "priority_support": true,
+        "custom_integrations": false,
+        "multi_branch": true,
+        "advanced_security": true,
+        "backup_restore": true,
+        "audit_logs": true
+      },
+      "description": "Perfecto para empresas en crecimiento",
+      "highlights": [
+        "Hasta 200 clientes",
+        "Inventario avanzado",
+        "Reportes avanzados",
+        "Multi-sucursal",
+        "API REST",
+        "Soporte prioritario"
+      ]
+    },
+    {
+      "id": "advanced",
+      "name": "Avanzado",
+      "planType": "premium",
+      "clientLimit": 400,
+      "price": {
+        "monthly": 149.99,
+        "yearly": 1499.99,
+        "currency": "USD"
+      },
+      "features": {
+        "unlimited_clients": false,
+        "unlimited_users": true,
+        "unlimited_plugins": false,
+        "plugin_marketplace": true,
+        "advanced_inventory": true,
+        "advanced_billing": true,
+        "advanced_reports": true,
+        "api_access": true,
+        "white_label": true,
+        "priority_support": true,
+        "custom_integrations": true,
+        "multi_branch": true,
+        "advanced_security": true,
+        "backup_restore": true,
+        "audit_logs": true
+      },
+      "description": "Para empresas establecidas con alto volumen",
+      "highlights": [
+        "Hasta 400 clientes",
+        "Usuarios ilimitados",
+        "White Label",
+        "Integraciones personalizadas",
+        "Seguridad avanzada",
+        "Soporte 24/7"
+      ]
+    },
+    {
+      "id": "full",
+      "name": "Full / Enterprise",
+      "planType": "enterprise",
+      "clientLimit": null,
+      "price": {
+        "monthly": 299.99,
+        "yearly": 2999.99,
+        "currency": "USD"
+      },
+      "features": {
+        "unlimited_clients": true,
+        "unlimited_users": true,
+        "unlimited_plugins": true,
+        "plugin_marketplace": true,
+        "advanced_inventory": true,
+        "advanced_billing": true,
+        "advanced_reports": true,
+        "api_access": true,
+        "white_label": true,
+        "priority_support": true,
+        "custom_integrations": true,
+        "multi_branch": true,
+        "advanced_security": true,
+        "backup_restore": true,
+        "audit_logs": true,
+        "free_plugins": true,
+        "dedicated_support": true,
+        "custom_development": true
+      },
+      "description": "Sin límites. Todo incluido.",
+      "highlights": [
+        "Clientes ILIMITADOS",
+        "Usuarios ILIMITADOS",
+        "TODOS los plugins GRATIS",
+        "Desarrollo personalizado",
+        "Soporte dedicado 24/7",
+        "SLA garantizado"
+      ]
+    }
+  ]
+}

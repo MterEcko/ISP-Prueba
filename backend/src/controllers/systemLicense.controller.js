@@ -2,6 +2,11 @@ const db = require('../models');
 const SystemLicense = db.SystemLicense;
 const logger = require('../utils/logger');
 const crypto = require('crypto');
+const {
+  isMasterLicense,
+  getMasterLicenseInfo,
+  validateAgainstMaster
+} = require('../config/master-license');
 
 // Get all system licenses
 exports.getAllLicenses = async (req, res) => {
@@ -346,18 +351,39 @@ exports.deactivateLicense = async (req, res) => {
 exports.verifyLicense = async (req, res) => {
   try {
     const { license_key, hardware_id } = req.body;
-    
+
     if (!license_key) {
       return res.status(400).json({
         success: false,
         message: 'License key is required'
       });
     }
-    
+
+    // 🔑 Verificar primero contra licencia maestra
+    const masterValidation = validateAgainstMaster(license_key);
+    if (masterValidation.valid) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          license: masterValidation.license,
+          verification: {
+            isValid: true,
+            isMasterLicense: true,
+            isActive: true,
+            isExpired: false,
+            hardwareMatches: true,
+            daysRemaining: 999999,
+            unlimited: true
+          }
+        },
+        message: 'Master license validated successfully'
+      });
+    }
+
     const license = await SystemLicense.findOne({
       where: { license_key }
     });
-    
+
     if (!license) {
       return res.status(404).json({
         success: false,

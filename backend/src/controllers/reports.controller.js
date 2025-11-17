@@ -370,3 +370,129 @@ exports.getClientStatistics = async (req, res) => {
     });
   }
 };
+
+/**
+ * Exportar reporte de clientes en formato PDF
+ * GET /api/reports/clients/pdf?estado=activo&dateFrom=2024-01-01&dateTo=2024-12-31&limit=1000
+ */
+exports.exportClientsPDF = async (req, res) => {
+  try {
+    const filters = {
+      estado: req.query.estado || null,
+      dateFrom: req.query.dateFrom || null,
+      dateTo: req.query.dateTo || null,
+      limit: req.query.limit ? parseInt(req.query.limit) : 1000
+    };
+
+    const pdfBuffer = await ReportsService.generateClientsPDF(filters);
+
+    // Configurar headers para descarga
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="clientes_${Date.now()}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    return res.send(pdfBuffer);
+  } catch (error) {
+    logger.error(`Error exportando PDF de clientes: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Error generando reporte PDF de clientes',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Exportar reporte de clientes en formato Excel
+ * GET /api/reports/clients/excel?estado=activo&dateFrom=2024-01-01&dateTo=2024-12-31&limit=1000
+ */
+exports.exportClientsExcel = async (req, res) => {
+  try {
+    const filters = {
+      estado: req.query.estado || null,
+      dateFrom: req.query.dateFrom || null,
+      dateTo: req.query.dateTo || null,
+      limit: req.query.limit ? parseInt(req.query.limit) : 1000
+    };
+
+    const excelBuffer = await ReportsService.generateClientsExcel(filters);
+
+    // Configurar headers para descarga
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="clientes_${Date.now()}.xlsx"`);
+    res.setHeader('Content-Length', excelBuffer.length);
+
+    return res.send(excelBuffer);
+  } catch (error) {
+    logger.error(`Error exportando Excel de clientes: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Error generando reporte Excel de clientes',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Exportar reporte de pagos en formato PDF
+ * GET /api/reports/payments/pdf?estado=completado&metodo_pago=transfer&dateFrom=2024-01-01&dateTo=2024-12-31&limit=1000
+ */
+exports.exportPaymentsPDF = async (req, res) => {
+  try {
+    const filters = {
+      estado: req.query.estado || null,
+      metodo_pago: req.query.metodo_pago || null,
+      dateFrom: req.query.dateFrom || null,
+      dateTo: req.query.dateTo || null,
+      limit: req.query.limit ? parseInt(req.query.limit) : 1000
+    };
+
+    const pdfBuffer = await ReportsService.generatePaymentsPDF(filters);
+
+    // Configurar headers para descarga
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="pagos_${Date.now()}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    return res.send(pdfBuffer);
+  } catch (error) {
+    logger.error(`Error exportando PDF de pagos: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Error generando reporte PDF de pagos',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Exportar reporte de pagos en formato Excel
+ * GET /api/reports/payments/excel?estado=completado&metodo_pago=transfer&dateFrom=2024-01-01&dateTo=2024-12-31&limit=1000
+ */
+exports.exportPaymentsExcel = async (req, res) => {
+  try {
+    const filters = {
+      estado: req.query.estado || null,
+      metodo_pago: req.query.metodo_pago || null,
+      dateFrom: req.query.dateFrom || null,
+      dateTo: req.query.dateTo || null,
+      limit: req.query.limit ? parseInt(req.query.limit) : 1000
+    };
+
+    const excelBuffer = await ReportsService.generatePaymentsExcel(filters);
+
+    // Configurar headers para descarga
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="pagos_${Date.now()}.xlsx"`);
+    res.setHeader('Content-Length', excelBuffer.length);
+
+    return res.send(excelBuffer);
+  } catch (error) {
+    logger.error(`Error exportando Excel de pagos: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Error generando reporte Excel de pagos',
+      error: error.message
+    });
+  }
+};

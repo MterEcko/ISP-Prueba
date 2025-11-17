@@ -1,0 +1,281 @@
+{
+  "plugins": [
+    {
+      "id": "mercadopago-payment",
+      "name": "MercadoPago Payments",
+      "version": "2.1.5",
+      "author": "ISP-Prueba Official",
+      "category": "payment",
+      "description": "Integración completa con MercadoPago para procesar pagos de clientes en Argentina, Brasil, Chile, Colombia, México, Perú y Uruguay",
+      "longDescription": "Plugin oficial de MercadoPago que permite procesar pagos, suscripciones recurrentes, webhooks automáticos y gestión de reembolsos.",
+      "price": 0,
+      "isFree": true,
+      "downloads": 15420,
+      "rating": 4.8,
+      "image": "/assets/plugins/mercadopago.png",
+      "features": [
+        "Procesamiento de pagos",
+        "Suscripciones recurrentes",
+        "Webhooks automáticos",
+        "Gestión de reembolsos",
+        "Soporte multi-país"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "basic"
+      },
+      "changelog": [
+        {
+          "version": "2.1.5",
+          "date": "2025-01-15",
+          "changes": ["Corrección de bugs en webhooks", "Mejora de rendimiento"]
+        }
+      ],
+      "tags": ["pagos", "mercadopago", "latam", "official"]
+    },
+    {
+      "id": "whatsapp-messenger",
+      "name": "WhatsApp Business",
+      "version": "3.2.0",
+      "author": "ISP-Prueba Official",
+      "category": "communication",
+      "description": "Envía notificaciones y mensajes a tus clientes vía WhatsApp Business API",
+      "longDescription": "Conecta tu sistema con WhatsApp Business para enviar notificaciones automáticas, recordatorios de pago, confirmaciones de servicio y más.",
+      "price": 29.99,
+      "isFree": false,
+      "downloads": 8730,
+      "rating": 4.6,
+      "image": "/assets/plugins/whatsapp.png",
+      "features": [
+        "Envío masivo de mensajes",
+        "Plantillas personalizables",
+        "Respuestas automáticas",
+        "Integración con CRM",
+        "Analytics de mensajes"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "medium"
+      },
+      "tags": ["whatsapp", "mensajería", "notificaciones", "premium"]
+    },
+    {
+      "id": "email-marketing",
+      "name": "Email Marketing Pro",
+      "version": "1.8.2",
+      "author": "ISP-Prueba Official",
+      "category": "marketing",
+      "description": "Suite completa de email marketing con campañas automatizadas y segmentación avanzada",
+      "longDescription": "Crea campañas de email profesionales, automatiza el envío basado en eventos, segmenta tu audiencia y mide resultados con analytics detallados.",
+      "price": 19.99,
+      "isFree": false,
+      "downloads": 5240,
+      "rating": 4.4,
+      "image": "/assets/plugins/email.png",
+      "features": [
+        "Editor drag & drop",
+        "Automatizaciones avanzadas",
+        "Segmentación de audiencia",
+        "A/B Testing",
+        "Analytics en tiempo real"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "medium"
+      },
+      "tags": ["email", "marketing", "automatización", "premium"]
+    },
+    {
+      "id": "sms-notifications",
+      "name": "SMS Notifications",
+      "version": "2.0.1",
+      "author": "Community Dev",
+      "category": "communication",
+      "description": "Envía notificaciones SMS a tus clientes por cortes programados, pagos vencidos y más",
+      "longDescription": "Plugin para envío de SMS masivos o individuales a clientes. Soporta múltiples proveedores de SMS.",
+      "price": 0,
+      "isFree": true,
+      "downloads": 12150,
+      "rating": 4.2,
+      "image": "/assets/plugins/sms.png",
+      "features": [
+        "Envío masivo de SMS",
+        "Programación de envíos",
+        "Múltiples proveedores",
+        "Historial de mensajes",
+        "Reportes de entrega"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "basic"
+      },
+      "tags": ["sms", "notificaciones", "free"]
+    },
+    {
+      "id": "mikrotik-sync",
+      "name": "MikroTik Sync Advanced",
+      "version": "4.5.0",
+      "author": "ISP-Prueba Official",
+      "category": "integration",
+      "description": "Sincronización avanzada con routers MikroTik RouterOS",
+      "longDescription": "Gestiona tus routers MikroTik directamente desde el sistema. Cortes automáticos, creación de PPPoE, monitoreo en tiempo real.",
+      "price": 0,
+      "isFree": true,
+      "downloads": 18920,
+      "rating": 4.9,
+      "image": "/assets/plugins/mikrotik.png",
+      "features": [
+        "Cortes/Reconexiones automáticas",
+        "Creación de usuarios PPPoE",
+        "Monitoreo de ancho de banda",
+        "Gestión de IPs",
+        "Backup de configuraciones"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "basic"
+      },
+      "tags": ["mikrotik", "router", "isp", "official", "free"]
+    },
+    {
+      "id": "paypal-gateway",
+      "name": "PayPal Payment Gateway",
+      "version": "1.6.3",
+      "author": "ISP-Prueba Official",
+      "category": "payment",
+      "description": "Acepta pagos con PayPal de forma segura",
+      "longDescription": "Integración oficial con PayPal para procesar pagos únicos y suscripciones recurrentes.",
+      "price": 0,
+      "isFree": true,
+      "downloads": 6840,
+      "rating": 4.3,
+      "image": "/assets/plugins/paypal.png",
+      "features": [
+        "Pagos únicos",
+        "Suscripciones recurrentes",
+        "Webhooks de PayPal",
+        "Múltiples monedas"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "basic"
+      },
+      "tags": ["paypal", "pagos", "free"]
+    },
+    {
+      "id": "advanced-reports",
+      "name": "Advanced Reports & Analytics",
+      "version": "2.3.0",
+      "author": "Analytics Team",
+      "category": "reporting",
+      "description": "Reportes y análisis avanzados con gráficos interactivos y exportación a múltiples formatos",
+      "longDescription": "Suite completa de reportes con dashboards personalizables, métricas en tiempo real, predicciones con IA y exportación a PDF/Excel.",
+      "price": 49.99,
+      "isFree": false,
+      "downloads": 3210,
+      "rating": 4.7,
+      "image": "/assets/plugins/reports.png",
+      "features": [
+        "Dashboards personalizables",
+        "Gráficos interactivos",
+        "Predicciones con IA",
+        "Exportación PDF/Excel",
+        "Reportes programados"
+      ],
+      "requirements": {
+        "minVersion": "1.2.0",
+        "requiredLicense": "advanced"
+      },
+      "tags": ["reportes", "analytics", "premium", "ai"]
+    },
+    {
+      "id": "inventory-scanner",
+      "name": "Inventory Barcode Scanner",
+      "version": "1.4.0",
+      "author": "Community Dev",
+      "category": "productivity",
+      "description": "Escanea códigos de barras y QR para gestionar inventario rápidamente",
+      "longDescription": "Agiliza la gestión de inventario con escaneo de códigos de barras y QR desde dispositivos móviles o lectores USB.",
+      "price": 14.99,
+      "isFree": false,
+      "downloads": 2180,
+      "rating": 4.1,
+      "image": "/assets/plugins/scanner.png",
+      "features": [
+        "Escaneo de códigos de barras",
+        "Escaneo de códigos QR",
+        "Soporte para móviles",
+        "Lectores USB compatibles",
+        "Importación masiva"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "medium"
+      },
+      "tags": ["inventario", "scanner", "barcode", "premium"]
+    },
+    {
+      "id": "backup-cloud",
+      "name": "Cloud Backup & Restore",
+      "version": "3.1.0",
+      "author": "Security Team",
+      "category": "security",
+      "description": "Respaldos automáticos en la nube con cifrado de extremo a extremo",
+      "longDescription": "Protege tus datos con backups automáticos a la nube (AWS, Google Cloud, Dropbox). Cifrado AES-256 y restauración con un clic.",
+      "price": 39.99,
+      "isFree": false,
+      "downloads": 4560,
+      "rating": 4.8,
+      "image": "/assets/plugins/backup.png",
+      "features": [
+        "Backups automáticos",
+        "Cifrado AES-256",
+        "Múltiples proveedores cloud",
+        "Restauración rápida",
+        "Versionado de backups"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "medium"
+      },
+      "tags": ["backup", "seguridad", "cloud", "premium"]
+    },
+    {
+      "id": "customer-portal",
+      "name": "Customer Self-Service Portal",
+      "version": "2.7.1",
+      "author": "ISP-Prueba Official",
+      "category": "productivity",
+      "description": "Portal web para que los clientes gestionen su cuenta, paguen facturas y abran tickets",
+      "longDescription": "Permite que tus clientes accedan a un portal web para ver su consumo, pagar facturas, cambiar planes y abrir tickets de soporte.",
+      "price": 0,
+      "isFree": true,
+      "downloads": 11230,
+      "rating": 4.5,
+      "image": "/assets/plugins/portal.png",
+      "features": [
+        "Portal web responsive",
+        "Pago de facturas online",
+        "Apertura de tickets",
+        "Historial de consumo",
+        "Cambio de contraseña"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "basic"
+      },
+      "tags": ["portal", "clientes", "self-service", "free"]
+    }
+  ],
+  "categories": [
+    { "id": "payment", "name": "Pagos", "icon": "mdi-credit-card", "count": 3 },
+    { "id": "communication", "name": "Comunicación", "icon": "mdi-message", "count": 2 },
+    { "id": "marketing", "name": "Marketing", "icon": "mdi-bullhorn", "count": 1 },
+    { "id": "integration", "name": "Integraciones", "icon": "mdi-link-variant", "count": 1 },
+    { "id": "reporting", "name": "Reportes", "icon": "mdi-chart-bar", "count": 1 },
+    { "id": "productivity", "name": "Productividad", "icon": "mdi-lightning-bolt", "count": 2 },
+    { "id": "security", "name": "Seguridad", "icon": "mdi-shield", "count": 1 }
+  ],
+  "featured": ["mikrotik-sync", "mercadopago-payment", "customer-portal"],
+  "trending": ["whatsapp-messenger", "advanced-reports", "backup-cloud"]
+}
