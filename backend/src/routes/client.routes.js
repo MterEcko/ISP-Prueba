@@ -293,17 +293,7 @@ module.exports = function(app) {
     documents.findAll
   );
 
-  app.get(
-    "/api/documents/:id/download",
-    //[authJwt.verifyToken],
-    documents.download
-  );
 
-  app.delete(
-    "/api/documents/:id",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_clients")],
-    documents.delete
-  );
 
 
 };

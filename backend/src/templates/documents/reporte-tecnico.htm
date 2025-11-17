@@ -1,0 +1,662 @@
+<!-- backend/src/templates/documents/reporte-tecnico.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte Técnico - {{nombre_completo}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 10pt;
+            line-height: 1.5;
+            color: #333;
+            background: white;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 25px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 8px 8px 0 0;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 20pt;
+            margin-bottom: 5px;
+        }
+
+        .header .report-date {
+            font-size: 9pt;
+            opacity: 0.9;
+        }
+
+        .header .report-number {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            background: white;
+            color: #1565c0;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 10pt;
+        }
+
+        .content-wrapper {
+            border: 2px solid #e0e0e0;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 25px;
+            background: #fafafa;
+        }
+
+        .section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            page-break-inside: avoid;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1e88e5;
+        }
+        .section-header .icon {
+            font-size: 18pt;
+        }
+
+        .section-header h3 {
+            color: #1565c0;
+            font-size: 13pt;
+            margin: 0;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 3px solid #1e88e5;
+            border-radius: 4px;
+        }
+
+        .info-item label {
+            display: block;
+            font-size: 9pt;
+            color: #666;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .info-item .value {
+            font-size: 11pt;
+            color: #333;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-card {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .status-card.good {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+
+        .status-card.warning {
+            background: #fff3e0;
+            border-color: #ff9800;
+        }
+
+        .status-card.error {
+            background: #ffebee;
+            border-color: #f44336;
+        }
+
+        .status-card .metric {
+            font-size: 24pt;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .status-card.good .metric {
+            color: #4caf50;
+        }
+
+        .status-card.warning .metric {
+            color: #ff9800;
+        }
+
+        .status-card.error .metric {
+            color: #f44336;
+        }
+
+        .status-card .label {
+            font-size: 9pt;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .metric-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .metric-table th {
+            background: #1565c0;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-size: 9pt;
+            font-weight: bold;
+        }
+
+        .metric-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 10pt;
+        }
+
+        .metric-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .metric-table .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .metric-table .status-indicator.online {
+            background: #4caf50;
+        }
+
+        .metric-table .status-indicator.offline {
+            background: #f44336;
+        }
+
+        .metric-table .status-indicator.warning {
+            background: #ff9800;
+        }
+
+        .observations-box {
+            background: #fff9c4;
+            border: 2px solid #fbc02d;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .observations-box h4 {
+            color: #f57f17;
+            font-size: 11pt;
+            margin-bottom: 10px;
+        }
+
+        .observations-box ul {
+            margin-left: 20px;
+        }
+
+        .observations-box ul li {
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .recommendations-box {
+            background: #e3f2fd;
+            border: 2px solid #1976d2;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .recommendations-box h4 {
+            color: #0d47a1;
+            font-size: 11pt;
+            margin-bottom: 10px;
+        }
+
+        .recommendations-box ul {
+            margin-left: 20px;
+        }
+
+        .recommendations-box ul li {
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .action-required {
+            background: #ffebee;
+            border: 2px solid #f44336;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .action-required h4 {
+            color: #c62828;
+            font-size: 11pt;
+            margin-bottom: 10px;
+        }
+
+        .action-required p {
+            color: #666;
+            font-weight: bold;
+        }
+
+        .signature-section {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            page-break-inside: avoid;
+        }
+
+        .signature-box {
+            text-align: center;
+        }
+
+        .signature-line {
+            border-top: 2px solid #333;
+            margin: 50px 20px 10px 20px;
+        }
+
+        .signature-label {
+            font-weight: bold;
+            color: #1565c0;
+            font-size: 9pt;
+            margin-top: 5px;
+        }
+
+        .signature-name {
+            color: #666;
+            font-size: 9pt;
+            margin-top: 3px;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 9pt;
+            font-weight: bold;
+        }
+
+        .priority-badge.high {
+            background: #f44336;
+            color: white;
+        }
+
+        .priority-badge.medium {
+            background: #ff9800;
+            color: white;
+        }
+
+        .priority-badge.low {
+            background: #4caf50;
+            color: white;
+        }
+
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .container {
+                max-width: 100%;
+                padding: 15px;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Encabezado -->
+        <div class="header">
+            <h1>📊 REPORTE TÉCNICO DE SERVICIO</h1>
+            <p class="report-date">Generado: {{fecha_generacion}}</p>
+            <div class="report-number">REP-{{numero_reporte}}</div>
+        </div>
+
+        <div class="content-wrapper">
+            <!-- Información del Cliente -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="icon">👤</span>
+                    <h3>INFORMACIÓN DEL CLIENTE</h3>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Cliente:</label>
+                        <div class="value">{{nombre_completo}}</div>
+                    </div>
+                    <div class="info-item">
+                        <label>ID Cliente:</label>
+                        <div class="value">{{numero_cliente}}</div>
+                    </div>
+                    <div class="info-item full-width">
+                        <label>Dirección:</label>
+                        <div class="value">{{domicilio}}</div>
+                    </div>
+                    <div class="info-item">
+                        <label>Teléfono:</label>
+                        <div class="value">{{telefono}}</div>
+                    </div>
+                    <div class="info-item">
+                        <label>Email:</label>
+                        <div class="value">{{email}}</div>
+                    </div>
+                    <div class="info-item">
+                        <label>Plan:</label>
+                        <div class="value">{{plan_servicio}}</div>
+                    </div>
+                    <div class="info-item">
+                        <label>Velocidad:</label>
+                        <div class="value">{{velocidad_descarga}}/{{velocidad_subida}} Mbps</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado del Servicio -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="icon">🌐</span>
+                    <h3>ESTADO ACTUAL DEL SERVICIO</h3>
+                </div>
+                
+                <div class="status-grid">
+                    <div class="status-card good">
+                        <div class="metric">95%</div>
+                        <div class="label">DISPONIBILIDAD</div>
+                    </div>
+                    <div class="status-card good">
+                        <div class="metric">12ms</div>
+                        <div class="label">LATENCIA</div>
+                    </div>
+                    <div class="status-card warning">
+                        <div class="metric">-65dBm</div>
+                        <div class="label">SEÑAL</div>
+                    </div>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Estado del Servicio:</label>
+                        <div class="value">
+                            <span class="priority-badge low">ACTIVO</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <label>Última Conexión:</label>
+                        <div class="value">{{ultima_conexion}}</div>
+                    </div>
+                    <div class="info-item">
+                        <label>IP Asignada:</label>
+                        <div class="value">{{ip_asignada}}</div>
+                    </div>
+                    <div class="info-item">
+                        <label>Usuario PPPoE:</label>
+                        <div class="value">{{usuario_pppoe}}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topología de Red -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="icon">📡</span>
+                    <h3>TOPOLOGÍA DE RED</h3>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Zona:</label>
+                        <div class="value">{{zona}}</div>
+                    </div>
+                    <div class="info-item">
+                        <label>Nodo Principal:</label>
+                        <div class="value">{{nodo}}</div>
+                    </div>
+                    <div class="info-item">
+                        <label>Sector:</label>
+                        <div class="value">{{sector}}</div>
+                    </div>
+                    <div class="info-item">
+                        <label>Frecuencia:</label>
+                        <div class="value">{{frecuencia_sector}}</div>
+                    </div>
+                    <div class="info-item full-width">
+                        <label>Coordenadas GPS:</label>
+                        <div class="value">{{latitud}}, {{longitud}}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Equipamiento -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="icon">📦</span>
+                    <h3>EQUIPAMIENTO INSTALADO</h3>
+                </div>
+                
+                <table class="metric-table">
+                    <thead>
+                        <tr>
+                            <th>Estado</th>
+                            <th>Equipo</th>
+                            <th>Modelo</th>
+                            <th>MAC Address</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <span class="status-indicator online"></span>
+                            </td>
+                            <td>Router CPE</td>
+                            <td>{{modelo_router}}</td>
+                            <td>{{mac_router}}</td>
+                            <td>Online</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <span class="status-indicator online"></span>
+                            </td>
+                            <td>Antena</td>
+                            <td>{{modelo_antena}}</td>
+                            <td>{{mac_antena}}</td>
+                            <td>Conectado</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Métricas de Rendimiento -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="icon">📈</span>
+                    <h3>MÉTRICAS DE RENDIMIENTO (ÚLTIMOS 30 DÍAS)</h3>
+                </div>
+                
+                <table class="metric-table">
+                    <thead>
+                        <tr>
+                            <th>Métrica</th>
+                            <th>Promedio</th>
+                            <th>Mínimo</th>
+                            <th>Máximo</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Velocidad de Descarga</td>
+                            <td>{{promedio_descarga}} Mbps</td>
+                            <td>{{min_descarga}} Mbps</td>
+                            <td>{{max_descarga}} Mbps</td>
+                            <td><span class="priority-badge low">ÓPTIMO</span></td>
+                        </tr>
+                        <tr>
+                            <td>Velocidad de Subida</td>
+                            <td>{{promedio_subida}} Mbps</td>
+                            <td>{{min_subida}} Mbps</td>
+                            <td>{{max_subida}} Mbps</td>
+                            <td><span class="priority-badge low">ÓPTIMO</span></td>
+                        </tr>
+                        <tr>
+                            <td>Latencia (Ping)</td>
+                            <td>{{promedio_latencia}} ms</td>
+                            <td>{{min_latencia}} ms</td>
+                            <td>{{max_latencia}} ms</td>
+                            <td><span class="priority-badge low">BUENO</span></td>
+                        </tr>
+                        <tr>
+                            <td>Pérdida de Paquetes</td>
+                            <td>{{promedio_perdida}}%</td>
+                            <td>{{min_perdida}}%</td>
+                            <td>{{max_perdida}}%</td>
+                            <td><span class="priority-badge medium">ACEPTABLE</span></td>
+                        </tr>
+                        <tr>
+                            <td>Disponibilidad</td>
+                            <td>{{disponibilidad}}%</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td><span class="priority-badge low">EXCELENTE</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="icon">⚠️</span>
+                    <h3>OBSERVACIONES TÉCNICAS</h3>
+                </div>
+                
+                <div class="observations-box">
+                    <h4>🔍 Hallazgos</h4>
+                    <ul>
+                        <li>La señal de la antena presenta variaciones durante horas pico</li>
+                        <li>Se detectaron 3 cortes breves de servicio en el último mes</li>
+                        <li>El nivel de señal está dentro del rango aceptable (-65 dBm)</li>
+                        <li>Equipamiento funcionando correctamente</li>
+                    </ul>
+                </div>
+
+                <div class="recommendations-box">
+                    <h4>💡 Recomendaciones</h4>
+                    <ul>
+                        <li><strong>Optimización:</strong> Ajustar orientación de antena para mejorar nivel de señal</li>
+                        <li><strong>Mantenimiento:</strong> Programar limpieza de equipos en próxima visita</li>
+                        <li><strong>Actualización:</strong> Firmware del router actualizado a última versión</li>
+                        <li><strong>Preventivo:</strong> Revisar cable de alimentación, presenta desgaste leve</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Acciones Requeridas -->
+            <div class="section">
+                <div class="action-required">
+                    <h4>⚡ ACCIÓN REQUERIDA</h4>
+                    <p>No se requieren acciones inmediatas. Servicio operando dentro de parámetros normales.</p>
+                    <p style="margin-top: 10px; font-weight: normal;">
+                        <strong>Próxima Revisión:</strong> Programada para {{fecha_proxima_revision}}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Código QR -->
+            <div style="text-align: center; margin: 30px 0; padding: 20px; background: white; border-radius: 8px;">
+                <qr-code data="TECH-REPORT-{{numero_reporte}}-{{numero_cliente}}" size="120"></qr-code>
+                <p style="margin-top: 10px; font-size: 9pt; color: #666;">
+                    Código de verificación del reporte
+                </p>
+            </div>
+
+            <!-- Firmas -->
+            <div class="signature-section">
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">TÉCNICO RESPONSABLE</div>
+                    <div class="signature-name">{{tecnico_responsable}}</div>
+                </div>
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">SUPERVISOR TÉCNICO</div>
+                    <div class="signature-name">Depto. Técnico ISP</div>
+                </div>
+            </div>
+
+            <!-- Pie de página -->
+            <div class="footer">
+                <p>
+                    <strong>Reporte Técnico No. {{numero_reporte}}</strong> | 
+                    Generado el {{fecha_generacion}}
+                </p>
+                <p style="margin-top: 10px;">
+                    Este documento contiene información técnica del servicio de Internet 
+                    proporcionado al cliente. Para consultas técnicas, contacte al 
+                    departamento de soporte técnico.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

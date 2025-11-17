@@ -28,6 +28,8 @@ module.exports = function(app) {
     //[authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
     inventory.getProductTemplates
   );
+  
+
 
   // Dashboard de eficiencia
   app.get(

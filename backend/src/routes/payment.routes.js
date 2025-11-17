@@ -1,6 +1,7 @@
 // backend/src/routes/payment.routes.js
 const { authJwt } = require("../middleware");
 const paymentController = require("../controllers/payment.controller");
+const upload = require("../middleware/upload");
 
 module.exports = function(app) {
   app.use(function(req, res, next) {
@@ -21,6 +22,7 @@ module.exports = function(app) {
   app.get(
     "/api/payments",
     //[authJwt.verifyToken, authJwt.checkPermission("view_billing")],
+    [authJwt.verifyToken, upload.single('receipt')],
     paymentController.getAllPayments
   );
 

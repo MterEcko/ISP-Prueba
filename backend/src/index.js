@@ -4,7 +4,7 @@ const cors = require('cors');
 const morgan = require("morgan");
 const helmet = require('helmet');
 const dotenv = require("dotenv");
-
+const configHelper = require('./helpers/configHelper');
 const path = require('path');
 
 const { setupTPLinkPermissions } = require("./config/permissions-setup");
@@ -110,9 +110,36 @@ async function synchronizeDatabase() {
     await db.NotificationQueue.sync({ force: false });
     await db.CommunicationContact.sync({ force: false });
     await db.CommunicationEvent.sync({ force: false });
+	await db.TechnicianInventoryReconciliation.sync({ force: false });
+	await db.InventoryBatch.sync({ force: false });
 
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
-    await initial(); // Llamar a la función para datos iniciales
+    
+    // ==================== AGREGAR ESTE BLOQUE AQUÍ ====================
+    try {
+      console.log('\n=== INICIALIZANDO SISTEMA DE CONFIGURACIONES ===');
+      configHelper.init(db);
+      console.log('✅ ConfigHelper inicializado con instancia de DB');
+      
+      await configHelper.loadAllConfigs();
+      console.log('✅ Configuraciones cargadas en caché');
+      
+      // Mostrar configuración de email actual
+      const emailConfig = await configHelper.getEmailConfig();
+      console.log('📧 Configuración de Email:');
+      console.log('   - Host:', emailConfig.host);
+      console.log('   - Puerto:', emailConfig.port);
+      console.log('   - Secure:', emailConfig.secure);
+      console.log('   - Usuario:', emailConfig.auth.user);
+      console.log('================================================\n');
+    } catch (error) {
+      console.error('❌ Error inicializando ConfigHelper:', error);
+      console.warn('⚠️ El sistema continuará pero las configuraciones dinámicas no estarán disponibles');
+    }
+    // ==================== FIN DEL BLOQUE ====================
+    
+    await initial(); // Esta línea ya debe existir en tu código
+    
   } catch (error) {
     console.error("No se pudo conectar a la base de datos desde src/index:", error);
     process.exit(1);
@@ -235,6 +262,14 @@ try {
   console.error('❌ Error en systemPlugin.routes:', error.message);
 }
 
+try {
+  console.log('Registrando settings.routes...');
+  require('./routes/settings.routes')(app);
+  console.log('✅ settings.routes registradas');
+} catch (error) {
+  console.error('❌ Error en settings.routes:', error.message);
+}
+
 // Rutas de red y Mikrotik
 // Primero las rutas específicas
 try {
@@ -260,6 +295,11 @@ try {
 } catch (error) {
   console.error('❌ Error en ip.assignment.routes:', error.message);
 }
+
+
+
+
+
 
 // Luego las rutas generales de red
 try {
@@ -294,6 +334,22 @@ try {
   console.log('✅ payment.routes registradas');
 } catch (error) {
   console.error('❌ Error en payment.routes:', error.message);
+}
+
+try {
+  console.log('Registrando manual.payment.routes...');
+  require('./routes/manual.payment.routes')(app);
+  console.log('✅ manual.payment.routes registradas');
+} catch (error) {
+  console.error('❌ Error en manual.payment.routes:', error.message);
+}
+
+try {
+  console.log('Registrando reports.routes...');
+  require('./routes/reports.routes')(app);
+  console.log('✅ reports.routes registradas');
+} catch (error) {
+  console.error('❌ Error en manual.payment.routes:', error.message);
 }
 
 /*
@@ -338,7 +394,49 @@ try {
   console.error('❌ Error en client.routes:', error.message);
 }
 
+try {
+  console.log('Registrando documentTemplate.routes...');
+  require('./routes/documentTemplate.routes')(app);
+  console.log('✅ documentTemplate.routes registradas');
+} catch (error) {
+  console.error('❌ Error en documentTemplate.routes:', error.message);
+}
+
+try {
+  console.log('Registrando documentAdvanced.routes...');
+  require('./routes/documentAdvanced.routes')(app);
+  console.log('✅ documentAdvanced.routes registradas');
+} catch (error) {
+  console.error('❌ Error en documentAdvanced.routes:', error.message);
+}
+
 // Rutas de inventario
+
+
+try {
+  console.log('Registrando inventoryBatch.routes...');
+  require("./routes/inventoryBatch.routes")(app);
+  console.log('✅ inventoryBatch.routes registradas');
+} catch (error) {
+  console.error('❌ Error en inventoryBatch.routes:', error.message);
+}
+
+try {
+  console.log('Registrando inventoryTechnician.routes...');
+  require("./routes/inventoryTechnician.routes")(app);
+  console.log('✅ inventoryTechnician.routes registradas');
+} catch (error) {
+  console.error('❌ Error en inventoryTechnician.routes:', error.message);
+}
+
+try {
+  console.log('Registrando inventoryReconciliation.routes...');
+  require("./routes/inventoryReconciliation.routes")(app);
+  console.log('✅ inventoryReconciliation.routes registradas');
+} catch (error) {
+  console.error('❌ Error en inventoryReconciliation.routes:', error.message);
+}
+
 // Primero las rutas específicas
 try {
   console.log('Registrando inventoryLocation.routes...');
@@ -364,6 +462,8 @@ try {
 } catch (error) {
   console.error('❌ Error en inventory.routes:', error.message);
 }
+
+
 
 // Rutas de tickets y soporte
 try {
