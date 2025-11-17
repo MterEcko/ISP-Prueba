@@ -714,6 +714,15 @@ try {
   console.error('❌ Error en currency.routes:', error.message);
 }
 
+// Rutas del Portal del Cliente
+try {
+  console.log('Registrando clientPortal.routes...');
+  app.use('/api/client-portal', require('./routes/clientPortal.routes'));
+  console.log('✅ clientPortal.routes registradas');
+} catch (error) {
+  console.error('❌ Error en clientPortal.routes:', error.message);
+}
+
 console.log('\n=== FIN REGISTRO DE RUTAS ===');
 console.log("Todas las rutas han sido procesadas");
 
