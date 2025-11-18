@@ -135,7 +135,7 @@ module.exports = (sequelize, DataTypes) => {
       comment: 'Additional item metadata'
     }
   }, {
-    tableName: 'store_order_items',
+    tableName: 'StoreOrderItems',
     timestamps: true,
     indexes: [
       { fields: ['orderId'] },

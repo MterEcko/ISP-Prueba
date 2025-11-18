@@ -161,7 +161,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     }
   }, {
-    tableName: 'store_orders',
+    tableName: 'StoreOrders',
     timestamps: true,
     indexes: [
       { fields: ['customerId'] },
