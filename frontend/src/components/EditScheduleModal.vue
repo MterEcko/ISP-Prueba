@@ -2,14 +2,14 @@
   <div class="modal-overlay" @click="closeModal">
     <div class="modal-content" @click.stop>
       <div class="modal-header">
-        <h3>Editar Programación</h3>
+        <h3>Editar Programaciï¿½n</h3>
         <button @click="closeModal" class="close-button">&times;</button>
       </div>
 
       <div class="modal-body">
-        <!-- Información del mensaje actual -->
+        <!-- Informaciï¿½n del mensaje actual -->
         <div class="message-info">
-          <h4>Información del Mensaje</h4>
+          <h4>Informaciï¿½n del Mensaje</h4>
           <div class="info-grid">
             <div class="info-item">
               <span class="label">Destinatario:</span>
@@ -42,9 +42,9 @@
           </div>
         </div>
 
-        <!-- Programación actual -->
+        <!-- Programaciï¿½n actual -->
         <div class="current-schedule">
-          <h4>Programación Actual</h4>
+          <h4>Programaciï¿½n Actual</h4>
           <div class="schedule-info">
             <div class="schedule-item">
               <span class="schedule-label">Programado para:</span>
@@ -57,15 +57,15 @@
               <span class="schedule-value">{{ message.attempts }}/{{ message.maxAttempts }}</span>
             </div>
             <div v-if="isOverdue()" class="overdue-warning">
-              ?? Este mensaje está vencido y debería ejecutarse inmediatamente
+              ?? Este mensaje estï¿½ vencido y deberï¿½a ejecutarse inmediatamente
             </div>
           </div>
         </div>
 
-        <!-- Nueva programación -->
+        <!-- Nueva programaciï¿½n -->
         <form @submit.prevent="saveSchedule">
           <div class="new-schedule">
-            <h4>Nueva Programación</h4>
+            <h4>Nueva Programaciï¿½n</h4>
             
             <div class="schedule-options">
               <div class="option-group">
@@ -77,7 +77,7 @@
                   />
                   <span class="option-text">
                     <strong>Enviar inmediatamente</strong>
-                    <small>El mensaje se enviará en cuanto se procese</small>
+                    <small>El mensaje se enviarï¿½ en cuanto se procese</small>
                   </span>
                 </label>
               </div>
@@ -90,7 +90,7 @@
                     value="datetime"
                   />
                   <span class="option-text">
-                    <strong>Programar para fecha específica</strong>
+                    <strong>Programar para fecha especï¿½fica</strong>
                     <small>Selecciona una nueva fecha y hora</small>
                   </span>
                 </label>
@@ -104,14 +104,14 @@
                     value="delay"
                   />
                   <span class="option-text">
-                    <strong>Retrasar por un período</strong>
-                    <small>Añadir tiempo a la programación actual</small>
+                    <strong>Retrasar por un perï¿½odo</strong>
+                    <small>Aï¿½adir tiempo a la programaciï¿½n actual</small>
                   </span>
                 </label>
               </div>
             </div>
 
-            <!-- Selección de fecha y hora -->
+            <!-- Selecciï¿½n de fecha y hora -->
             <div v-if="scheduleType === 'datetime'" class="datetime-selector">
               <div class="datetime-row">
                 <div class="form-group">
@@ -137,7 +137,7 @@
               </div>
               
               <div class="preview-datetime">
-                <span class="preview-label">Se enviará:</span>
+                <span class="preview-label">Se enviarï¿½:</span>
                 <span class="preview-value">{{ previewDateTime }}</span>
               </div>
             </div>
@@ -162,14 +162,14 @@
                   <select id="delayUnit" v-model="delayUnit" required>
                     <option value="minutes">Minutos</option>
                     <option value="hours">Horas</option>
-                    <option value="days">Días</option>
+                    <option value="days">Dï¿½as</option>
                     <option value="weeks">Semanas</option>
                   </select>
                 </div>
               </div>
               
               <div class="preview-delay">
-                <span class="preview-label">Se enviará:</span>
+                <span class="preview-label">Se enviarï¿½:</span>
                 <span class="preview-value">{{ previewDelayDateTime }}</span>
               </div>
             </div>
@@ -185,7 +185,7 @@
                   Reiniciar contador de intentos
                 </label>
                 <small class="help-text">
-                  Útil si el mensaje había fallado anteriormente
+                  ï¿½til si el mensaje habï¿½a fallado anteriormente
                 </small>
               </div>
 
@@ -198,18 +198,18 @@
                   Aumentar prioridad del mensaje
                 </label>
                 <small class="help-text">
-                  El mensaje se procesará antes que otros pendientes
+                  El mensaje se procesarï¿½ antes que otros pendientes
                 </small>
               </div>
             </div>
 
-            <!-- Razón del cambio -->
+            <!-- Razï¿½n del cambio -->
             <div class="form-group">
-              <label for="reason">Razón del cambio (opcional)</label>
+              <label for="reason">Razï¿½n del cambio (opcional)</label>
               <textarea 
                 id="reason"
                 v-model="changeReason"
-                placeholder="Explica por qué se reprograma este mensaje..."
+                placeholder="Explica por quï¿½ se reprograma este mensaje..."
                 rows="3"
               ></textarea>
             </div>
@@ -307,7 +307,7 @@ export default {
   },
   methods: {
     initializeDefaults() {
-      // Si el mensaje está vencido, sugerir envío inmediato
+      // Si el mensaje estï¿½ vencido, sugerir envï¿½o inmediato
       if (this.isOverdue()) {
         this.scheduleType = 'immediate';
       } else {
@@ -353,11 +353,12 @@ export default {
         case 'datetime':
           scheduledFor = new Date(`${this.newSchedule.date}T${this.newSchedule.time}`).toISOString();
           break;
-        case 'delay':
+        case 'delay': {
           const currentSchedule = new Date(this.message.scheduledFor);
           const delayMs = this.getDelayInMilliseconds();
           scheduledFor = new Date(currentSchedule.getTime() + delayMs).toISOString();
           break;
+        }
       }
       
       return {
@@ -418,11 +419,11 @@ export default {
         })}`;
       }
       
-      // Si es mañana
+      // Si es maï¿½ana
       const tomorrow = new Date(now);
       tomorrow.setDate(tomorrow.getDate() + 1);
       if (date.toDateString() === tomorrow.toDateString()) {
-        return `Mañana a las ${date.toLocaleTimeString('es-MX', { 
+        return `Maï¿½ana a las ${date.toLocaleTimeString('es-MX', { 
           hour: '2-digit', 
           minute: '2-digit' 
         })}`;

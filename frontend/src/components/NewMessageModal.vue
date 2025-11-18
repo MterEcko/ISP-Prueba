@@ -8,9 +8,9 @@
 
       <div class="modal-body">
         <form @submit.prevent="sendMessage">
-          <!-- Canal de comunicación -->
+          <!-- Canal de comunicaciï¿½n -->
           <div class="form-group">
-            <label for="channel">Canal de comunicación *</label>
+            <label for="channel">Canal de comunicaciï¿½n *</label>
             <select 
               id="channel" 
               v-model="message.channelId" 
@@ -39,7 +39,7 @@
                   value="client"
                   @change="onRecipientTypeChange"
                 />
-                Cliente específico
+                Cliente especï¿½fico
               </label>
               <label class="radio-option">
                 <input 
@@ -53,7 +53,7 @@
             </div>
           </div>
 
-          <!-- Selección de cliente -->
+          <!-- Selecciï¿½n de cliente -->
           <div v-if="recipientType === 'client'" class="form-group">
             <label for="client">Cliente *</label>
             <ClientSelector
@@ -131,7 +131,7 @@
                 {{ message.messageBody.length }} caracteres
               </span>
               <span v-if="getCharacterLimit()" class="char-limit">
-                / {{ getCharacterLimit() }} máximo
+                / {{ getCharacterLimit() }} mï¿½ximo
               </span>
             </div>
           </div>
@@ -153,14 +153,14 @@
             </div>
           </div>
 
-          <!-- Programar envío -->
+          <!-- Programar envï¿½o -->
           <div class="form-group">
             <label class="checkbox-label">
               <input 
                 type="checkbox" 
                 v-model="scheduleMessage"
               />
-              Programar envío
+              Programar envï¿½o
             </label>
           </div>
 
@@ -214,7 +214,7 @@
 
 <script>
 import CommunicationService from '../services/communication.service';
-import ClientService from '../services/client.service';
+// import ClientService from '../services/client.service'; // Comentado: no utilizado actualmente
 import ClientSelector from './ClientSelector.vue';
 
 export default {
@@ -253,7 +253,7 @@ export default {
         { name: '{nombre}', description: 'Nombre del cliente' },
         { name: '{apellido}', description: 'Apellido del cliente' },
         { name: '{email}', description: 'Email del cliente' },
-        { name: '{telefono}', description: 'Teléfono del cliente' },
+        { name: '{telefono}', description: 'Telï¿½fono del cliente' },
         { name: '{plan}', description: 'Plan contratado' },
         { name: '{fecha}', description: 'Fecha actual' },
         { name: '{empresa}', description: 'Nombre de la empresa' }
@@ -288,7 +288,7 @@ export default {
     },
 
     onChannelChange() {
-      // Limpiar campos específicos del canal anterior
+      // Limpiar campos especï¿½ficos del canal anterior
       this.message.subject = '';
       this.selectedTemplateId = '';
       this.messagePreview = '';
@@ -304,7 +304,7 @@ export default {
       this.selectedClient = client;
       this.message.clientId = client.id;
       
-      // Auto-completar destinatario según el canal
+      // Auto-completar destinatario segï¿½n el canal
       if (this.selectedChannel) {
         switch (this.selectedChannel.channelType) {
           case 'email':
@@ -357,7 +357,7 @@ export default {
           telefono: this.selectedClient.phone,
           plan: this.selectedClient.plan?.name || 'N/A',
           fecha: new Date().toLocaleDateString('es-MX'),
-          empresa: 'Mi ISP' // Esto debería venir de configuración
+          empresa: 'Mi ISP' // Esto deberï¿½a venir de configuraciï¿½n
         };
 
         const response = await CommunicationService.previewTemplate(
@@ -407,7 +407,7 @@ export default {
           messageData.subject = this.message.subject;
         }
 
-        // Agregar programación si está habilitada
+        // Agregar programaciï¿½n si estï¿½ habilitada
         if (this.scheduleMessage) {
           messageData.scheduledFor = `${this.message.scheduleDate}T${this.message.scheduleTime}:00`;
         }
@@ -444,10 +444,10 @@ export default {
       if (!this.selectedChannel) return 'Destinatario';
       
       const labels = {
-        'email': 'Correo electrónico',
-        'whatsapp': 'Número de WhatsApp',
+        'email': 'Correo electrï¿½nico',
+        'whatsapp': 'Nï¿½mero de WhatsApp',
         'telegram': 'Usuario de Telegram',
-        'sms': 'Número de teléfono'
+        'sms': 'Nï¿½mero de telï¿½fono'
       };
       
       return labels[this.selectedChannel.channelType] || 'Destinatario';
@@ -467,7 +467,7 @@ export default {
     },
 
     getMessagePlaceholder() {
-      if (!this.selectedChannel) return 'Escriba su mensaje aquí...';
+      if (!this.selectedChannel) return 'Escriba su mensaje aquï¿½...';
       
       const placeholders = {
         'email': 'Escriba el contenido del correo...',
@@ -476,7 +476,7 @@ export default {
         'sms': 'Escriba el mensaje SMS...'
       };
       
-      return placeholders[this.selectedChannel.channelType] || 'Escriba su mensaje aquí...';
+      return placeholders[this.selectedChannel.channelType] || 'Escriba su mensaje aquï¿½...';
     },
 
     getCharacterLimit() {

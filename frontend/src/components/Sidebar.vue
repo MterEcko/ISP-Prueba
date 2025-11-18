@@ -216,10 +216,8 @@
 </template>
 
 <script>
-import AuthService from '../services/auth.service';
-
 export default {
-  name: 'Sidebar',
+  name: 'SidebarComponent',
   data() {
     return {
       isCollapsed: false
