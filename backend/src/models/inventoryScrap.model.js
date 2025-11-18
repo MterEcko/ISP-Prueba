@@ -77,8 +77,8 @@ module.exports = (sequelize) => {
     },
     unitType: {
       type: DataTypes.ENUM('piece', 'meters', 'grams', 'box', 'liters'),
-      defaultValue: 'piece',
-      comment: 'Tipo de unidad para las cantidades'
+      defaultValue: 'piece'
+      // Nota: piece=pieza, meters=metros, grams=gramos, box=caja, liters=litros
     },
     scrapThreshold: {
       type: DataTypes.DECIMAL(10, 3),
