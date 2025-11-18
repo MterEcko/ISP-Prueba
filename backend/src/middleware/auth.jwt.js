@@ -18,6 +18,7 @@ verifyToken = (req, res, next) => {
       });
     }
     req.userId = decoded.id;
+    req.user = { id: decoded.id }; // Para compatibilidad con controllers que usan req.user.id
     next();
   });
 };
