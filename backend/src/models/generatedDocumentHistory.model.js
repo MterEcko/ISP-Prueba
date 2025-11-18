@@ -118,12 +118,14 @@ module.exports = (sequelize) => {
         fields: ['generatedAt']
       },
       {
+        name: 'idx_gen_doc_sig_required',
         fields: ['signatureRequired'],
         where: {
           signatureRequired: true
         }
       },
       {
+        name: 'idx_gen_doc_pending_sig',
         fields: ['signatureRequired', 'signatureCompleted'],
         where: {
           signatureRequired: true,
