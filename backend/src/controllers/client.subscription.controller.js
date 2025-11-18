@@ -451,7 +451,7 @@ exports.searchSubscriptions = async (req, res) => {
     } = req.query;
 
     const db = require('../models');
-    const { Subscription, Client, servicePackage, Zone, IpPool } = db;
+    const { Subscription, Client, ServicePackage, Zone, IpPool } = db;
     const { Op } = require('sequelize');
 
     // Construir condiciones WHERE
@@ -494,7 +494,7 @@ exports.searchSubscriptions = async (req, res) => {
           attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'active']
         },
         {
-          model: db.servicePackage,
+          model: db.ServicePackage,
           where: Object.keys(packageWhereClause).length > 0 ? packageWhereClause : undefined,
           include: [{ model: db.Zone, attributes: ['id', 'name'] }]
         },
