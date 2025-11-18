@@ -12,7 +12,6 @@ module.exports = (sequelize) => {
     batchNumber: {
       type: DataTypes.STRING(50),
       allowNull: false,
-      unique: true,
       comment: 'Número único del lote (auto-generado)'
     },
     purchaseDate: {
