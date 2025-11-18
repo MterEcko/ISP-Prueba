@@ -50,7 +50,7 @@ module.exports = (sequelize) => {
       comment: 'Usuario que registró el pago'
     }
   }, {
-    tableName: 'payroll_payments',
+    tableName: 'PayrollPayments',
     timestamps: true,
     indexes: [
       {
