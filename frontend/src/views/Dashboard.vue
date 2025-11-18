@@ -347,7 +347,7 @@
 import DashboardService from '../services/dashboard.service.js';
 
 export default {
-  name: 'Dashboard',
+  name: 'AppDashboard',
   data() {
     return {
       loading: true,

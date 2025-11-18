@@ -5,6 +5,7 @@
         <h1 class="text-h4 mb-4">
           <v-icon large class="mr-2">mdi-key-chain</v-icon>
           Gestión de Licencias
+        </h-icon>
         </h1>
       </v-col>
     </v-row>

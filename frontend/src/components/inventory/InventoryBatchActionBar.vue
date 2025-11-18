@@ -132,7 +132,7 @@
     <!-- Modales para acciones -->
     
     <!-- Modal para confirmación de cambio de estado -->
-    <Modal 
+    <BaseModal 
       v-if="showStatusModal"
       :show="showStatusModal" 
       title="Cambiar estado de elementos" 
@@ -170,10 +170,10 @@
           </ul>
         </div>
       </div>
-    </Modal>
+    </BaseModal>
     
     <!-- Modal para confirmación de movimiento -->
-    <Modal 
+    <BaseModal 
       v-if="showLocationModal"
       :show="showLocationModal" 
       title="Mover elementos" 
@@ -229,10 +229,10 @@
           </ul>
         </div>
       </div>
-    </Modal>
+    </BaseModal>
     
     <!-- Modal para confirmación de asignación -->
-    <Modal 
+    <BaseModal 
       v-if="showClientModal"
       :show="showClientModal" 
       title="Asignar elementos a cliente" 
@@ -291,10 +291,10 @@
           </ul>
         </div>
       </div>
-    </Modal>
+    </BaseModal>
     
     <!-- Modal para confirmación de eliminación de asignación -->
-    <Modal 
+    <BaseModal 
       v-if="showRemoveAssignmentModal"
       :show="showRemoveAssignmentModal" 
       title="Eliminar asignación de elementos" 
@@ -351,10 +351,10 @@
           </ul>
         </div>
       </div>
-    </Modal>
+    </BaseModal>
     
     <!-- Modal para opciones de impresión -->
-    <Modal 
+    <BaseModal 
       v-if="showPrintModal"
       :show="showPrintModal" 
       title="Imprimir etiquetas" 
@@ -504,10 +504,10 @@
           <p>Elementos seleccionados: <strong>{{ selectedItems.length }}</strong></p>
         </div>
       </div>
-    </Modal>
+    </BaseModal>
     
     <!-- Modal para opciones de exportación -->
-    <Modal 
+    <BaseModal 
       v-if="showExportModal"
       :show="showExportModal" 
       title="Exportar elementos" 
@@ -583,10 +583,10 @@
           <p>Elementos seleccionados: <strong>{{ selectedItems.length }}</strong></p>
         </div>
       </div>
-    </Modal>
+    </BaseModal>
     
     <!-- Modal para confirmación de eliminación -->
-    <Modal 
+    <BaseModal 
       v-if="showDeleteModal"
       :show="showDeleteModal" 
       title="Eliminar elementos" 
@@ -634,19 +634,19 @@
           </ul>
         </div>
       </div>
-    </Modal>
+    </BaseModal>
   </div>
 </template>
 
 <script>
-import Modal from '@/components/common/Modal.vue';
+import BaseModal from '@/components/common/Modal.vue';
 import inventoryService from '@/services/inventory';
 import clientService from '@/services/client';
 
 export default {
   name: 'BatchActionBar',
   components: {
-    Modal
+    BaseModal
   },
   props: {
     // Lista de elementos seleccionados
@@ -844,7 +844,7 @@ export default {
     // Escuchar clics fuera para cerrar dropdowns
     document.addEventListener('click', this.handleOutsideClick);
   },
-  beforeDestroy() {
+  beforeUnmount() {
     // Limpiar event listener
     document.removeEventListener('click', this.handleOutsideClick);
   },

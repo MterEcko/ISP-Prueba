@@ -149,13 +149,13 @@ async function synchronizeDatabase() {
 
     // Sincronizar modelos de contabilidad
     await db.ExpenseCategory.sync({ force: false });
-    //await db.Expense.sync({ force: false });
-    //await db.Payroll.sync({ force: false });
-    //await db.PayrollPayment.sync({ force: false });
+    await db.Expense.sync({ force: false });
+    await db.Payroll.sync({ force: false });
+    await db.PayrollPayment.sync({ force: false });
 
     // Sincronizar modelos de divisas
     await db.Currency.sync({ force: false });
-    //await db.ExchangeRate.sync({ force: false });
+    await db.ExchangeRate.sync({ force: false });
 
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
     
@@ -354,14 +354,6 @@ try {
 }
 
 try {
-  console.log('Registrando notification.routes...');
-  require('./routes/notification.routes')(app);
-  console.log('✅ notification.routes registradas');
-} catch (error) {
-  console.error('❌ Error en notification.routes:', error.message);
-}
-
-try {
   console.log('Registrando reminders.routes...');
   require('./routes/reminders.routes')(app);
   console.log('✅ reminders.routes registradas');
@@ -452,11 +444,19 @@ try {
 }
 
 try {
+  console.log('Registrando billing.routes...');
+  require('./routes/billing.routes')(app);
+  console.log('✅ billing.routes registradas');
+} catch (error) {
+  console.error('❌ Error en billing.routes:', error.message);
+}
+
+try {
   console.log('Registrando reports.routes...');
   require('./routes/reports.routes')(app);
   console.log('✅ reports.routes registradas');
 } catch (error) {
-  console.error('❌ Error en manual.payment.routes:', error.message);
+  console.error('❌ Error en reports.routes:', error.message);
 }
 
 /*
@@ -469,11 +469,11 @@ try {
 }
 */
 try {
-  console.log('Registrando client.billing.routes...');
+  console.log('Registrando invoice.routes...');
   require('./routes/invoice.routes')(app);
-  console.log('✅ client.billing.routes registradas');
+  console.log('✅ invoice.routes registradas');
 } catch (error) {
-  console.error('❌ Error en client.billing.routes:', error.message);
+  console.error('❌ Error en invoice.routes:', error.message);
 }
 
 try {

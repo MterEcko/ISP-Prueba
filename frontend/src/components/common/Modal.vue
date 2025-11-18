@@ -23,7 +23,7 @@
 
 <script>
 export default {
-  name: 'Modal',
+  name: 'BaseModal',
   props: {
     /**
      * Título del modal (opcional si se usa slot header)

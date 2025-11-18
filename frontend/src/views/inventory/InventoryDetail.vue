@@ -269,7 +269,7 @@
     
     <!-- Modales -->
     <!-- Modal para confirmar eliminación -->
-    <Modal
+    <BaseModal
       v-if="showDeleteModal"
       :show="showDeleteModal"
       title="Confirmar eliminación"
@@ -300,10 +300,10 @@
           </div>
         </div>
       </div>
-    </Modal>
+    </BaseModal>
     
     <!-- Modal para asignar a cliente o técnico -->
-    <Modal
+    <BaseModal
       v-if="showAssignModal"
       title="Asignar elemento"
       @close="closeAssignModal"
@@ -380,10 +380,10 @@
           {{ assigningItem ? 'Guardando...' : 'Guardar' }}
         </button>
       </template>
-    </Modal>
+    </BaseModal>
     
     <!-- Modal para mover a otra ubicación -->
-    <Modal
+    <BaseModal
       v-if="showMoveModal"
       title="Mover elemento"
       @close="closeMoveModal"
@@ -447,13 +447,13 @@
           {{ movingItem ? 'Moviendo...' : 'Mover' }}
         </button>
       </template>
-    </Modal>
+    </BaseModal>
   </div>
 </template>
 
 <script>
 
-import Modal from '@/components/common/Modal.vue';
+import BaseModal from '@/components/common/Modal.vue';
 
 import inventoryService from '../../services/inventory.service';
 import clientService from '../../services/client.service';
@@ -464,7 +464,7 @@ import { formatDate, formatDateTime, formatCurrency } from '@/utils/formatters';
 export default {
   name: 'InventoryDetail',
   components: {
-    Modal
+    BaseModal
   },
   data() {
     return {

@@ -37,7 +37,7 @@ class ChatService {
    */
   async getMessages(conversationId, limit = 50, offset = 0) {
     try {
-      const response = await api.get(`/chat/conversations/${conversationId}/messages`, {
+      const response = await axios.get(API_URL + `chat/conversations/${conversationId}/messages`, {
         params: { limit, offset }
       });
       return response.data;
@@ -70,7 +70,7 @@ class ChatService {
    */
   async markAsRead(conversationId) {
     try {
-      const response = await api.put(`/chat/conversations/${conversationId}/read`);
+      const response = await axios.put(API_URL + `chat/conversations/${conversationId}/read`);
       return response.data;
     } catch (error) {
       console.error('Error marking as read:', error);

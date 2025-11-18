@@ -236,7 +236,7 @@ export default {
     this.connectWebSocket();
     this.loadHistoricalData();
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.disconnectWebSocket();
     if (this.revenueChart) this.revenueChart.destroy();
     if (this.clientsChart) this.clientsChart.destroy();
