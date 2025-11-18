@@ -36,7 +36,6 @@ module.exports = (sequelize, DataTypes) => {
     gatewayType: {
       type: DataTypes.ENUM('paypal', 'stripe', 'mercadopago', 'card', 'transfer', 'cash'),
       allowNull: false,
-      comment: 'Tipo de pasarela'
     },
     transactionId: {
       type: DataTypes.STRING(200),
@@ -66,8 +65,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     status: {
       type: DataTypes.ENUM('pending', 'processing', 'completed', 'failed', 'refunded', 'cancelled'),
-      defaultValue: 'pending',
-      comment: 'Estado del pago'
+      defaultValue: 'pending'
+      // Nota: Estado del pago
     },
     paymentMethod: {
       type: DataTypes.STRING(100),

@@ -60,8 +60,8 @@ module.exports = (sequelize) => {
     },
     syncDirection: {
       type: DataTypes.ENUM('bidirectional', 'from_provider', 'to_provider'),
-      defaultValue: 'bidirectional',
-      comment: 'Dirección de sincronización'
+      defaultValue: 'bidirectional'
+      // Nota: Dirección de sincronización
     },
     lastSyncedAt: {
       type: DataTypes.DATE,

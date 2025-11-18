@@ -60,8 +60,8 @@ module.exports = (sequelize) => {
     },
     status: {
       type: DataTypes.ENUM('pending', 'completed', 'discrepancy', 'approved'),
-      defaultValue: 'pending',
-      comment: 'Estado de la reconciliación'
+      defaultValue: 'pending'
+      // Nota: Estado de la reconciliación
     },
     discrepancyDetails: {
       type: DataTypes.JSON,

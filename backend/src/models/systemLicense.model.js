@@ -19,7 +19,6 @@ module.exports = (sequelize) => {
     },
     clientLimit: {
       type: DataTypes.INTEGER,
-      comment: '50 para freemium, null para ilimitado'
     },
     active: {
       type: DataTypes.BOOLEAN,

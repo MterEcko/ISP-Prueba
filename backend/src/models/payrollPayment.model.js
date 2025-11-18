@@ -29,7 +29,6 @@ module.exports = (sequelize) => {
     paymentMethod: {
       type: DataTypes.ENUM('cash', 'transfer', 'check'),
       allowNull: false,
-      comment: 'Método de pago'
     },
     paymentReference: {
       type: DataTypes.STRING(255),

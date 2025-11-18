@@ -27,7 +27,7 @@ module.exports = (sequelize) => {
     supportType: {
       type: DataTypes.ENUM('technical', 'billing', 'sales', 'general'),
       allowNull: false,
-      comment: 'Tipo de soporte'
+      // Nota: Tipo de soporte
     },
     category: {
       type: DataTypes.STRING(100),
@@ -52,7 +52,6 @@ module.exports = (sequelize) => {
     },
     resolution: {
       type: DataTypes.TEXT,
-      comment: 'Descripción de la resolución'
     },
     resolvedBy: {
       type: DataTypes.INTEGER,
