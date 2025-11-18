@@ -81,11 +81,7 @@ module.exports = (sequelize, DataTypes) => {
     generatedLicenseId: {
       type: DataTypes.UUID,
       allowNull: true,
-      references: {
-        model: 'PluginLicenses',
-        key: 'id'
-      },
-      comment: 'License generated for this purchase'
+      comment: 'License generated for this purchase (references PluginLicenses.id)'
     },
 
     // Tipo de licencia (si aplica)
