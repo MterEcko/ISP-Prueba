@@ -48,7 +48,7 @@ module.exports = (sequelize) => {
       comment: 'Notas adicionales sobre la moneda'
     }
   }, {
-    tableName: 'currencies',
+    tableName: 'Currencies',
     timestamps: true,
     indexes: [
       {
