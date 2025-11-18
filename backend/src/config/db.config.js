@@ -3,8 +3,17 @@ const path = require('path');
 
 module.exports = {
   development: {
-    dialect: 'sqlite',
-    storage: path.join(__dirname, '../../database.sqlite'),
+    // Si hay variables de entorno de DB configuradas, usar PostgreSQL
+    // Si no, usar SQLite por defecto
+    dialect: process.env.DB_DIALECT || 'sqlite',
+    // Para SQLite
+    storage: process.env.DB_DIALECT === 'postgres' ? undefined : path.join(__dirname, '../../database.sqlite'),
+    // Para PostgreSQL
+    username: process.env.DB_USERNAME || 'postgres',
+    password: process.env.DB_PASSWORD || 'Supermetroid1.',
+    database: process.env.DB_NAME || 'ispdev',
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
     pool: {
       max: 10,
       min: 0,

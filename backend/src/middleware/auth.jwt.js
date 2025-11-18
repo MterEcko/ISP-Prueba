@@ -91,10 +91,92 @@ checkPermission = (requiredPermission) => {
   };
 };
 
+// Middleware específicos para roles comunes
+isAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findByPk(req.userId, {
+      include: [{
+        model: db.Role,
+        attributes: ['name']
+      }]
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    if (user.Role.name === 'admin') {
+      next();
+      return;
+    }
+
+    res.status(403).json({
+      message: "Requiere rol de administrador"
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+isAdminOrManager = async (req, res, next) => {
+  try {
+    const user = await User.findByPk(req.userId, {
+      include: [{
+        model: db.Role,
+        attributes: ['name']
+      }]
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    if (user.Role.name === 'admin' || user.Role.name === 'manager') {
+      next();
+      return;
+    }
+
+    res.status(403).json({
+      message: "Requiere rol de administrador o gerente"
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+isAdminOrTechnician = async (req, res, next) => {
+  try {
+    const user = await User.findByPk(req.userId, {
+      include: [{
+        model: db.Role,
+        attributes: ['name']
+      }]
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    if (user.Role.name === 'admin' || user.Role.name === 'technician') {
+      next();
+      return;
+    }
+
+    res.status(403).json({
+      message: "Requiere rol de administrador o técnico"
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const authJwt = {
   verifyToken,
   checkRole,
-  checkPermission
+  checkPermission,
+  isAdmin,
+  isAdminOrManager,
+  isAdminOrTechnician
 };
 
 module.exports = authJwt;
