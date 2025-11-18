@@ -11,7 +11,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'currencies',
+        model: 'Currencies',
         key: 'id'
       },
       comment: 'Moneda origen (generalmente USD como base)'
@@ -20,7 +20,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'currencies',
+        model: 'Currencies',
         key: 'id'
       },
       comment: 'Moneda destino'

@@ -43,8 +43,8 @@ module.exports = (sequelize) => {
     },
     installationType: {
       type: DataTypes.ENUM('new', 'upgrade', 'migration', 'repair'),
-      defaultValue: 'new',
-      comment: 'Tipo de instalación'
+      defaultValue: 'new'
+      // Nota: Tipo de instalación
     },
     status: {
       type: DataTypes.ENUM('scheduled', 'in_progress', 'completed', 'cancelled'),
@@ -52,7 +52,6 @@ module.exports = (sequelize) => {
     },
     equipment: {
       type: DataTypes.JSON,
-      comment: 'Equipos instalados'
     },
     signalStrength: {
       type: DataTypes.INTEGER,

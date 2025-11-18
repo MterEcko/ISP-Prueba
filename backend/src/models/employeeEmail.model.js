@@ -76,8 +76,8 @@ module.exports = (sequelize) => {
     },
     serverType: {
       type: DataTypes.ENUM('external', 'local'),
-      defaultValue: 'external',
-      comment: 'Tipo de servidor (externo contratado o local)'
+      defaultValue: 'external'
+      // Nota: Tipo de servidor (externo contratado o local)
     },
     webmailUrl: {
       type: DataTypes.STRING(255),

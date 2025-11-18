@@ -14,8 +14,8 @@ module.exports = (sequelize) => {
     },
     type: {
       type: DataTypes.ENUM('direct', 'group', 'channel'),
-      defaultValue: 'direct',
-      comment: 'Tipo de conversación'
+      defaultValue: 'direct'
+      // Nota: Tipo de conversación
     },
     participants: {
       type: DataTypes.JSON,

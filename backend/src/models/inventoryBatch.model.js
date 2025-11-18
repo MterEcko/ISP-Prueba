@@ -61,8 +61,8 @@ module.exports = (sequelize) => {
     },
     status: {
       type: DataTypes.ENUM('pending', 'in_progress', 'completed', 'cancelled'),
-      defaultValue: 'pending',
-      comment: 'Estado del proceso de ingreso'
+      defaultValue: 'pending'
+      // Nota: Estado del proceso de ingreso
     },
     notes: {
       type: DataTypes.TEXT,

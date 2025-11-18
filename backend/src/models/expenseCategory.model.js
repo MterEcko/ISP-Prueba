@@ -16,8 +16,8 @@ module.exports = (sequelize) => {
     type: {
       type: DataTypes.ENUM('fixed', 'variable'),
       allowNull: false,
-      defaultValue: 'variable',
-      comment: 'Tipo de gasto: fijo o variable'
+      defaultValue: 'variable'
+      // Nota: Tipo de gasto: fijo o variable
     },
     icon: {
       type: DataTypes.STRING(50),

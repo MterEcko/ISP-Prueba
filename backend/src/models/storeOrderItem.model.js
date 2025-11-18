@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'store_orders',
+        model: 'StoreOrders',
         key: 'id'
       }
     },
@@ -82,7 +82,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       allowNull: true,
       references: {
-        model: 'licenses',
+        model: 'Licenses',
         key: 'id'
       },
       comment: 'License generated for this purchase'

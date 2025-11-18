@@ -11,7 +11,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'expense_categories',
+        model: 'ExpenseCategories',
         key: 'id'
       },
       comment: 'Categoría del gasto'
@@ -39,7 +39,6 @@ module.exports = (sequelize) => {
     recurringPeriod: {
       type: DataTypes.ENUM('daily', 'weekly', 'monthly', 'yearly'),
       allowNull: true,
-      comment: 'Periodo de recurrencia'
     },
     supplier: {
       type: DataTypes.STRING(255),
@@ -54,8 +53,8 @@ module.exports = (sequelize) => {
     paymentMethod: {
       type: DataTypes.ENUM('cash', 'transfer', 'card', 'check', 'other'),
       allowNull: true,
-      defaultValue: 'cash',
-      comment: 'Método de pago'
+      defaultValue: 'cash'
+      // Nota: Método de pago
     },
     paymentReference: {
       type: DataTypes.STRING(255),
@@ -71,7 +70,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'users',
+        model: 'Users',
         key: 'id'
       },
       comment: 'Usuario que registró el gasto'

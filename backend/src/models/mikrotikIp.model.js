@@ -43,7 +43,6 @@ module.exports = (sequelize) => {
     },
     mikrotikId: {
       type: DataTypes.STRING,
-      comment: 'ID de la entrada en la tabla de IPs del router Mikrotik'
     },
     macAddress: {
       type: DataTypes.STRING,

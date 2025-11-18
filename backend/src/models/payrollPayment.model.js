@@ -11,7 +11,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'payrolls',
+        model: 'Payrolls',
         key: 'id'
       },
       comment: 'Nómina asociada'
@@ -29,7 +29,6 @@ module.exports = (sequelize) => {
     paymentMethod: {
       type: DataTypes.ENUM('cash', 'transfer', 'check'),
       allowNull: false,
-      comment: 'Método de pago'
     },
     paymentReference: {
       type: DataTypes.STRING(255),
@@ -45,7 +44,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'users',
+        model: 'Users',
         key: 'id'
       },
       comment: 'Usuario que registró el pago'

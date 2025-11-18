@@ -8,13 +8,13 @@ module.exports = (sequelize, Sequelize) => {
     },
     type: {
       type: Sequelize.ENUM('sms', 'whatsapp', 'email'),
-      allowNull: false,
-      comment: 'Tipo de mensaje enviado'
+      allowNull: false
+      // Tipo de mensaje enviado
     },
     to: {
       type: Sequelize.STRING(50),
       allowNull: false,
-      comment: 'Número de teléfono o email destino'
+      comment: 'Nï¿½mero de telï¿½fono o email destino'
     },
     message: {
       type: Sequelize.TEXT,
@@ -24,8 +24,8 @@ module.exports = (sequelize, Sequelize) => {
     status: {
       type: Sequelize.ENUM('sent', 'failed', 'pending', 'delivered', 'read'),
       allowNull: false,
-      defaultValue: 'pending',
-      comment: 'Estado del mensaje'
+      defaultValue: 'pending'
+      // Estado del mensaje
     },
     providerId: {
       type: Sequelize.STRING(100),
@@ -36,12 +36,12 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.STRING(50),
       allowNull: true,
       defaultValue: 'twilio',
-      comment: 'Proveedor de mensajería (twilio, etc.)'
+      comment: 'Proveedor de mensajerï¿½a (twilio, etc.)'
     },
     error: {
       type: Sequelize.TEXT,
       allowNull: true,
-      comment: 'Mensaje de error si falló'
+      comment: 'Mensaje de error si fallï¿½'
     },
     clientId: {
       type: Sequelize.INTEGER,
@@ -65,7 +65,7 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.DATE,
       allowNull: false,
       defaultValue: Sequelize.NOW,
-      comment: 'Fecha y hora de envío'
+      comment: 'Fecha y hora de envï¿½o'
     },
     deliveredAt: {
       type: Sequelize.DATE,
@@ -101,13 +101,13 @@ module.exports = (sequelize, Sequelize) => {
   });
 
   MessageLog.associate = function(models) {
-    // Asociación con Cliente (opcional)
+    // Asociaciï¿½n con Cliente (opcional)
     MessageLog.belongsTo(models.Client, {
       foreignKey: 'clientId',
       as: 'client'
     });
 
-    // Asociación con Factura (opcional)
+    // Asociaciï¿½n con Factura (opcional)
     MessageLog.belongsTo(models.Invoice, {
       foreignKey: 'invoiceId',
       as: 'invoice'

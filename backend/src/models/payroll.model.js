@@ -11,7 +11,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'users',
+        model: 'Users',
         key: 'id'
       },
       comment: 'Empleado al que se le paga'
@@ -24,8 +24,8 @@ module.exports = (sequelize) => {
     paymentType: {
       type: DataTypes.ENUM('monthly', 'biweekly', 'weekly', 'bonus'),
       allowNull: false,
-      defaultValue: 'monthly',
-      comment: 'Tipo de pago'
+      defaultValue: 'monthly'
+      // Nota: Tipo de pago
     },
     baseSalary: {
       type: DataTypes.DECIMAL(10, 2),
@@ -82,8 +82,8 @@ module.exports = (sequelize) => {
     // Estado de pago
     status: {
       type: DataTypes.ENUM('pending', 'paid', 'cancelled'),
-      defaultValue: 'pending',
-      comment: 'Estado de la nómina'
+      defaultValue: 'pending'
+      // Nota: Estado de la nómina
     },
     paymentDate: {
       type: DataTypes.DATEONLY,
@@ -93,7 +93,6 @@ module.exports = (sequelize) => {
     paymentMethod: {
       type: DataTypes.ENUM('cash', 'transfer', 'check'),
       allowNull: true,
-      comment: 'Método de pago'
     },
     paymentReference: {
       type: DataTypes.STRING(255),
@@ -109,7 +108,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'users',
+        model: 'Users',
         key: 'id'
       },
       comment: 'Usuario que creó la nómina'
@@ -118,7 +117,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'users',
+        model: 'Users',
         key: 'id'
       },
       comment: 'Usuario que registró el pago'

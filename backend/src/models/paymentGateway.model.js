@@ -20,12 +20,10 @@ module.exports = (sequelize, DataTypes) => {
     type: {
       type: DataTypes.ENUM('paypal', 'stripe', 'mercadopago', 'card', 'transfer', 'cash'),
       allowNull: false,
-      comment: 'Tipo de pasarela de pago'
     },
     gatewayType: {
       type: DataTypes.ENUM('paypal', 'stripe', 'mercadopago', 'card', 'transfer', 'cash'),
       allowNull: true,
-      comment: 'Alias de tipo de pasarela (para compatibilidad)'
     },
     enabled: {
       type: DataTypes.BOOLEAN,
@@ -34,8 +32,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     mode: {
       type: DataTypes.ENUM('sandbox', 'live'),
-      defaultValue: 'sandbox',
-      comment: 'Modo de operación (sandbox para pruebas, live para producción)'
+      defaultValue: 'sandbox'
+      // Nota: Modo de operación (sandbox para pruebas, live para producción)
     },
     configuration: {
       type: DataTypes.TEXT,

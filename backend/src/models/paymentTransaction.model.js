@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'invoices',
+        model: 'Invoices',
         key: 'id'
       },
       comment: 'Factura asociada al pago'
@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'clients',
+        model: 'Clients',
         key: 'id'
       },
       comment: 'Cliente que realizó el pago'
@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'payment_gateways',
+        model: 'PaymentGateways',
         key: 'id'
       },
       comment: 'Pasarela utilizada'
@@ -36,7 +36,6 @@ module.exports = (sequelize, DataTypes) => {
     gatewayType: {
       type: DataTypes.ENUM('paypal', 'stripe', 'mercadopago', 'card', 'transfer', 'cash'),
       allowNull: false,
-      comment: 'Tipo de pasarela'
     },
     transactionId: {
       type: DataTypes.STRING(200),
@@ -66,8 +65,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     status: {
       type: DataTypes.ENUM('pending', 'processing', 'completed', 'failed', 'refunded', 'cancelled'),
-      defaultValue: 'pending',
-      comment: 'Estado del pago'
+      defaultValue: 'pending'
+      // Nota: Estado del pago
     },
     paymentMethod: {
       type: DataTypes.STRING(100),
