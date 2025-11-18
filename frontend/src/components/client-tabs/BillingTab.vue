@@ -3,12 +3,12 @@
   <div class="billing-tab">
     <div class="billing-grid">
       
-      <!-- Resumen de Facturaci¨®n -->
+      <!-- Resumen de Facturaciï¿½ï¿½n -->
       <div class="section-card resumen-facturacion">
         <div class="section-header">
           <div class="section-title">
             <div class="section-icon">??</div>
-            <h3>Resumen de Facturaci¨®n</h3>
+            <h3>Resumen de Facturaciï¿½ï¿½n</h3>
           </div>
           <div class="section-actions">
             <button @click="refreshBilling" class="btn btn-secondary" :disabled="loading">
@@ -29,7 +29,7 @@
         <div class="section-content">
           <div v-if="loading" class="loading-state">
             <div class="loading-spinner"></div>
-            <span>Cargando informaci¨®n de facturaci¨®n...</span>
+            <span>Cargando informaciï¿½ï¿½n de facturaciï¿½ï¿½n...</span>
           </div>
           
           <div v-else-if="billingInfo" class="billing-summary">
@@ -49,21 +49,21 @@
               </div>
 
               <div class="summary-item">
-                <span class="summary-label">D¨ªa de Facturaci¨®n</span>
+                <span class="summary-label">Dï¿½ï¿½a de Facturaciï¿½ï¿½n</span>
                 <span class="summary-value">
                   {{ billingInfo.billingDay || 'No definido' }} de cada mes
                 </span>
               </div>
 
               <div class="summary-item">
-                <span class="summary-label">¨²ltimo Pago</span>
+                <span class="summary-label">ï¿½ï¿½ltimo Pago</span>
                 <span class="summary-value">
                   {{ formatDate(billingInfo.lastPaymentDate) || 'Sin pagos registrados' }}
                 </span>
               </div>
 
               <div class="summary-item">
-                <span class="summary-label">Pr¨®ximo Vencimiento</span>
+                <span class="summary-label">Prï¿½ï¿½ximo Vencimiento</span>
                 <span :class="['summary-value', getPaymentStatusClass(billingInfo.nextDueDate)]">
                   {{ formatDate(billingInfo.nextDueDate) || 'No definido' }}
                   <span v-if="getDaysUntilDue(billingInfo.nextDueDate)" class="days-info">
@@ -73,21 +73,21 @@
               </div>
 
               <div class="summary-item">
-                <span class="summary-label">M¨¦todo de Pago</span>
+                <span class="summary-label">Mï¿½ï¿½todo de Pago</span>
                 <span class="summary-value">
                   {{ formatPaymentMethod(billingInfo.paymentMethod) }}
                 </span>
               </div>
 
               <div class="summary-item">
-                <span class="summary-label">D¨ªas de Gracia</span>
+                <span class="summary-label">Dï¿½ï¿½as de Gracia</span>
                 <span class="summary-value">
-                  {{ billingInfo.graceDays || 0 }} d¨ªas
+                  {{ billingInfo.graceDays || 0 }} dï¿½ï¿½as
                 </span>
               </div>
 
               <div class="summary-item">
-                <span class="summary-label">Penalizaci¨®n</span>
+                <span class="summary-label">Penalizaciï¿½ï¿½n</span>
                 <span class="summary-value price">
                   ${{ billingInfo.penaltyFee || '0.00' }}
                 </span>
@@ -109,10 +109,10 @@
           
           <div v-else class="empty-state">
             <div class="empty-icon">??</div>
-            <h4>Sin configuraci¨®n de facturaci¨®n</h4>
-            <p>Este cliente no tiene configurada su informaci¨®n de facturaci¨®n</p>
+            <h4>Sin configuraciï¿½ï¿½n de facturaciï¿½ï¿½n</h4>
+            <p>Este cliente no tiene configurada su informaciï¿½ï¿½n de facturaciï¿½ï¿½n</p>
             <button @click="setupBilling" class="btn btn-primary">
-              Configurar Facturaci¨®n
+              Configurar Facturaciï¿½ï¿½n
             </button>
           </div>
         </div>
@@ -277,8 +277,8 @@
                 </div>
                 
                 <div v-if="invoice.status === 'overdue'" class="detail-row overdue">
-                  <span class="detail-label">D¨ªas de Retraso:</span>
-                  <span class="detail-value">{{ calculateOverdueDays(invoice.dueDate) }} d¨ªas</span>
+                  <span class="detail-label">Dï¿½ï¿½as de Retraso:</span>
+                  <span class="detail-value">{{ calculateOverdueDays(invoice.dueDate) }} dï¿½ï¿½as</span>
                 </div>
               </div>
 
@@ -324,12 +324,12 @@
         </div>
       </div>
 
-      <!-- Estad¨ªsticas de Facturaci¨®n -->
+      <!-- Estadï¿½ï¿½sticas de Facturaciï¿½ï¿½n -->
       <div class="section-card estadisticas-billing">
         <div class="section-header">
           <div class="section-title">
             <div class="section-icon">??</div>
-            <h3>Estad¨ªsticas</h3>
+            <h3>Estadï¿½ï¿½sticas</h3>
           </div>
           <div class="section-actions">
             <select v-model="statsFilter" @change="loadStats" class="filter-select">
@@ -344,7 +344,7 @@
         <div class="section-content">
           <div v-if="loadingStats" class="loading-state">
             <div class="loading-spinner"></div>
-            <span>Cargando estad¨ªsticas...</span>
+            <span>Cargando estadï¿½ï¿½sticas...</span>
           </div>
           
           <div v-else class="stats-grid">
@@ -368,7 +368,7 @@
               <div class="stat-icon">??</div>
               <div class="stat-info">
                 <div class="stat-value">{{ billingStats.averageDaysLate || 0 }}</div>
-                <div class="stat-label">D¨ªas Promedio de Retraso</div>
+                <div class="stat-label">Dï¿½ï¿½as Promedio de Retraso</div>
               </div>
             </div>
 
@@ -376,7 +376,7 @@
               <div class="stat-icon">?</div>
               <div class="stat-info">
                 <div class="stat-value">{{ billingStats.paymentScore || 0 }}%</div>
-                <div class="stat-label">Puntuaci¨®n de Pago</div>
+                <div class="stat-label">Puntuaciï¿½ï¿½n de Pago</div>
               </div>
             </div>
 
@@ -408,7 +408,7 @@
         
         <div class="payment-options">
           <div class="form-group">
-            <label for="selectedGateway">M¨¦todo de Pago *</label>
+            <label for="selectedGateway">Mï¿½ï¿½todo de Pago *</label>
             <select id="selectedGateway" v-model="paymentForm.gatewayId" @change="onGatewayChange" required>
               <option v-for="gateway in paymentGateways" :key="gateway.id" :value="gateway.id">
                 {{ gateway.name }} ({{ formatGatewayType(gateway.gatewayType) }})
@@ -426,7 +426,7 @@
               step="0.01"
               required
             />
-            <small>M¨¢ximo: ${{ selectedInvoice?.totalAmount || selectedInvoice?.amount }}</small>
+            <small>Mï¿½ï¿½ximo: ${{ selectedInvoice?.totalAmount || selectedInvoice?.amount }}</small>
           </div>
 
           <div class="form-group">
@@ -451,7 +451,7 @@
               @change="handleReceiptUpload"
               accept=".jpg,.jpeg,.png,.pdf"
             />
-            <small>Formatos: JPG, PNG, PDF (m¨¢x. 5MB)</small>
+            <small>Formatos: JPG, PNG, PDF (mï¿½ï¿½x. 5MB)</small>
             
             <div v-if="receiptFile" class="file-selected">
               <span class="file-icon">??</span>
@@ -464,18 +464,18 @@
           <div class="gateway-info">
             <div v-if="selectedGatewayType === 'cash'" class="info-box info-success">
               <strong>?? Pago en Efectivo</strong>
-              <p>El pago ser¨¢ aprobado autom¨¢ticamente al registrarse.</p>
+              <p>El pago serï¿½ï¿½ aprobado automï¿½ï¿½ticamente al registrarse.</p>
             </div>
             
             <div v-else-if="selectedGatewayType === 'transfer'" class="info-box info-warning">
               <strong>?? Transferencia Bancaria</strong>
-              <p>El pago entrar¨¢ en estado PENDIENTE y requerir¨¢ aprobaci¨®n manual.</p>
-              <p>Se recomienda adjuntar el comprobante para agilizar la revisi¨®n.</p>
+              <p>El pago entrarï¿½ï¿½ en estado PENDIENTE y requerirï¿½ï¿½ aprobaciï¿½ï¿½n manual.</p>
+              <p>Se recomienda adjuntar el comprobante para agilizar la revisiï¿½ï¿½n.</p>
             </div>
             
             <div v-else-if="selectedGatewayType === 'mercadopago' || selectedGatewayType === 'paypal'" class="info-box info-primary">
               <strong>?? Pasarela de Pago</strong>
-              <p>El pago ser¨¢ confirmado autom¨¢ticamente cuando la pasarela notifique el resultado.</p>
+              <p>El pago serï¿½ï¿½ confirmado automï¿½ï¿½ticamente cuando la pasarela notifique el resultado.</p>
             </div>
           </div>
         </div>
@@ -504,7 +504,7 @@
 </template>
 
 <script>
-import ClientService from '../../services/client.service';
+// import ClientService from '../../services/client.service'; // Unused
 import BillingService from '../../services/billing.service';
 import InvoiceService from '../../services/invoice.service';
 import PaymentService from '../../services/payment.service';
@@ -574,7 +574,7 @@ export default {
       await this.loadPaymentGateways(); // ? NUEVO: Cargar primero las pasarelas
       this.loadAllBillingData();
     } else {
-      console.error('? No se recibi¨® clientId v¨¢lido');
+      console.error('? No se recibiï¿½ï¿½ clientId vï¿½ï¿½lido');
     }
   },
   
@@ -632,7 +632,7 @@ export default {
         console.log('?? Respuesta RAW de pagos:', response);
         
         const paymentsData = this.extractApiData(response);
-        console.log('?? Datos extra¨ªdos:', paymentsData);
+        console.log('?? Datos extraï¿½ï¿½dos:', paymentsData);
         
         this.recentPayments = paymentsData.payments || [];
         
@@ -676,7 +676,7 @@ export default {
     async loadStats() {
       this.loadingStats = true;
       try {
-        console.log('?? Calculando estad¨ªsticas b¨¢sicas');
+        console.log('?? Calculando estadï¿½ï¿½sticas bï¿½ï¿½sicas');
         
         let allPayments = [];
         try {
@@ -687,7 +687,7 @@ export default {
           const allPaymentsData = this.extractApiData(allPaymentsResponse);
           allPayments = allPaymentsData.payments || [];
         } catch (error) {
-          console.warn('?? No se pudieron cargar todos los pagos para estad¨ªsticas:', error);
+          console.warn('?? No se pudieron cargar todos los pagos para estadï¿½ï¿½sticas:', error);
         }
         
         this.billingStats = {
@@ -699,10 +699,10 @@ totalInvoices: this.clientInvoices.length,
           paymentScore: this.calculatePaymentScore()
         };
         
-        console.log('? Estad¨ªsticas calculadas:', this.billingStats);
+        console.log('? Estadï¿½ï¿½sticas calculadas:', this.billingStats);
         
       } catch (error) {
-        console.error('? Error cargando estad¨ªsticas:', error);
+        console.error('? Error cargando estadï¿½ï¿½sticas:', error);
         this.billingStats = {
           totalPaid: '0.00',
           totalPayments: 0,
@@ -744,7 +744,7 @@ totalInvoices: this.clientInvoices.length,
 
     extractApiData(response) {
       if (!response || !response.data) {
-        console.warn('?? Respuesta vac¨ªa o inv¨¢lida:', response);
+        console.warn('?? Respuesta vacï¿½ï¿½a o invï¿½ï¿½lida:', response);
         return {};
       }
       
@@ -756,11 +756,11 @@ totalInvoices: this.clientInvoices.length,
     },
 
     // ===============================
-    // ACCIONES DE FACTURACI¨®N
+    // ACCIONES DE FACTURACIï¿½ï¿½N
     // ===============================
     async refreshBilling() {
       await this.loadAllBillingData();
-      this.$emit('show-notification', 'Informaci¨®n de facturaci¨®n actualizada', 'success');
+      this.$emit('show-notification', 'Informaciï¿½ï¿½n de facturaciï¿½ï¿½n actualizada', 'success');
     },
 
     setupBilling() {
@@ -794,6 +794,7 @@ totalInvoices: this.clientInvoices.length,
       this.$router.push(`/payments/${payment.id}`);
     },
 
+    // eslint-disable-next-line no-unused-vars
     async printReceipt(payment) {
       try {
         this.$emit('show-notification', 'Generando recibo...', 'info');
@@ -804,6 +805,7 @@ totalInvoices: this.clientInvoices.length,
       }
     },
 
+    // eslint-disable-next-line no-unused-vars
     async confirmPayment(payment) {
       if (!confirm('?Confirmar este pago?')) return;
       
@@ -821,7 +823,7 @@ totalInvoices: this.clientInvoices.length,
     async generateInvoice() {
       try {
         if (!this.billingInfo) {
-          this.$emit('show-notification', 'Configure primero la facturaci¨®n del cliente', 'warning');
+          this.$emit('show-notification', 'Configure primero la facturaciï¿½ï¿½n del cliente', 'warning');
           return;
         }
 
@@ -830,9 +832,9 @@ totalInvoices: this.clientInvoices.length,
         const invoiceData = {
           period: new Date().toISOString().slice(0, 7) // YYYY-MM
         };
-        
-        const response = await BillingService.generateInvoice(this.clientId, invoiceData);
-        
+
+        await BillingService.generateInvoice(this.clientId, invoiceData);
+
         await this.loadClientInvoices();
         
         this.$emit('show-notification', 'Factura generada correctamente', 'success');
@@ -926,7 +928,7 @@ totalInvoices: this.clientInvoices.length,
       const file = event.target.files[0];
       if (file) {
         if (file.size > 5 * 1024 * 1024) {
-          alert('El archivo es demasiado grande. M¨¢ximo 5MB.');
+          alert('El archivo es demasiado grande. Mï¿½ï¿½ximo 5MB.');
           event.target.value = '';
           this.receiptFile = null;
           return;
@@ -936,7 +938,7 @@ totalInvoices: this.clientInvoices.length,
       }
     },
 
-    // ? NUEVO: Enviar pago (l¨®gica diferenciada)
+    // ? NUEVO: Enviar pago (lï¿½ï¿½gica diferenciada)
     async submitPayment() {
       if (this.isProcessing) return;
       
@@ -969,23 +971,23 @@ totalInvoices: this.clientInvoices.length,
         console.log('?? Datos de pago a enviar:', paymentData);
         console.log('?? Comprobante adjunto:', this.receiptFile?.name || 'Ninguno');
         
-        // ? L¨®gica diferenciada por tipo de gateway
+        // ? Lï¿½ï¿½gica diferenciada por tipo de gateway
         if (selectedGateway.gatewayType === 'cash') {
           // ? EFECTIVO: Auto-aprobado
           await InvoiceService.markAsPaid(this.selectedInvoice.id, paymentData);
           
           this.$emit('show-notification', 
-            '? Pago en efectivo registrado y aprobado autom¨¢ticamente.', 
+            '? Pago en efectivo registrado y aprobado automï¿½ï¿½ticamente.', 
             'success'
           );
           
         } else if (selectedGateway.gatewayType === 'transfer') {
-          // ? TRANSFERENCIA: Pendiente de aprobaci¨®n
+          // ? TRANSFERENCIA: Pendiente de aprobaciï¿½ï¿½n
           
           if (!this.receiptFile) {
             const confirmWithout = confirm(
               '?? No ha adjuntado comprobante de transferencia.\n' +
-              'Se recomienda adjuntar el comprobante para agilizar la aprobaci¨®n.\n\n' +
+              'Se recomienda adjuntar el comprobante para agilizar la aprobaciï¿½ï¿½n.\n\n' +
               '?Desea continuar de todas formas?'
             );
             if (!confirmWithout) {
@@ -997,7 +999,7 @@ totalInvoices: this.clientInvoices.length,
           await PaymentService.submitManualPayment(paymentData, this.receiptFile);
           
           this.$emit('show-notification', 
-            '? Pago por transferencia registrado.\nPendiente de aprobaci¨®n por el administrador.', 
+            '? Pago por transferencia registrado.\nPendiente de aprobaciï¿½ï¿½n por el administrador.', 
             'info'
           );
           
@@ -1006,7 +1008,7 @@ totalInvoices: this.clientInvoices.length,
           await InvoiceService.markAsPaid(this.selectedInvoice.id, paymentData);
           
           this.$emit('show-notification', 
-            '? Pago registrado en la pasarela.\nEsperando confirmaci¨®n autom¨¢tica.', 
+            '? Pago registrado en la pasarela.\nEsperando confirmaciï¿½ï¿½n automï¿½ï¿½tica.', 
             'info'
           );
         }
@@ -1030,9 +1032,10 @@ totalInvoices: this.clientInvoices.length,
       }
     },
 
+    // eslint-disable-next-line no-unused-vars
     async sendInvoiceByEmail(invoice) {
       try {
-        this.$emit('show-notification', 'Funcionalidad de env¨ªo por email en desarrollo', 'info');
+        this.$emit('show-notification', 'Funcionalidad de envï¿½ï¿½o por email en desarrollo', 'info');
       } catch (error) {
         console.error('? Error enviando factura:', error);
         this.$emit('show-notification', 'Error enviando factura', 'error');
@@ -1084,7 +1087,7 @@ totalInvoices: this.clientInvoices.length,
     },
 
     // ===============================
-    // M¨¦TODOS DE FORMATO
+    // Mï¿½ï¿½TODOS DE FORMATO
     // ===============================
     formatDate(dateString) {
       if (!dateString) return null;
@@ -1104,7 +1107,7 @@ totalInvoices: this.clientInvoices.length,
         'overdue': 'Vencido',
         'cancelled': 'Cancelado',
         'pending': 'Pendiente',
-        'grace_period': 'Per¨ªodo de Gracia'
+        'grace_period': 'Perï¿½ï¿½odo de Gracia'
       };
       return statusMap[status] || status;
     },
@@ -1115,7 +1118,7 @@ totalInvoices: this.clientInvoices.length,
         'transfer': 'Transferencia',
         'card': 'Tarjeta',
         'check': 'Cheque',
-        'online': 'Pago en L¨ªnea',
+        'online': 'Pago en Lï¿½ï¿½nea',
         'mercadopago': 'Mercado Pago',
         'paypal': 'PayPal',
         'spei': 'SPEI',
@@ -1147,7 +1150,7 @@ totalInvoices: this.clientInvoices.length,
     },
 
     formatInvoicePeriod(startDate, endDate) {
-      if (!startDate || !endDate) return 'Per¨ªodo no definido';
+      if (!startDate || !endDate) return 'Perï¿½ï¿½odo no definido';
       
       const start = new Date(startDate);
       const end = new Date(endDate);
@@ -1174,10 +1177,10 @@ totalInvoices: this.clientInvoices.length,
       const due = new Date(dueDate);
       const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
       
-      if (diffDays < 0) return `${Math.abs(diffDays)} d¨ªas vencido`;
+      if (diffDays < 0) return `${Math.abs(diffDays)} dï¿½ï¿½as vencido`;
       if (diffDays === 0) return 'Vence hoy';
       if (diffDays === 1) return 'Vence ma?ana';
-      return `${diffDays} d¨ªas`;
+      return `${diffDays} dï¿½ï¿½as`;
     },
 
     calculateOverdueDays(dueDate) {
@@ -1225,7 +1228,7 @@ totalInvoices: this.clientInvoices.length,
   gap: 24px;
 }
 
-/* ===== TARJETAS DE SECCI¨®N ===== */
+/* ===== TARJETAS DE SECCIï¿½ï¿½N ===== */
 .section-card {
   background: white;
   border-radius: 12px;
@@ -1368,7 +1371,7 @@ totalInvoices: this.clientInvoices.length,
   100% { transform: rotate(360deg); }
 }
 
-/* ===== RESUMEN DE FACTURACI¨®N ===== */
+/* ===== RESUMEN DE FACTURACIï¿½ï¿½N ===== */
 .billing-summary {
   display: flex;
   flex-direction: column;
@@ -1774,7 +1777,7 @@ totalInvoices: this.clientInvoices.length,
   box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
 }
 
-/* ===== ESTAD¨ªSTICAS ===== */
+/* ===== ESTADï¿½ï¿½STICAS ===== */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1852,7 +1855,7 @@ totalInvoices: this.clientInvoices.length,
   box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
 }
 
-/* ===== ESTADOS VAC¨ªOS ===== */
+/* ===== ESTADOS VACï¿½ï¿½OS ===== */
 .empty-state {
   text-align: center;
   padding: 60px 24px;

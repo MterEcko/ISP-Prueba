@@ -255,7 +255,7 @@
 
 
 <script>
-import { ref, computed, watch, onMounted, toRefs } from 'vue'
+import { computed, watch, onMounted, toRefs } from 'vue'
 import { useSubscriptionForm } from '@/composables/useSubscriptionForm'
 import { useTransactionManager } from '@/composables/useTransactionManager'
 import { useDebugLogger } from '@/composables/useDebugLogger'
@@ -331,25 +331,11 @@ export default {
      formWarnings,
      loadingMessage,
      operationType,
-     selectedPackage: composableSelectedPackage,
      targetZoneId,
      targetNodeId,
      suggestedPPPoEUsername,
-     isFormValid: composableIsFormValid,
-     hasLocationChange,
-     requiresMikrotikRecreation,
      initializeForm,
-     validateForm,
-     resetForm,
-     exportFormData,
-     loadClientInfo,
      loadServicePackages,
-     loadAvailableRouters,
-     loadIpPools,
-     detectOperationType,
-     prioritizeNodeRouters,
-     addValidationError,
-     prefillFormWithExistingData,
      submitSubscriptionChange
    } = useSubscriptionForm(clientId.value, subscription.value, subscriptionId.value)
 
@@ -358,9 +344,7 @@ export default {
      currentTransactionStep,
      transactionErrors,
      showTransactionProgress,
-     executeTransaction,
-     cancelTransaction,
-     rollbackTransaction
+     cancelTransaction
    } = useTransactionManager()
 
    const {
@@ -368,11 +352,8 @@ export default {
      consoleLogs,
      debugInfo,
      toggleDebugMode,
-     logDebug,
      logInfo,
-     logWarn,
-     logError,
-     clearLogs
+     logError
    } = useDebugLogger()
 
    // ===============================
@@ -546,103 +527,8 @@ const handleSubmit = async () => {
      return isValid
    }
 
-   const setupTransactionSteps = () => {
-     const currentOpType = operationType?.value || operationType || 'CREATE_NEW'
-     const steps = []
-     
-     switch (currentOpType) {
-       case 'CREATE_NEW':
-         steps.push(
-           { id: 'validate_data', name: 'Validar datos del formulario', status: 'pending' },
-           { id: 'create_subscription', name: 'Crear suscripción en BD', status: 'pending' },
-           { id: 'create_network_config', name: 'Crear configuración de red', status: 'pending' },
-           { id: 'create_mikrotik_user', name: 'Crear usuario en Mikrotik', status: 'pending' },
-           { id: 'assign_ip', name: 'Asignar IP del pool', status: 'pending' },
-           { id: 'sync_all_data', name: 'Sincronizar todos los datos', status: 'pending' }
-         )
-         break
-         
-       case 'CHANGE_PLAN':
-         steps.push(
-           { id: 'validate_plan_change', name: 'Validar cambio de plan', status: 'pending' },
-           { id: 'backup_current_config', name: 'Respaldar configuración actual', status: 'pending' },
-           { id: 'update_subscription', name: 'Actualizar suscripción', status: 'pending' },
-           { id: 'update_mikrotik_profile', name: 'Actualizar perfil en Mikrotik', status: 'pending' },
-           { id: 'verify_sync', name: 'Verificar sincronización', status: 'pending' }
-         )
-         break
-         
-       case 'CHANGE_NODE':
-         steps.push(
-           { id: 'validate_node_change', name: 'Validar cambio de nodo', status: 'pending' },
-           { id: 'backup_current_config', name: 'Respaldar configuración actual', status: 'pending' },
-           { id: 'remove_from_old_mikrotik', name: 'Eliminar de Mikrotik anterior', status: 'pending' },
-           { id: 'update_subscription', name: 'Actualizar suscripción', status: 'pending' },
-           { id: 'create_in_new_mikrotik', name: 'Crear en nuevo Mikrotik', status: 'pending' },
-           { id: 'verify_connectivity', name: 'Verificar conectividad', status: 'pending' }
-         )
-         break
-         
-       case 'CHANGE_ZONE':
-         steps.push(
-           { id: 'validate_zone_change', name: 'Validar cambio de zona', status: 'pending' },
-           { id: 'validate_package_in_zone', name: 'Validar paquete en nueva zona', status: 'pending' },
-           { id: 'backup_current_config', name: 'Respaldar configuración actual', status: 'pending' },
-           { id: 'remove_from_old_mikrotik', name: 'Eliminar de Mikrotik anterior', status: 'pending' },
-           { id: 'update_all_configs', name: 'Actualizar todas las configuraciones', status: 'pending' },
-           { id: 'create_in_new_mikrotik', name: 'Crear en nuevo Mikrotik', status: 'pending' },
-           { id: 'verify_full_sync', name: 'Verificar sincronización completa', status: 'pending' }
-         )
-         break
-     }
-     
-     if (transactionSteps?.value) {
-       transactionSteps.value = steps
-     }
-     logInfo('📋 Pasos de transacción configurados', { steps: steps.length, operationType: currentOpType })
-   }
-
-   const getTransactionPlan = () => {
-     const currentOpType = operationType?.value || operationType || 'CREATE_NEW'
-     const plan = {
-       operationType: currentOpType,
-       rollbackSupported: true,
-       criticalSteps: [],
-       tables: []
-     }
-     
-     switch (currentOpType) {
-       case 'CREATE_NEW':
-         plan.tables = ['Subscription', 'ClientNetworkConfig', 'ClientNetwork', 'MikrotikPPPOE', 'MikrotikIp', 'IpPool']
-         plan.criticalSteps = ['create_mikrotik_user', 'assign_ip']
-         break
-         
-       case 'CHANGE_PLAN':
-         plan.tables = ['Subscription', 'MikrotikProfile']
-         plan.criticalSteps = ['update_mikrotik_profile']
-         break
-         
-       case 'CHANGE_NODE':
-       case 'CHANGE_ZONE':
-         plan.tables = ['Subscription', 'ClientNetworkConfig', 'ClientNetwork', 'MikrotikPPPOE', 'MikrotikIp']
-         plan.criticalSteps = ['remove_from_old_mikrotik', 'create_in_new_mikrotik']
-         plan.rollbackSupported = true
-         break
-     }
-     
-     return plan
-   }
-
-   const handleRollback = async (error) => {
-     logWarn('⏪ Iniciando rollback debido a error', error)
-     
-     try {
-       await rollbackTransaction(error.transactionId, error.completedSteps)
-       logInfo('✅ Rollback completado exitosamente')
-     } catch (rollbackError) {
-       logError('❌ Error durante rollback - ATENCIÓN MANUAL REQUERIDA', rollbackError)
-     }
-   }
+   // Removed unused methods: setupTransactionSteps, getTransactionPlan, handleRollback
+   // These were defined but never called in the component
 
    // ===============================
    // 5. MÉTODOS AUXILIARES

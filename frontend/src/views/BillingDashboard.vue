@@ -164,7 +164,7 @@
 </template>
 
 <script>
-import BillingService from '../services/billing.service';
+// import BillingService from '../services/billing.service'; // Unused
 import InvoiceService from '../services/invoice.service';
 import PaymentService from '../services/payment.service';
 import ClientService from '../services/client.service';
@@ -284,8 +284,9 @@ export default {
 
       // ESTADÍSTICAS DE FACTURAS
       const pendingInvoices = invoices.filter(i => i.status === 'pending');
+      // eslint-disable-next-line no-unused-vars
       const overdueInvoices = invoices.filter(i => i.status === 'overdue');
-      const paidInvoices = invoices.filter(i => i.status === 'paid');
+      // const paidInvoices = invoices.filter(i => i.status === 'paid'); // Unused
 
       const pendingAmount = pendingInvoices.reduce((sum, inv) => 
         sum + parseFloat(inv.totalAmount || 0), 0

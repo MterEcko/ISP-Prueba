@@ -158,6 +158,7 @@ class IpPoolService {
   }
 
   // Obtener nombre amigable para mostrar
+  // eslint-disable-next-line no-unused-vars
   getPoolDisplayName(poolName, poolType) {
     // Si el nombre ya fue personalizado, usarlo
     const customNames = {

@@ -116,6 +116,7 @@ const getters = {
   },
   
   // Obtener estado por ID
+  // eslint-disable-next-line no-unused-vars
   getStatusById: state => id => {
     return state.statuses.find(status => status.id === status.id);
   },

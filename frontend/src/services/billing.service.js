@@ -253,6 +253,7 @@ class BillingService {
   }
 
   // Calcular próxima fecha de facturación
+  // eslint-disable-next-line no-unused-vars
   calculateNextBillingDate(billingDay, lastPaymentDate = null) {
     const today = new Date();
     const currentMonth = today.getMonth();

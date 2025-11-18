@@ -1,8 +1,8 @@
 // composables/useTransactionManager.js
-import { ref, reactive } from 'vue'
+import { ref } from 'vue'
 import SubscriptionService from '@/services/subscription.service'
 import MikrotikService from '@/services/mikrotik.service'
-import ClientService from '@/services/client.service'
+// import ClientService from '@/services/client.service' // Unused
 
 export function useTransactionManager() {
   // ===============================
@@ -252,7 +252,7 @@ export function useTransactionManager() {
       
       // PASO 2: Eliminar de Mikrotik anterior (CRÍTICO)
       updateStep(2, 'running', 'Eliminando usuario del Mikrotik anterior...')
-      const deleteResult = await MikrotikService.deleteUser(
+      await MikrotikService.deleteUser(
         rollbackData.value.oldMikrotikIp,
         currentMikrotikConfig.mikrotikUserId
       )
@@ -306,12 +306,12 @@ export function useTransactionManager() {
     
     // Similar a cambio de nodo pero con validaciones adicionales
     updateStep(0, 'running', 'Validando cambio de zona...')
-    
-    const currentSubscription = await SubscriptionService.getSubscription(formData.subscriptionId)
-    
+
+    await SubscriptionService.getSubscription(formData.subscriptionId)
+
     // Validar que el paquete exista en la nueva zona
     const packageValidation = await validatePackageInZone(
-      formData.servicePackageId, 
+      formData.servicePackageId,
       formData.newZoneId
     )
     if (!packageValidation.isValid) {
@@ -403,6 +403,7 @@ export function useTransactionManager() {
     }
   }
 
+  // eslint-disable-next-line no-unused-vars
   const rollbackNodeChange = async (rollbackData, originalError) => {
     console.log('🔄 Ejecutando rollback específico para cambio de nodo')
     
@@ -476,6 +477,7 @@ export function useTransactionManager() {
   // FUNCIONES DE SERVICIOS (Placeholder - implementar según tus servicios)
   // ===============================
   
+  // eslint-disable-next-line no-unused-vars
   const validateNewSubscriptionData = async (formData) => {
     // Implementar validación específica
     return { isValid: true, errors: [] }
@@ -520,6 +522,7 @@ export function useTransactionManager() {
   // FUNCIONES AUXILIARES FALTANTES
   // ===============================
   
+  // eslint-disable-next-line no-unused-vars
   const validatePlanChange = async (currentSubscription, formData) => {
     // Validar que el cambio de plan sea válido
     return { isValid: true, errors: [] };

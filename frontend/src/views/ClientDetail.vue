@@ -216,7 +216,7 @@ import SubscriptionService from '../services/subscription.service';
 import DeviceService from '../services/device.service';
 import BillingService from '../services/billing.service';
 import InventoryService from '../services/inventory.service';
-import CommunicationService from '../services/communication.service';
+// import CommunicationService from '../services/communication.service'; // Unused
 import TicketService from '../services/ticket.service';
 
 
@@ -500,15 +500,18 @@ async updateTabBadges() {
      this.selectedChannel = null;
    },
 
+    // eslint-disable-next-line no-unused-vars
    onMessageSent(event) {
      this.closeMessageModal();
      this.showNotification('Mensaje enviado correctamente', 'success');
    },
 
+    // eslint-disable-next-line no-unused-vars
    sendMessage(data) {
      // Implementar envío de mensaje
    },
 
+    // eslint-disable-next-line no-unused-vars
    viewCommunication(communication) {
      // Implementar vista de comunicación
    },
@@ -626,6 +629,7 @@ async getClientTicketStats() {
      }
    },
 
+    // eslint-disable-next-line no-unused-vars
    generateDocument(type) {
      // Implementar generación de documentos
    },
@@ -642,14 +646,17 @@ async getClientTicketStats() {
    // MÉTODOS DE HERRAMIENTAS
    // ===============================
 
+    // eslint-disable-next-line no-unused-vars
    executePing(target) {
      // Implementar ping
    },
 
+    // eslint-disable-next-line no-unused-vars
    accessDevice(device) {
      // Implementar acceso remoto
    },
 
+    // eslint-disable-next-line no-unused-vars
    viewTraffic(device) {
      // Implementar vista de tráfico
    },

@@ -165,7 +165,7 @@ const mutations = {
 
   // Establecer estado de carga
   SET_LOADING(state, { operation, value }) {
-    if (state.loading.hasOwnProperty(operation)) {
+    if (Object.prototype.hasOwnProperty.call(state.loading, operation)) {
       state.loading[operation] = value;
     }
   },
@@ -376,6 +376,7 @@ const actions = {
   /**
    * Verificar estado de licencia (local)
    */
+  // eslint-disable-next-line no-unused-vars
   checkLicenseStatus({ commit, state }) {
     const status = licenseService.getLicenseStatus();
     commit('SET_LICENSE_STATUS', status);
@@ -386,6 +387,7 @@ const actions = {
   /**
    * Verificar límite de clientes
    */
+  // eslint-disable-next-line no-unused-vars
   async checkClientLimit({ state }) {
     return await licenseService.checkClientLimit();
   },

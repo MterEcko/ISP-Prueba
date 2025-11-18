@@ -80,6 +80,7 @@ const pluginUploadService = {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
+    // eslint-disable-next-line no-unused-vars
       reader.onload = async (e) => {
         try {
           // Aquí podríamos usar jszip para leer el ZIP en el cliente

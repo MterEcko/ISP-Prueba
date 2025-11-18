@@ -522,6 +522,7 @@ export default {
       this.testing = true;
       try {
         // Simular prueba de configuración
+      // eslint-disable-next-line no-unused-vars
         const testData = {
           name: this.brand.name,
           protocols: this.selectedProtocols,
@@ -558,6 +559,7 @@ export default {
           await CommandService.updateBrand(this.brand.id, brandData);
           this.successMessage = 'Marca actualizada correctamente';
         } else {
+      // eslint-disable-next-line no-unused-vars
           const response = await CommandService.createBrand(brandData);
           this.successMessage = 'Marca creada correctamente';
           

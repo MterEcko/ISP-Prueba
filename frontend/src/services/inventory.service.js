@@ -59,6 +59,7 @@ class InventoryService {
   }
 
   // ✅ BÚSQUEDA UNIFICADA (usando solo rutas que existen)
+    // eslint-disable-next-line no-unused-vars
   async searchInventory(searchTerm, type = 'all') {
     try {
       const results = [];

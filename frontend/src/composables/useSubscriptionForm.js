@@ -3,7 +3,7 @@ import { ref, reactive, computed, watch } from 'vue'
 import ClientService from '@/services/client.service'
 import SubscriptionService from '@/services/subscription.service'
 import ServicePackageService from '@/services/servicePackage.service'
-import DeviceService from '@/services/device.service'
+// import DeviceService from '@/services/device.service' // Unused
 import MikrotikService from '@/services/mikrotik.service'
 import MikrotikRouterService from '@/services/mikrotikRouter.service'
 import NetworkService from '@/services/network.service'
@@ -901,17 +901,18 @@ const submitSubscriptionChange = async (formData, operationType) => {
         if (!currentSubscription.value) {
           throw new Error('No hay suscripción actual para cambiar')
         }
-        
-        const planChangeData = {
-          subscriptionId: currentSubscription.value.id,
-          newServicePackageId: formData.servicePackageId,
-          customPrice: formData.customPrice,
-          promoDiscount: formData.promoDiscount,
-          billingDay: formData.billingDay,
-          notes: formData.notes,
-          changeReason: formData.changeReason
-        }
-        
+
+        // TODO: Use full planChangeData object when API supports it
+        // const planChangeData = {
+        //   subscriptionId: currentSubscription.value.id,
+        //   newServicePackageId: formData.servicePackageId,
+        //   customPrice: formData.customPrice,
+        //   promoDiscount: formData.promoDiscount,
+        //   billingDay: formData.billingDay,
+        //   notes: formData.notes,
+        //   changeReason: formData.changeReason
+        // }
+
         response = await SubscriptionService.changeServicePlan(
           currentSubscription.value.id,
           formData.servicePackageId,
