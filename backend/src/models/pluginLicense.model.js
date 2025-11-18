@@ -43,7 +43,7 @@ module.exports = (sequelize, Sequelize) => {
       comment: 'Metadata adicional'
     }
   }, {
-    tableName: 'plugin_licenses',
+    tableName: 'PluginLicenses',
     timestamps: true,
     underscored: true,
     indexes: [
