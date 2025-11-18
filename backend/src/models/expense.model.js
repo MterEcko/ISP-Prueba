@@ -11,7 +11,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'expense_categories',
+        model: 'ExpenseCategories',
         key: 'id'
       },
       comment: 'Categoría del gasto'
@@ -71,7 +71,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'users',
+        model: 'Users',
         key: 'id'
       },
       comment: 'Usuario que registró el gasto'

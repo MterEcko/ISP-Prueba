@@ -11,7 +11,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'users',
+        model: 'Users',
         key: 'id'
       },
       comment: 'Empleado al que se le paga'
@@ -109,7 +109,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'users',
+        model: 'Users',
         key: 'id'
       },
       comment: 'Usuario que creó la nómina'
@@ -118,7 +118,7 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'users',
+        model: 'Users',
         key: 'id'
       },
       comment: 'Usuario que registró el pago'

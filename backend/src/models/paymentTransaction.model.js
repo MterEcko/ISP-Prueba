@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'invoices',
+        model: 'Invoices',
         key: 'id'
       },
       comment: 'Factura asociada al pago'
@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'clients',
+        model: 'Clients',
         key: 'id'
       },
       comment: 'Cliente que realizó el pago'
@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'payment_gateways',
+        model: 'PaymentGateways',
         key: 'id'
       },
       comment: 'Pasarela utilizada'
