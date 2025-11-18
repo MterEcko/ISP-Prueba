@@ -82,7 +82,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       allowNull: true,
       references: {
-        model: 'Licenses',
+        model: 'PluginLicenses',
         key: 'id'
       },
       comment: 'License generated for this purchase'
