@@ -20,8 +20,8 @@ module.exports = (sequelize, Sequelize) => {
     },
     status: {
       type: Sequelize.ENUM('active', 'inactive', 'expired', 'suspended'),
-      defaultValue: 'active',
-      comment: 'Estado de la licencia'
+      defaultValue: 'active'
+      // Estado de la licencia
     },
     expires_at: {
       type: Sequelize.DATE,
