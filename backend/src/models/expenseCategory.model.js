@@ -10,7 +10,6 @@ module.exports = (sequelize) => {
     name: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      unique: true,
       comment: 'Nombre de la categoría (ej: Nómina, Servicios, Renta)'
     },
     type: {

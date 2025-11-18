@@ -68,7 +68,6 @@ module.exports = (sequelize) => {
     // Integración con Google Calendar
     googleEventId: {
       type: DataTypes.STRING,
-      unique: true,
       allowNull: true,
       comment: 'ID del evento en Google Calendar'
     },
@@ -80,7 +79,6 @@ module.exports = (sequelize) => {
     // Integración con Microsoft Calendar
     microsoftEventId: {
       type: DataTypes.STRING,
-      unique: true,
       allowNull: true,
       comment: 'ID del evento en Microsoft Calendar'
     },

@@ -10,8 +10,7 @@ module.exports = (sequelize) => {
     },
     configKey: {
       type: DataTypes.STRING,
-      //allowNull: false,
-      unique: true
+      //allowNull: false
       //comment: 'telegramBotToken, smtpHost, etc.'
     },
     configValue: {

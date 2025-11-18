@@ -20,7 +20,6 @@ module.exports = (sequelize, DataTypes) => {
     orderNumber: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
       comment: 'Human-readable order number (e.g., ORD-2024-00001)'
     },
 

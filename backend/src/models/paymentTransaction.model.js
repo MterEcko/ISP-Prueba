@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
         model: 'Clients',
         key: 'id'
       },
-      comment: 'Cliente que realizó el pago'
+      comment: 'Cliente que realiz el pago'
     },
     gatewayId: {
       type: DataTypes.INTEGER,
@@ -40,8 +40,7 @@ module.exports = (sequelize, DataTypes) => {
     transactionId: {
       type: DataTypes.STRING(200),
       allowNull: true,
-      unique: true,
-      comment: 'ID de transacción de la pasarela externa'
+      comment: 'ID de transaccin de la pasarela externa'
     },
     amount: {
       type: DataTypes.DECIMAL(10, 2),
@@ -56,7 +55,7 @@ module.exports = (sequelize, DataTypes) => {
     fee: {
       type: DataTypes.DECIMAL(10, 2),
       defaultValue: 0,
-      comment: 'Comisión de la pasarela'
+      comment: 'Comisin de la pasarela'
     },
     netAmount: {
       type: DataTypes.DECIMAL(10, 2),
@@ -71,7 +70,7 @@ module.exports = (sequelize, DataTypes) => {
     paymentMethod: {
       type: DataTypes.STRING(100),
       allowNull: true,
-      comment: 'Método de pago específico (tarjeta, cuenta PayPal, etc.)'
+      comment: 'Mtodo de pago especfico (tarjeta, cuenta PayPal, etc.)'
     },
     payerEmail: {
       type: DataTypes.STRING(200),
@@ -105,12 +104,12 @@ module.exports = (sequelize, DataTypes) => {
       set(value) {
         this.setDataValue('metadata', JSON.stringify(value));
       },
-      comment: 'Metadata adicional de la transacción'
+      comment: 'Metadata adicional de la transaccin'
     },
     errorMessage: {
       type: DataTypes.TEXT,
       allowNull: true,
-      comment: 'Mensaje de error si el pago falló'
+      comment: 'Mensaje de error si el pago fall'
     },
     processedAt: {
       type: DataTypes.DATE,
@@ -130,7 +129,7 @@ module.exports = (sequelize, DataTypes) => {
     refundReason: {
       type: DataTypes.TEXT,
       allowNull: true,
-      comment: 'Razón del reembolso'
+      comment: 'Razn del reembolso'
     },
     ipAddress: {
       type: DataTypes.STRING(45),

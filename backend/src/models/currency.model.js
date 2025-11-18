@@ -10,7 +10,6 @@ module.exports = (sequelize) => {
     code: {
       type: DataTypes.STRING(3),
       allowNull: false,
-      unique: true,
       comment: 'Código ISO de la moneda (MXN, CLP, USD, EUR, etc.)'
     },
     name: {

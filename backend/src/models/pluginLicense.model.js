@@ -14,7 +14,6 @@ module.exports = (sequelize, Sequelize) => {
     },
     license_key: {
       type: Sequelize.STRING(50),
-      unique: true,
       allowNull: false,
       comment: 'License key del plugin'
     },
