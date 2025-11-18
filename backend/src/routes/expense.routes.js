@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const expenseController = require('../controllers/expense.controller');
-const { verifyToken, isAdmin, isAdminOrManager } = require('../middleware/authJwt');
+const { verifyToken, isAdmin, isAdminOrManager } = require('../middleware/auth.jwt');
 
 // ========== GASTOS ==========
 

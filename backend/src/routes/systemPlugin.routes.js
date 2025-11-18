@@ -2,6 +2,7 @@
 const { authJwt } = require("../middleware");
 const systemPluginController = require("../controllers/systemPlugin.controller");
 
+
 module.exports = function(app) {
   app.use(function(req, res, next) {
     res.header(

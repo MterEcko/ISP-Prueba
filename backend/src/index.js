@@ -149,13 +149,13 @@ async function synchronizeDatabase() {
 
     // Sincronizar modelos de contabilidad
     await db.ExpenseCategory.sync({ force: false });
-    await db.Expense.sync({ force: false });
-    await db.Payroll.sync({ force: false });
-    await db.PayrollPayment.sync({ force: false });
+    //await db.Expense.sync({ force: false });
+    //await db.Payroll.sync({ force: false });
+    //await db.PayrollPayment.sync({ force: false });
 
     // Sincronizar modelos de divisas
     await db.Currency.sync({ force: false });
-    await db.ExchangeRate.sync({ force: false });
+    //await db.ExchangeRate.sync({ force: false });
 
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
     

@@ -3,15 +3,19 @@ const path = require('path');
 
 module.exports = {
   development: {
-    dialect: 'sqlite',
-    storage: path.join(__dirname, '../../database.sqlite'),
+    username: 'postgres',
+    password: 'Supermetroid1.',
+    database: 'ispdev',
+    host: 'localhost',
+    port: 5433,
+    dialect: 'postgres',
     pool: {
       max: 10,
       min: 0,
       acquire: 30000,
       idle: 10000
     },
-    logging: false, // Cambiar a console.log para habilitar logging
+    logging: console.log, // Habilitar logging en desarrollo
     define: {
       timestamps: true,
       underscored: false,

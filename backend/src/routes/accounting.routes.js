@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const accountingController = require('../controllers/accounting.controller');
-const { verifyToken, isAdminOrManager } = require('../middleware/authJwt');
+const { verifyToken, isAdminOrManager } = require('../middleware/auth.jwt');
 
 // Dashboard financiero general
 router.get('/dashboard',

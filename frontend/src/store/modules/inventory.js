@@ -1,4 +1,4 @@
-import api from '@/api';
+
 
 // Estado inicial
 const state = {

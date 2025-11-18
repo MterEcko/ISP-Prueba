@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const payrollController = require('../controllers/payroll.controller');
-const { verifyToken, isAdmin, isAdminOrManager } = require('../middleware/authJwt');
+const { verifyToken, isAdmin, isAdminOrManager } = require('../middleware/auth.jwt');
 
 // Generar nóminas mensuales automáticamente
 router.post('/generate-monthly',
