@@ -55,9 +55,6 @@ module.exports = (sequelize) => {
     timestamps: true,
     indexes: [
       {
-        fields: ['fromCurrencyId', 'toCurrencyId', 'rateDate']
-      },
-      {
         fields: ['rateDate']
       },
       {

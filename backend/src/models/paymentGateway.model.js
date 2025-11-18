@@ -9,7 +9,6 @@ module.exports = (sequelize, DataTypes) => {
     name: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      unique: true,
       comment: 'Nombre de la pasarela (paypal, stripe, mercadopago)'
     },
     displayName: {
@@ -96,6 +95,10 @@ module.exports = (sequelize, DataTypes) => {
     tableName: 'payment_gateways',
     timestamps: true,
     indexes: [
+      {
+        unique: true,
+        fields: ['name']
+      },
       {
         fields: ['type']
       },
