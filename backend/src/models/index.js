@@ -1,6 +1,10 @@
 // backend/src/models/index.js - VERSIÓN ACTUALIZADA CON COMUNICACIONES
 const { Sequelize } = require('sequelize');
 const path = require('path');
+const dotenv = require('dotenv');
+
+// Cargar variables de entorno ANTES de leer la configuración
+dotenv.config();
 
 // Obtener la configuración basada en el entorno
 const env = process.env.NODE_ENV || 'development';
