@@ -122,8 +122,8 @@ module.exports = (sequelize, Sequelize) => {
     },
     inventoryCategory: {
       type: DataTypes.ENUM('equipment', 'bulk', 'assigned_bulk', 'consumed'),
-      defaultValue: 'equipment',
-      comment: 'equipment=equipos con serial, bulk=stock almacén, assigned_bulk=dado a técnico, consumed=usado'
+      defaultValue: 'equipment'
+      // Nota: equipment=equipos con serial, bulk=stock almacén, assigned_bulk=dado a técnico, consumed=usado
     },
     assignedToTechnicianId: {
       type: DataTypes.INTEGER,
