@@ -1069,6 +1069,7 @@ export default {
     /**
      * Manejar inicio de importación
      */
+    // eslint-disable-next-line no-unused-vars
     handleImportStart(importData) {
       // Aquí se enviaría la solicitud de importación al backend
       // importData contiene el archivo y la configuración
@@ -1106,6 +1107,7 @@ export default {
     /**
      * Manejar inicio de exportación
      */
+    // eslint-disable-next-line no-unused-vars
     handleExportStart(exportConfig) {
       // Aquí se enviaría la solicitud de exportación al backend
       // exportConfig contiene la configuración
@@ -1114,6 +1116,7 @@ export default {
     /**
      * Manejar finalización de exportación
      */
+    // eslint-disable-next-line no-unused-vars
     handleExportSuccess(result) {
       // En una implementación real, aquí se procesaría la respuesta
       // y se descargaría el archivo exportado
@@ -1144,6 +1147,7 @@ export default {
     /**
      * Manejar solicitud de generación de códigos QR
      */
+    // eslint-disable-next-line no-unused-vars
     handleQRGenerate(qrConfig) {
       // Aquí se enviaría la solicitud de generación al backend
       // qrConfig contiene la configuración
@@ -1152,6 +1156,7 @@ export default {
     /**
      * Manejar finalización de generación de códigos QR
      */
+    // eslint-disable-next-line no-unused-vars
     handleQRSuccess(result) {
       this.closeQRModal();
       

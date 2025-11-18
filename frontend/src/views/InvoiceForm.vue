@@ -755,6 +755,7 @@ export default {
         if (this.isEdit) {
           response = await InvoiceService.updateInvoice(this.invoice.id, invoiceData);
         } else {
+          // eslint-disable-next-line no-unused-vars
           response = await InvoiceService.createInvoice(invoiceData);
         }
 

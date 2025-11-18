@@ -342,8 +342,8 @@
 </template>
 
 <script>
-import MikrotikService from '../../services/mikrotik.service';
-import DeviceService from '../../services/device.service';
+// import MikrotikService from '../../services/mikrotik.service'; // Unused
+// import DeviceService from '../../services/device.service'; // Unused
 
 export default {
   name: 'HerramientasTab',

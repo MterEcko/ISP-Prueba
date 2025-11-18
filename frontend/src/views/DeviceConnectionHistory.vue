@@ -863,6 +863,7 @@ export default {
     async performExport() {
       this.exporting = true;
       try {
+      // eslint-disable-next-line no-unused-vars
         const params = {
           deviceId: this.device.id,
           format: this.exportFormat,

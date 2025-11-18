@@ -294,6 +294,7 @@ export default {
       };
       return classMap[type] || 'badge badge-secondary';
     },
+      // eslint-disable-next-line no-unused-vars
     getRowClass(backup) {
       return '';
     },

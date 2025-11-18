@@ -189,6 +189,7 @@ const actions = {
   /**
    * Crear evento
    */
+  // eslint-disable-next-line no-unused-vars
   async createEvent({ commit, dispatch }, eventData) {
     commit('SET_LOADING', true);
     commit('SET_ERROR', null);

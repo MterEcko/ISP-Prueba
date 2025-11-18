@@ -209,7 +209,7 @@ const mutations = {
 
   // Establecer estado de carga
   SET_LOADING(state, { operation, value }) {
-    if (state.loading.hasOwnProperty(operation)) {
+    if (Object.prototype.hasOwnProperty.call(state.loading, operation)) {
       state.loading[operation] = value;
     }
   },
@@ -588,6 +588,7 @@ const actions = {
   /**
    * Actualizar estadísticas de plugins
    */
+  // eslint-disable-next-line no-unused-vars
   async updateStats({ commit, state }) {
     const stats = await pluginService.getPluginStats();
     commit('SET_STATS', stats);

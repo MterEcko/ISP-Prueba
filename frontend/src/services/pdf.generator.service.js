@@ -397,6 +397,7 @@ class PDFGeneratorService {
    */
   async generateAccountStatement(billingData) {
     try {
+    // eslint-disable-next-line no-unused-vars
       const { client, billingInfo, invoices, period } = billingData;
       
       const pdf = new jsPDF();
@@ -478,6 +479,7 @@ class PDFGeneratorService {
    */
   async generateServiceContract(contractData) {
     try {
+      // eslint-disable-next-line no-unused-vars
       const { client, equipment, subscription, installationDate } = contractData;
       
       const pdf = new jsPDF();

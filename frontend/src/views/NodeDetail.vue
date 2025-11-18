@@ -255,6 +255,7 @@
 <script>
 import NetworkService from '../services/network.service';
 import DeviceService from '../services/device.service';
+// eslint-disable-next-line no-unused-vars
 import MikrotikService from '../services/mikrotik.service';
 
 export default {

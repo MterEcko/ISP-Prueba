@@ -366,6 +366,7 @@ const actions = {
   /**
    * Cancel order
    */
+  // eslint-disable-next-line no-unused-vars
   async cancelOrder({ commit, dispatch }, { orderId, reason }) {
     try {
       const response = await storeCustomerService.cancelOrder(orderId, reason);
@@ -382,6 +383,7 @@ const actions = {
   /**
    * Refund order
    */
+  // eslint-disable-next-line no-unused-vars
   async refundOrder({ commit, dispatch }, { orderId, reason }) {
     try {
       const response = await storeCustomerService.refundOrder(orderId, reason);

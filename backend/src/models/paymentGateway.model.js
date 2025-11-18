@@ -22,6 +22,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       comment: 'Tipo de pasarela de pago'
     },
+    gatewayType: {
+      type: DataTypes.ENUM('paypal', 'stripe', 'mercadopago', 'card', 'transfer', 'cash'),
+      allowNull: true,
+      comment: 'Alias de tipo de pasarela (para compatibilidad)'
+    },
     enabled: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

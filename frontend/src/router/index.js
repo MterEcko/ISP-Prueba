@@ -95,6 +95,24 @@ import CommunicationHistory from '../components/CommunicationHistory.vue';
 import TemplateManager from '../components/TemplateManager.vue';
 // import ChannelConfiguration from '../views/ChannelConfiguration.vue';
 
+// ===== IMPORTACIONES PARA ACCOUNTING =====
+import AccountingDashboard from '../views/Accounting/AccountingDashboard.vue';
+import ExpenseManagement from '../views/Accounting/ExpenseManagement.vue';
+import FinancialReports from '../views/Accounting/FinancialReports.vue';
+import PayrollManagement from '../views/Accounting/PayrollManagement.vue';
+
+// ===== IMPORTACIONES ADICIONALES =====
+import CurrencyConfig from '../views/CurrencyConfig.vue';
+import EmployeeEmailManagement from '../views/EmployeeEmailManagement.vue';
+import PermisoList from '../views/PermisoList.vue';
+import IpAssignmentView from '../views/IpAssignmentView.vue';
+import ClientServiceForm from '../views/ClientServiceForm.vue';
+import InventorySearch from '../views/InventorySearch.vue';
+import DepartamentoList from '../views/DepartamentoList.vue';
+
+// ===== IMPORTAR RUTAS DE LICENCIAS Y PLUGINS =====
+import { licenseRoutes, pluginRoutes } from './license-plugin-routes';
+
 
 const routes = [
   {
@@ -1395,6 +1413,140 @@ const routes = [
       title: 'Subir Plugin'
     }
   },
+
+  // ===============================
+  // RUTAS DE ACCOUNTING/CONTABILIDAD
+  // ===============================
+  {
+    path: '/accounting/dashboard',
+    name: 'AccountingDashboard',
+    component: AccountingDashboard,
+    meta: {
+      requiresAuth: true,
+      title: 'Dashboard Contable'
+    }
+  },
+  {
+    path: '/accounting/expenses',
+    name: 'ExpenseManagement',
+    component: ExpenseManagement,
+    meta: {
+      requiresAuth: true,
+      title: 'Gestión de Gastos'
+    }
+  },
+  {
+    path: '/accounting/payroll',
+    name: 'PayrollManagement',
+    component: PayrollManagement,
+    meta: {
+      requiresAuth: true,
+      title: 'Gestión de Nóminas'
+    }
+  },
+  {
+    path: '/accounting/reports',
+    name: 'FinancialReports',
+    component: FinancialReports,
+    meta: {
+      requiresAuth: true,
+      title: 'Reportes Financieros'
+    }
+  },
+
+  // ===============================
+  // RUTAS DE CONFIGURACIÓN ADICIONALES
+  // ===============================
+  {
+    path: '/settings/currency',
+    name: 'CurrencyConfig',
+    component: CurrencyConfig,
+    meta: {
+      requiresAuth: true,
+      title: 'Configuración de Monedas'
+    }
+  },
+  {
+    path: '/employees/email',
+    name: 'EmployeeEmailManagement',
+    component: EmployeeEmailManagement,
+    meta: {
+      requiresAuth: true,
+      title: 'Gestión de Correos de Empleados'
+    }
+  },
+  {
+    path: '/permissions',
+    name: 'PermisoList',
+    component: PermisoList,
+    meta: {
+      requiresAuth: true,
+      title: 'Gestión de Permisos'
+    }
+  },
+  {
+    path: '/departments',
+    name: 'DepartamentoList',
+    component: DepartamentoList,
+    meta: {
+      requiresAuth: true,
+      title: 'Gestión de Departamentos'
+    }
+  },
+
+  // ===============================
+  // RUTAS DE CLIENTES - SERVICIOS
+  // ===============================
+  {
+    path: '/clients/:clientId/services/new',
+    name: 'NewClientService',
+    component: ClientServiceForm,
+    meta: {
+      requiresAuth: true,
+      title: 'Agregar Servicio al Cliente'
+    }
+  },
+  {
+    path: '/clients/:clientId/services/:serviceId/edit',
+    name: 'EditClientService',
+    component: ClientServiceForm,
+    meta: {
+      requiresAuth: true,
+      title: 'Editar Servicio del Cliente'
+    }
+  },
+
+  // ===============================
+  // RUTAS DE RED - IP ASSIGNMENT
+  // ===============================
+  {
+    path: '/network/ip-assignment',
+    name: 'IpAssignmentView',
+    component: IpAssignmentView,
+    meta: {
+      requiresAuth: true,
+      title: 'Asignación de IPs'
+    }
+  },
+
+  // ===============================
+  // RUTAS DE INVENTARIO - BÚSQUEDA
+  // ===============================
+  {
+    path: '/inventory/search',
+    name: 'InventorySearch',
+    component: InventorySearch,
+    meta: {
+      requiresAuth: true,
+      title: 'Búsqueda de Inventario'
+    }
+  },
+
+  // ===============================
+  // RUTAS DE LICENCIAS Y PLUGINS (importadas)
+  // ===============================
+  ...licenseRoutes,
+  ...pluginRoutes,
 
   // ===============================
   // a??RUTA 404 Y MANEJO DE ERRORES

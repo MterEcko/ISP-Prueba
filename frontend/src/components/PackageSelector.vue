@@ -76,7 +76,7 @@
 </template>
 
 <script>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import PackageCard from './PackageCard.vue'
 import PackageComparison from './PackageComparison.vue'
 

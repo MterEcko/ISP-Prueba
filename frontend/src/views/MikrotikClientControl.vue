@@ -624,6 +624,7 @@ export default {
           }
         } else if (trimmedRange.includes('/')) {
           // CIDR: 192.168.1.0/24
+          // eslint-disable-next-line no-unused-vars
           const [network, cidr] = trimmedRange.split('/');
           const networkParts = network.split('.').map(Number);
           

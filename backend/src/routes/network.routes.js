@@ -120,4 +120,13 @@ module.exports = function(app) {
     [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")],
     network.deleteSector
   );
+
+  // ==================== ALIAS: /api/network/* ====================
+  // Rutas alias para compatibilidad con el frontend
+
+  app.get("/api/network/nodes", network.findAllNodes);
+  app.get("/api/network/nodes/:id", network.findNodeById);
+  app.post("/api/network/nodes", [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")], network.createNode);
+  app.put("/api/network/nodes/:id", [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")], network.updateNode);
+  app.delete("/api/network/nodes/:id", [authJwt.verifyToken, authJwt.checkPermission("manageNetwork")], network.deleteNode);
 };

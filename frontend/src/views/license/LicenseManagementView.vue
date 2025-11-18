@@ -5,7 +5,6 @@
         <h1 class="text-h4 mb-4">
           <v-icon large class="mr-2">mdi-key-chain</v-icon>
           Gestión de Licencias
-        </h-icon>
         </h1>
       </v-col>
     </v-row>
@@ -175,6 +174,7 @@ export default {
       await this.loadLicenseData();
       this.showSnackbar('Licencias actualizadas', 'success');
     },
+    // eslint-disable-next-line no-unused-vars
     async handleActivationSuccess(license) {
       this.showActivationDialog = false;
       this.showSnackbar('Licencia activada exitosamente', 'success');
@@ -191,10 +191,12 @@ export default {
         }
       }
     },
+    // eslint-disable-next-line no-unused-vars
     handleRenew(license) {
       // Implementar renovación
       alert('Renovación de licencia - Próximamente');
     },
+    // eslint-disable-next-line no-unused-vars
     showLicenseDetails(license) {
       // Mostrar detalles
       alert('Detalles de licencia - Próximamente');

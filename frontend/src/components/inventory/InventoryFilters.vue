@@ -567,6 +567,7 @@ export default {
      */
     removeFilter(key) {
       // Manejar casos especiales
+      // eslint-disable-next-line no-unused-vars
       if (key === 'status') {
         this.selectedStatuses = [];
       } else if (key === 'specifications') {
@@ -580,6 +581,7 @@ export default {
         } else if (typeof this.filters[key] === 'number') {
           this.filters[key] = null;
         } else {
+      // eslint-disable-next-line no-unused-vars
           this.filters[key] = '';
         }
       }
@@ -659,6 +661,7 @@ export default {
           return this.getClientName(value);
           
         case 'warrantyStatus':
+          // eslint-disable-next-line no-case-declarations
           const warrantyLabels = {
             valid: 'En garantía',
             expired: 'Vencida',

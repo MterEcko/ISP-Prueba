@@ -9,7 +9,7 @@
         {{ isCollapsed ? '→' : '←' }}
       </button>
     </div>
-    
+
     <div class="user-profile" v-if="currentUser">
       <div class="user-avatar">
         {{ getUserInitials() }}
@@ -19,9 +19,10 @@
         <div class="user-role">{{ currentUser.role?.name || 'Usuario' }}</div>
       </div>
     </div>
-    
+
     <nav class="sidebar-nav">
       <ul>
+        <!-- Sección Principal -->
         <li>
           <router-link to="/dashboard">
             <span class="icon">📊</span>
@@ -33,6 +34,17 @@
             <span class="icon">👥</span>
             <span class="text" v-if="!isCollapsed">Clientes</span>
           </router-link>
+        </li>
+        <li>
+          <router-link to="/tickets">
+            <span class="icon">🎫</span>
+            <span class="text" v-if="!isCollapsed">Tickets</span>
+          </router-link>
+        </li>
+
+        <!-- Sección de Infraestructura -->
+        <li class="menu-separator" v-if="!isCollapsed">
+          <span class="text">INFRAESTRUCTURA</span>
         </li>
         <li>
           <router-link to="/network">
@@ -53,21 +65,49 @@
           </router-link>
         </li>
         <li>
-          <router-link to="/tickets">
-            <span class="icon">🎫</span>
-            <span class="text" v-if="!isCollapsed">Tickets</span>
-          </router-link>
-        </li>
-        <li>
           <router-link to="/inventory">
             <span class="icon">📦</span>
             <span class="text" v-if="!isCollapsed">Inventario</span>
           </router-link>
         </li>
+
+        <!-- Sección de Facturación -->
+        <li class="menu-separator" v-if="!isCollapsed">
+          <span class="text">FACTURACIÓN</span>
+        </li>
         <li>
           <router-link to="/billing">
             <span class="icon">💰</span>
             <span class="text" v-if="!isCollapsed">Facturación</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/billing/invoices">
+            <span class="icon">🧾</span>
+            <span class="text" v-if="!isCollapsed">Facturas</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/billing/payments">
+            <span class="icon">💳</span>
+            <span class="text" v-if="!isCollapsed">Pagos</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/billing/overdue">
+            <span class="icon">⏰</span>
+            <span class="text" v-if="!isCollapsed">Vencidos</span>
+          </router-link>
+        </li>
+
+        <!-- Sección de Comunicaciones -->
+        <li class="menu-separator" v-if="!isCollapsed">
+          <span class="text">COMUNICACIONES</span>
+        </li>
+        <li>
+          <router-link to="/communications">
+            <span class="icon">📨</span>
+            <span class="text" v-if="!isCollapsed">Comunicaciones</span>
           </router-link>
         </li>
         <li>
@@ -77,19 +117,13 @@
           </router-link>
         </li>
         <li>
-          <router-link to="/communications">
-            <span class="icon">📨</span>
-            <span class="text" v-if="!isCollapsed">Comunicaciones</span>
-          </router-link>
-        </li>
-        <li>
-          <router-link to="/reports">
-            <span class="icon">📊</span>
-            <span class="text" v-if="!isCollapsed">Reportes</span>
+          <router-link to="/chat">
+            <span class="icon">💬</span>
+            <span class="text" v-if="!isCollapsed">Chat</span>
           </router-link>
         </li>
 
-        <!-- Sección de Nuevas Funcionalidades -->
+        <!-- Sección de Herramientas -->
         <li class="menu-separator" v-if="!isCollapsed">
           <span class="text">HERRAMIENTAS</span>
         </li>
@@ -100,15 +134,32 @@
           </router-link>
         </li>
         <li>
-          <router-link to="/chat">
-            <span class="icon">💬</span>
-            <span class="text" v-if="!isCollapsed">Chat</span>
+          <router-link to="/reports">
+            <span class="icon">📈</span>
+            <span class="text" v-if="!isCollapsed">Reportes</span>
           </router-link>
+        </li>
+        <li>
+          <router-link to="/metrics-dashboard">
+            <span class="icon">📊</span>
+            <span class="text" v-if="!isCollapsed">Métricas</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/coverage-map">
+            <span class="icon">🗺️</span>
+            <span class="text" v-if="!isCollapsed">Cobertura</span>
+          </router-link>
+        </li>
+
+        <!-- Sección de Marketplace -->
+        <li class="menu-separator" v-if="!isCollapsed">
+          <span class="text">MARKETPLACE</span>
         </li>
         <li>
           <router-link to="/store/dashboard">
             <span class="icon">🏪</span>
-            <span class="text" v-if="!isCollapsed">Marketplace</span>
+            <span class="text" v-if="!isCollapsed">Tienda</span>
           </router-link>
         </li>
         <li>
@@ -131,10 +182,21 @@
         <li>
           <router-link to="/roles">
             <span class="icon">🔐</span>
-            <span class="text" v-if="!isCollapsed">Roles y Permisos</span>
+            <span class="text" v-if="!isCollapsed">Roles</span>
           </router-link>
         </li>
-
+        <li>
+          <router-link to="/license/management">
+            <span class="icon">🔑</span>
+            <span class="text" v-if="!isCollapsed">Licencias</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/settings/backups">
+            <span class="icon">💾</span>
+            <span class="text" v-if="!isCollapsed">Respaldos</span>
+          </router-link>
+        </li>
         <li>
           <router-link to="/settings">
             <span class="icon">⚙️</span>
@@ -143,7 +205,7 @@
         </li>
       </ul>
     </nav>
-    
+
     <div class="sidebar-footer">
       <button class="logout-button" @click="logout">
         <span class="icon">🚪</span>
@@ -154,10 +216,8 @@
 </template>
 
 <script>
-import AuthService from '../services/auth.service';
-
 export default {
-  name: 'Sidebar',
+  name: 'SidebarComponent',
   data() {
     return {
       isCollapsed: false
@@ -176,7 +236,7 @@ export default {
     },
     getUserInitials() {
       if (!this.currentUser || !this.currentUser.fullName) return '??';
-      
+
       const names = this.currentUser.fullName.split(' ');
       if (names.length > 1) {
         return (names[0][0] + names[1][0]).toUpperCase();
@@ -359,7 +419,7 @@ export default {
     z-index: 1000;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   }
-  
+
   .sidebar.collapsed {
     transform: translateX(-100%);
   }

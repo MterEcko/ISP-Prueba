@@ -1070,7 +1070,7 @@ export default {
       // Cargar criterios avanzados
       if (search.criteria) {
         Object.keys(search.criteria).forEach(key => {
-          if (advancedCriteria.hasOwnProperty(key)) {
+          if (Object.prototype.hasOwnProperty.call(advancedCriteria, key)) {
             advancedCriteria[key] = search.criteria[key];
           }
         });

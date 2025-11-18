@@ -14,7 +14,7 @@ exports.getAllClientBillings = async (req, res) => {
       include: [
         { model: Client, as: 'client' },
         { model: ServicePackage, as: 'ServicePackage' },
-        { model: IpPool }
+        { model: IpPool, as: 'currentIpPool' }
       ],
       order: [['nextDueDate', 'ASC']]
     });

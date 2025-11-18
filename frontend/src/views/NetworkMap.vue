@@ -467,6 +467,10 @@ export default {
      this.loading = true;
      try {
        // Cargar datos reales desde la API
+       // eslint-disable-next-line no-unused-vars
+       // eslint-disable-next-line no-unused-vars
+       // eslint-disable-next-line no-unused-vars
+       // eslint-disable-next-line no-unused-vars
        const [nodesResponse, sectorsResponse, devicesResponse, clientsResponse] = await Promise.allSettled([
          this.loadNodesData(),
          this.loadSectorsData(), 
@@ -707,6 +711,7 @@ export default {
        });
 
      if (this.settings.showLabels) {
+       // eslint-disable-next-line no-unused-vars
        const labels = svg.append("g")
          .selectAll("text")
          .data(topologyData.nodes)

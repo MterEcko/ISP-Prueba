@@ -148,7 +148,7 @@ class DashboardService {
   }
 
   processStatsData(rawData) {
-    const { clients, tickets, devices, billing, network } = rawData;
+    const { clients, tickets, devices, billing } = rawData;
     
     // Procesar clientes - usar datos reales
     const totalClients = clients.totalItems || clients.clients?.length || 0;
@@ -157,12 +157,12 @@ class DashboardService {
     
     // Procesar tickets - usar datos reales
     const totalTickets = tickets.totalItems || tickets.length || 0;
-    const openTickets = Array.isArray(tickets.tickets) 
+    const openTickets = Array.isArray(tickets.tickets)
       ? tickets.tickets.filter(t => ['open', 'in_progress'].includes(t.status))?.length || 0
       : 0;
-    const criticalTickets = Array.isArray(tickets.tickets)
-      ? tickets.tickets.filter(t => t.priority === 'critical')?.length || 0
-      : 0;
+    // const criticalTickets = Array.isArray(tickets.tickets)
+    //   ? tickets.tickets.filter(t => t.priority === 'critical')?.length || 0
+    //   : 0;
     
     // Procesar dispositivos - usar datos reales
     const totalDevices = devices.totalItems || devices.length || 0;
@@ -172,21 +172,21 @@ class DashboardService {
     const offlineDevices = totalDevices - onlineDevices;
     
     // Procesar facturación - usar datos reales
-    const totalBilling = billing.totalItems || billing.length || 0;
+    // const totalBilling = billing.totalItems || billing.length || 0;
     const unpaidBilling = Array.isArray(billing.data)
       ? billing.data.filter(b => b.client_status === 'suspended' || b.client_status === 'cut_service')?.length || 0
       : 0;
-    
+
     // Calcular ingresos reales
     const monthlyIncome = Array.isArray(billing.data)
       ? billing.data.reduce((sum, b) => sum + (parseFloat(b.monthly_fee) || 0), 0)
       : 0;
-    
-    const pendingIncome = Array.isArray(billing.data)
-      ? billing.data
-          .filter(b => b.client_status === 'suspended')
-          .reduce((sum, b) => sum + (parseFloat(b.monthly_fee) || 0), 0)
-      : 0;
+
+    // const pendingIncome = Array.isArray(billing.data)
+    //   ? billing.data
+    //       .filter(b => b.client_status === 'suspended')
+    //       .reduce((sum, b) => sum + (parseFloat(b.monthly_fee) || 0), 0)
+    //   : 0;
 
     // Obtener fecha actual para transacciones del día
     const today = new Date().toISOString().split('T')[0];

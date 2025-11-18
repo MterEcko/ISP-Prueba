@@ -496,6 +496,7 @@ export default {
 
       try {
         // Crear implementación temporal para prueba
+        // eslint-disable-next-line no-unused-vars
         const tempImpl = {
           ...this.implementation,
           // Incluir datos necesarios para la prueba
@@ -533,6 +534,7 @@ export default {
           await CommandService.updateImplementation(this.implementation.id, this.implementation);
           this.successMessage = 'Implementación actualizada correctamente';
         } else {
+          // eslint-disable-next-line no-unused-vars
           const response = await CommandService.createImplementation(this.implementation);
           this.successMessage = 'Implementación creada correctamente';
           

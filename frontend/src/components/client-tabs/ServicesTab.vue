@@ -826,10 +826,10 @@
 </template>
 
 <script>
-import ClientService from '../../services/client.service';
+// import ClientService from '../../services/client.service'; // Unused
 import DeviceService from '../../services/device.service';
 import InventoryService from '../../services/inventory.service';
-import PDFGeneratorService from '../../services/pdf.generator.service';
+// import PDFGeneratorService from '../../services/pdf.generator.service'; // Unused
 import BillingService from '../../services/billing.service';
 import SubscriptionService from '../../services/subscription.service';
 import InvoiceService from '../../services/invoice.service';  // ✅ AGREGAR
@@ -1109,6 +1109,7 @@ extractApiData(response) {
       }
     },
 
+    // eslint-disable-next-line no-unused-vars
     downloadConfigPDF(subscription) {
       this.showMenu = null;
       this.$emit('show-notification', 'Descarga de configuración iniciada', 'info');
@@ -1627,8 +1628,8 @@ console.log('Full selected material object:', this.selectedMaterial);
 async registerPayment(paymentData) {
   try {
     // 1. ✅ Crear registro en Payments
-    const payment = await BillingService.registerPayment(this.client.id, paymentData);
-    
+    await BillingService.registerPayment(this.client.id, paymentData);
+
     // 2. ✅ Actualizar Invoice a status 'paid'
     await this.updateInvoiceStatus(paymentData.invoiceId, 'paid');
     
@@ -1845,6 +1846,7 @@ async debugInvoiceGeneration() {
 
 
 
+    // eslint-disable-next-line no-unused-vars
     downloadInvoicePDF(invoice) {
       this.$emit('show-notification', 'Descarga de factura iniciada', 'info');
     },
