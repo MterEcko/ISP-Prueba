@@ -92,7 +92,7 @@ module.exports = (sequelize) => {
       comment: 'Número de serie del equipo'
     }
   }, {
-    tableName: 'expenses',
+    tableName: 'Expenses',
     timestamps: true,
     indexes: [
       {

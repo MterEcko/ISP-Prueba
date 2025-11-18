@@ -34,7 +34,7 @@ module.exports = (sequelize) => {
       comment: 'Si la categoría está activa'
     }
   }, {
-    tableName: 'expense_categories',
+    tableName: 'ExpenseCategories',
     timestamps: true,
     indexes: [
       {
