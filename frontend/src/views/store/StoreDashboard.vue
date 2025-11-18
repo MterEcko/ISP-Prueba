@@ -129,12 +129,13 @@
           <h2>Mejores Clientes</h2>
         </div>
         <div v-if="topCustomers.length > 0" class="customers-list">
+          <!-- eslint-disable-next-line vue/no-unused-vars -->
           <div
             v-for="(customer, index) in topCustomers.slice(0, 5)"
             :key="customer.id"
             class="customer-item"
           >
-            <div class="customer-rank">#{index + 1}</div>
+            <div class="customer-rank">#{{ index + 1 }}</div>
             <div class="customer-info">
               <div class="customer-name">
                 {{ customer.firstName }} {{ customer.lastName }}

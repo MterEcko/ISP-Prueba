@@ -17,9 +17,12 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 
 app.use(cors({
-  origin: '*', // Para desarrollo - cambia esto a tu dominio en producción
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'x-access-token', 'Origin']
+  origin: ['http://localhost:8080', 'http://localhost:3000', 'http://10.10.1.163:8080'], // Frontend URLs permitidas
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'x-access-token', 'Authorization', 'Origin', 'Accept'],
+  credentials: true, // Permite cookies y headers de autenticación
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 app.use(express.json());
 app.use(helmet()); // Ayuda a securizar la app estableciendo varios headers HTTP
