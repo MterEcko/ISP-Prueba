@@ -10,7 +10,7 @@ module.exports = (sequelize) => {
     // Clave de licencia
     licenseKey: {
       type: DataTypes.STRING(64),
-      unique: true,
+      // unique removed - defined in indexes below to avoid Sequelize PostgreSQL sync bug
       allowNull: false
     },
 
@@ -91,8 +91,8 @@ module.exports = (sequelize) => {
       defaultValue: false
     },
     recurringInterval: {
-      type: DataTypes.ENUM('monthly', 'yearly'),
-      comment: 'Intervalo de renovación automática'
+      type: DataTypes.ENUM('monthly', 'yearly')
+      // comment removed to avoid Sequelize PostgreSQL ENUM sync bug with USING clause
     },
     lastRenewalDate: {
       type: DataTypes.DATE
@@ -119,7 +119,7 @@ module.exports = (sequelize) => {
     tableName: 'Licenses',
     timestamps: true,
     indexes: [
-      { fields: ['licenseKey'] },
+      { unique: true, fields: ['licenseKey'], name: 'unique_license_key' },
       { fields: ['status'] },
       { fields: ['planType'] },
       { fields: ['installationId'] },
