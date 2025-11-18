@@ -79,83 +79,14 @@ const db = require('./models');
 // Función para sincronizar modelos en orden
 async function synchronizeDatabase() {
   try {
-    // Sincronizar modelos en orden de dependencias
-    await db.Zone.sync({ force: false }); // Primero, porque ServicePackage depende de Zone
-    await db.MikrotikRouter.sync({ force: false }); // Luego, porque MikrotikProfile depende de MikrotikRouter
-    await db.ServicePackage.sync({ force: false }); // Luego, porque MikrotikProfile depende de ServicePackage
-    await db.MikrotikProfile.sync({ force: false }); // Finalmente, porque depende de ServicePackage y MikrotikRouter
+    console.log('🔄 Sincronizando base de datos...');
 
-    // Sincronizar otros modelos para asegurar que todas las tablas se creen
-    await db.Role.sync({ force: false });
-    await db.Permission.sync({ force: false });
-    await db.User.sync({ force: false });
-    await db.Node.sync({ force: false });
-    await db.Sector.sync({ force: false });
-    await db.Client.sync({ force: false });
-    await db.ClientDocument.sync({ force: false });
-    await db.ClientNetwork.sync({ force: false });
-    await db.Subscription.sync({ force: false });
-    await db.Ticket.sync({ force: false });
-    await db.TicketComment.sync({ force: false });
-    await db.Device.sync({ force: false });
-    await db.DeviceCredential.sync({ force: false });
-    await db.DeviceMetric.sync({ force: false });
-    await db.CommandHistory.sync({ force: false });
-    await db.DeviceCommand.sync({ force: false });
-    await db.DeviceBrand.sync({ force: false });
-    await db.DeviceFamily.sync({ force: false });
-    await db.CommonCommand.sync({ force: false });
-    await db.CommandImplementation.sync({ force: false });
-    await db.CommandParameter.sync({ force: false });
-    await db.SnmpOid.sync({ force: false });
-    await db.Inventory.sync({ force: false });
-    await db.InventoryLocation.sync({ force: false });
-    await db.InventoryMovement.sync({ force: false });
-    await db.InventoryScrap.sync({ force: false });
-    await db.SystemConfiguration.sync({ force: false });
-    await db.SystemLicense.sync({ force: false });
-    await db.SystemPlugin.sync({ force: false });
-    await db.IpPool.sync({ force: false });
-    await db.MikrotikPPPOE.sync({ force: false });
-    await db.MikrotikIp.sync({ force: false });
-    await db.ClientBilling.sync({ force: false });
-    await db.ClientNetworkConfig.sync({ force: false });
-    await db.ClientInstallation.sync({ force: false });
-    await db.ClientSupport.sync({ force: false });
-    await db.InventoryCategory.sync({ force: false });
-    await db.InventoryType.sync({ force: false });
-    await db.InventoryProduct.sync({ force: false });
-    await db.InstallationMaterial.sync({ force: false });
-    await db.PaymentGateway.sync({ force: false });
-    await db.Invoice.sync({ force: false });
-    await db.Payment.sync({ force: false });
-    await db.PaymentReminder.sync({ force: false });
-    await db.CommunicationChannel.sync({ force: false });
-    await db.MessageTemplate.sync({ force: false });
-    await db.CommunicationLog.sync({ force: false });
-    await db.TicketType.sync({ force: false });
-    await db.TicketAttachment.sync({ force: false });
-
-    // Sincronizar nuevos modelos de comunicación
-    await db.NotificationRule.sync({ force: false });
-    await db.NotificationQueue.sync({ force: false });
-    await db.CommunicationContact.sync({ force: false });
-    await db.CommunicationEvent.sync({ force: false });
-	await db.TechnicianInventoryReconciliation.sync({ force: false });
-	await db.InventoryBatch.sync({ force: false });
-
-    // Sincronizar modelos de correo de empleados
-    await db.EmployeeEmail.sync({ force: false });
-
-    // Sincronizar modelos de contabilidad
-    await db.ExpenseCategory.sync({ force: false });
-    await db.Expense.sync({ force: false });
-    await db.Payroll.sync({ force: false });
-    await db.PayrollPayment.sync({ force: false });
-
-    // Sincronizar modelos de divisas
-    await db.Currency.sync({ force: false });
-    await db.ExchangeRate.sync({ force: false });
+    // Usar sequelize.sync() que automáticamente maneja las dependencias
+    // Esto evita problemas de orden al crear tablas con foreign keys
+    await db.sequelize.sync({
+      force: false,  // NO borrar tablas existentes
+      alter: false   // NO modificar estructura automáticamente (usar migraciones para eso)
+    });
 
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
     
