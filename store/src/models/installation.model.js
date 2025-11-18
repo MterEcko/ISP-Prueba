@@ -10,7 +10,7 @@ module.exports = (sequelize) => {
     // Identificación
     installationKey: {
       type: DataTypes.STRING,
-      unique: true,
+      // unique removido - se define como índice único abajo para evitar bug de Sequelize
       allowNull: false,
       comment: 'Clave única de instalación generada al instalar el software'
     },
@@ -32,7 +32,7 @@ module.exports = (sequelize) => {
     // Hardware ID
     hardwareId: {
       type: DataTypes.STRING,
-      unique: true,
+      // unique removido - se define como índice único abajo para evitar bug de Sequelize
       allowNull: false,
       comment: 'ID único del hardware donde está instalado'
     },
@@ -115,8 +115,8 @@ module.exports = (sequelize) => {
     tableName: 'Installations',
     timestamps: true,
     indexes: [
-      { fields: ['installationKey'] },
-      { fields: ['hardwareId'] },
+      { unique: true, fields: ['installationKey'], name: 'unique_installation_key' },
+      { unique: true, fields: ['hardwareId'], name: 'unique_hardware_id' },
       { fields: ['status'] },
       { fields: ['currentLicenseId'] },
       { fields: ['isOnline'] }
