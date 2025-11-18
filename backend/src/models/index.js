@@ -810,10 +810,12 @@ db.ClientBilling.belongsTo(db.ServicePackage, {
 
 db.IpPool.hasMany(db.ClientBilling, {
   foreignKey: 'currentIpPoolId',
+  as: 'clientBillings'
 });
 
 db.ClientBilling.belongsTo(db.IpPool, {
   foreignKey: 'currentIpPoolId',
+  as: 'currentIpPool'
 });
 
 db.Client.hasOne(db.ClientNetworkConfig, {

@@ -17,18 +17,18 @@ module.exports = function(app) {
     systemLicense.getAllLicenses
   );
 
+  // Get current active license (DEBE IR ANTES de /:id)
+  app.get(
+    "/api/system-licenses/current",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
+    systemLicense.getCurrentLicense
+  );
+
   // Get system license by ID
   app.get(
     "/api/system-licenses/:id",
     //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
     systemLicense.getLicenseById
-  );
-
-  // Get current active license
-  app.get(
-    "/api/system-licenses/current",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
-    systemLicense.getCurrentLicense
   );
 
   // Create a new system license

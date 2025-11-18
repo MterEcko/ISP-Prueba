@@ -485,15 +485,18 @@ exports.getCommunicationHistory = async (req, res) => {
     const includeOptions = [
       {
         model: CommunicationChannel,
+        as: 'channel',
         attributes: ['id', 'name', 'channelType']
       },
       {
         model: Client,
+        as: 'client',
         attributes: ['id', 'firstName', 'lastName', 'email'],
         required: false
       },
       {
         model: MessageTemplate,
+        as: 'template',
         attributes: ['id', 'name', 'templateType'],
         required: false
       }
@@ -814,15 +817,18 @@ exports.getScheduledMessages = async (req, res) => {
       include: [
         {
           model: Client,
+          as: 'client',
           attributes: ['id', 'firstName', 'lastName', 'email'],
           required: false
         },
         {
           model: CommunicationChannel,
+          as: 'channel',
           attributes: ['id', 'name', 'channelType']
         },
         {
           model: MessageTemplate,
+          as: 'template',
           attributes: ['id', 'name', 'templateType'],
           required: false
         }
