@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const currencyController = require('../controllers/currency.controller');
-const { verifyToken, isAdmin, isAdminOrManager } = require('../middleware/authJwt');
+const { authJwt } = require('../middleware');
+const { verifyToken, isAdmin, isAdminOrManager } = authJwt;
 
 // ========== MONEDAS ==========
 

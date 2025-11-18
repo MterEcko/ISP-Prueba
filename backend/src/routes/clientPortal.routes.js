@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const clientPortalController = require('../controllers/clientPortal.controller');
-const { verifyToken } = require('../middleware/authJwt');
+const { authJwt } = require('../middleware');
+const { verifyToken } = authJwt;
 
 // IMPORTANTE: Todas estas rutas requieren que el usuario esté autenticado
 // El rol debe ser 'cliente' para acceder al portal

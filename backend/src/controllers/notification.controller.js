@@ -77,7 +77,7 @@ class NotificationController {
       return res.status(200).json({
         success: true,
         data: result,
-        message: \`\${result.updated} notificaciones marcadas como leídas\`
+        message: `${result.updated} notificaciones marcadas como leídas`
       });
     } catch (error) {
       console.error('Error en markAllAsRead:', error);
