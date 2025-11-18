@@ -930,7 +930,7 @@
 import SettingsService from '../services/settings.service';
 
 export default {
-  name: 'Settings',
+  name: 'AppSettings',
   data() {
     return {
       activeTab: 'general',

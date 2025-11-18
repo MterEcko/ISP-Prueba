@@ -454,7 +454,7 @@
     </div>
     
     <!-- Modal para crear/editar elemento -->
-    <Modal
+    <BaseModal
       v-if="showEditModal"
       :show="showEditModal"
       :title="editingItemId ? 'Editar elemento' : 'Crear nuevo elemento'"
@@ -467,10 +467,10 @@
         <!-- Contenido del formulario de edición -->
         <p>Formulario de edición (a implementar)</p>
       </div>
-    </Modal>
+    </BaseModal>
     
     <!-- Modal para confirmar eliminación -->
-    <Modal
+    <BaseModal
       v-if="showDeleteModal"
       title="Confirmar eliminación"
       @close="closeDeleteModal"
@@ -500,10 +500,10 @@
           {{ deletingItem ? 'Eliminando...' : 'Eliminar' }}
         </button>
       </template>
-    </Modal>
+    </BaseModal>
     
     <!-- Modal para importar elementos -->
-    <Modal
+    <BaseModal
       v-if="showImportModal"
       :show="showImportModal"
       title="Importar elementos"
@@ -516,10 +516,10 @@
         @import-cancel="closeImportModal"
         @import-success="handleImportSuccess"
       />
-    </Modal>
+    </BaseModal>
     
     <!-- Modal para exportar elementos -->
-    <Modal
+    <BaseModal
       v-if="showExportModal"
       :show="showExportModal"
       title="Exportar inventario"
@@ -537,10 +537,10 @@
         @export-close="closeExportModal"
         @export-success="handleExportSuccess"
       />
-    </Modal>
+    </BaseModal>
     
     <!-- Modal para generar códigos QR -->
-    <Modal
+    <BaseModal
       v-if="showQRModal"
       :show="showQRModal"
       title="Generar códigos QR"
@@ -556,12 +556,12 @@
         @qr-success="handleQRSuccess"
         @qr-error="handleQRError"
       />
-    </Modal>
+    </BaseModal>
   </div>
 </template>
 
 <script>
-import Modal from '@/components/common/Modal.vue';
+import BaseModal from '@/components/common/Modal.vue';
 import BulkImportForm from '@/components/inventory/BulkImportForm.vue';
 import ExportForm from '@/components/inventory/ExportForm.vue';
 import QRCodeGenerator from '@/components/inventory/QRCodeGenerator.vue';
@@ -571,7 +571,7 @@ import InventoryService from '../../services/inventory.service';
 export default {
   name: 'InventoryList',
   components: {
-    Modal,
+    BaseModal,
     BulkImportForm,
     ExportForm,
     QRCodeGenerator

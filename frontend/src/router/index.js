@@ -6,7 +6,6 @@ import MetricsDashboard from '../views/MetricsDashboard.vue';
 import ClientList from '../views/ClientList.vue';
 import ClientDetail from '../views/ClientDetail.vue';
 import ClientForm from '../views/ClientForm.vue';
-import ClientServicesForm from '../views/ClientServiceForm.vue';
 import TicketList from '../views/TicketList.vue';
 import TicketDetail from '../views/TicketDetail.vue';
 import TicketForm from '../views/TicketForm.vue';
@@ -14,13 +13,7 @@ import SettingView from '../views/SettingView.vue';
 import BackupManagementView from '../views/BackupManagementView.vue';
 import PaymentPluginsView from '../views/PaymentPluginsView.vue';
 import NetworkView from '../views/NetworkView.vue';
-import NodeDetail from '../views/NodeDetail.vue';
-import NodeForm from '../views/NodeForm.vue';
-import SectorDetail from '../views/SectorDetail.vue';
-import SectorForm from '../views/SectorForm.vue';
-import InventarioManagement from '../views/InventarioManagement.vue';
 //import DepartamentoList from '../views/DepartamentoList.vue';
-import PermisoList from '../views/PermisoList.vue';
 import RolList from '../views/RolList.vue';
 import FibraOpticaList from '../views/FibraOpticaList.vue';
 
@@ -33,12 +26,10 @@ import UserForm from '../views/UserForm.vue';
 
 // Nuevas importaciones para Mikrotik
 import MikrotikManagement from '../views/MikrotikManagement.vue';
-import MikrotikClientControl from '../views/MikrotikClientControl.vue';
 import MikrotikPools from '../views/MikrotikPools.vue';
 import MikrotikProfiles from '../views/MikrotikProfiles.vue';
 
 // Nuevas importaciones para inventario
-import InventoryList from '../views/inventory/InventoryList.vue';
 import InventoryForm from '../views/inventory/InventoryForm.vue';
 import InventoryProductForm from '../views/inventory/InventoryProductForm.vue';
 import InventoryDetail from '../views/inventory/InventoryDetail.vue';
@@ -48,12 +39,6 @@ import InventoryManagementView from '../views/inventory/InventoryManagementView.
 import InventoryBatchForm from '../views/inventory/InventoryBatchForm.vue';
 import InventoryBatchRegisterForm from '../views/inventory/BatchRegisterForm.vue';
 
-// Importaciones para licencias
-import LicenseManagementView from '../views/license/LicenseManagementView.vue';
-
-// Importaciones para plugins
-import PluginManagementView from '../views/plugins/PluginManagementView.vue';
-import PluginMarketplaceView from '../views/plugins/PluginMarketplaceView.vue';
 
 
 import InventoryDashboard from '../views/inventory/InventoryDashboard';
@@ -67,7 +52,6 @@ import DeviceCredentialsForm from '../views/DeviceCredentialsForm.vue';
 import DeviceMetrics from '../views/DeviceMetrics.vue';
 import DeviceConnectionHistory from '../views/DeviceConnectionHistory.vue';
 import DeviceAlerts from '../views/DeviceAlerts.vue';
-import NetworkMap from '../views/NetworkMap.vue';
 
 // ===== IMPORTACIONES PARA COMANDOS =====
 import CommandList from '../views/CommandList.vue';
@@ -77,8 +61,6 @@ import CommandDetail from '../views/CommandDetail.vue';
 import ZoneList from '../views/ZoneList.vue';
 import ZoneForm from '../views/ZoneForm.vue';
 import ZoneDetail from '../views/ZoneDetail.vue';
-import ServicePackageList from '../views/ServicePackageList.vue';
-import SubscriptionCard from '../components/SubscriptionCard.vue';
 
 import BillingDashboard from '../views/BillingDashboard.vue';
 import InvoiceList from '../views/InvoiceList.vue';
@@ -111,7 +93,6 @@ import CommunicationDashboard from '../views/CommunicationDashboard.vue';
 // import MassMessageWizard from '../views/MassMessageWizard.vue';
 import CommunicationHistory from '../components/CommunicationHistory.vue';
 import TemplateManager from '../components/TemplateManager.vue';
-import ScheduledMessages from '../components/ScheduledMessages.vue';
 // import ChannelConfiguration from '../views/ChannelConfiguration.vue';
 
 

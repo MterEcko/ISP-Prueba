@@ -44,7 +44,7 @@
 import AuthService from '../services/auth.service';
 
 export default {
-  name: 'Login',
+  name: 'LoginView',
   data() {
     return {
       user: {
