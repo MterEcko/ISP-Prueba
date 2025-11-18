@@ -585,21 +585,21 @@ exports.getCommunicationStatistics = async (req, res) => {
 
     // Obtener estadísticas por canal
     const channelStats = await db.sequelize.query(`
-      SELECT 
-        cc.channelType,
-        cc.name as channelName,
-        COUNT(cl.id) as totalMessages,
-        COUNT(CASE WHEN cl.status = 'sent' THEN 1 END) as sentMessages,
-        COUNT(CASE WHEN cl.status = 'delivered' THEN 1 END) as deliveredMessages,
-        COUNT(CASE WHEN cl.status = 'failed' THEN 1 END) as failedMessages
-      FROM CommunicationChannels cc
-      LEFT JOIN CommunicationLogs cl ON cc.id = cl.channelId
-      ${startDate && endDate ? "AND cl.createdAt BETWEEN :startDate AND :endDate" : ""}
-      ${channelType ? "WHERE cc.channelType = :channelType" : ""}
-      GROUP BY cc.id, cc.channelType, cc.name
-      ORDER BY totalMessages DESC
+      SELECT
+        cc."channelType",
+        cc.name as "channelName",
+        COUNT(cl.id) as "totalMessages",
+        COUNT(CASE WHEN cl.status = 'sent' THEN 1 END) as "sentMessages",
+        COUNT(CASE WHEN cl.status = 'delivered' THEN 1 END) as "deliveredMessages",
+        COUNT(CASE WHEN cl.status = 'failed' THEN 1 END) as "failedMessages"
+      FROM "CommunicationChannels" cc
+      LEFT JOIN "CommunicationLogs" cl ON cc.id = cl."channelId"
+      ${startDate && endDate ? 'AND cl."createdAt" BETWEEN :startDate AND :endDate' : ""}
+      ${channelType ? 'WHERE cc."channelType" = :channelType' : ""}
+      GROUP BY cc.id, cc."channelType", cc.name
+      ORDER BY "totalMessages" DESC
     `, {
-      replacements: { 
+      replacements: {
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
         channelType
@@ -615,15 +615,15 @@ exports.getCommunicationStatistics = async (req, res) => {
     }
 
     const dailyData = await db.sequelize.query(`
-      SELECT 
-        DATE(createdAt) as date,
+      SELECT
+        DATE("createdAt") as date,
         COUNT(CASE WHEN status = 'sent' THEN 1 END) as sent,
         COUNT(CASE WHEN status = 'delivered' THEN 1 END) as delivered,
         COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed
-      FROM CommunicationLogs 
-      WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-      ${channelId ? "AND channelId = :channelId" : ""}
-      GROUP BY DATE(createdAt)
+      FROM "CommunicationLogs"
+      WHERE "createdAt" >= CURRENT_DATE - INTERVAL '7 days'
+      ${channelId ? 'AND "channelId" = :channelId' : ""}
+      GROUP BY DATE("createdAt")
       ORDER BY date ASC
     `, {
       replacements: { channelId },

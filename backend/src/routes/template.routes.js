@@ -69,7 +69,17 @@ module.exports = function(app) {
     templateController.duplicateTemplate
   );
 
+  // ==================== ALIAS: /api/message-templates ====================
+  // Rutas alias para compatibilidad con el frontend
 
+  app.get("/api/message-templates", templateController.getAllTemplates);
+  app.get("/api/message-templates/variables", templateController.getAvailableVariables);
+  app.get("/api/message-templates/:id", templateController.getTemplateById);
+  app.post("/api/message-templates", templateController.createTemplate);
+  app.put("/api/message-templates/:id", templateController.updateTemplate);
+  app.delete("/api/message-templates/:id", templateController.deleteTemplate);
+  app.post("/api/message-templates/:id/preview", templateController.previewTemplate);
+  app.post("/api/message-templates/:id/duplicate", templateController.duplicateTemplate);
 };
 
 

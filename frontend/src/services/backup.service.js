@@ -39,7 +39,7 @@ class BackupService {
    */
   createDatabaseBackup(description = '') {
     return axios.post(
-      `${API_URL}backups/database`,
+      `${API_URL}/backups/database`,
       { description },
       { headers: authHeader() }
     );
@@ -52,7 +52,7 @@ class BackupService {
    */
   createConfigBackup(description = '') {
     return axios.post(
-      `${API_URL}backups/config`,
+      `${API_URL}/backups/config`,
       { description },
       { headers: authHeader() }
     );
@@ -65,7 +65,7 @@ class BackupService {
    */
   createFullBackup(description = '') {
     return axios.post(
-      `${API_URL}backups/full`,
+      `${API_URL}/backups/full`,
       { description },
       { headers: authHeader() }
     );
@@ -80,7 +80,7 @@ class BackupService {
    */
   restoreDatabaseBackup(backupId) {
     return axios.post(
-      `${API_URL}backups/database/${backupId}/restore`,
+      `${API_URL}/backups/database/${backupId}/restore`,
       {},
       { headers: authHeader() }
     );
@@ -93,7 +93,7 @@ class BackupService {
    */
   restoreConfigBackup(backupId) {
     return axios.post(
-      `${API_URL}backups/config/${backupId}/restore`,
+      `${API_URL}/backups/config/${backupId}/restore`,
       {},
       { headers: authHeader() }
     );
@@ -106,7 +106,7 @@ class BackupService {
    */
   deleteBackup(backupId) {
     return axios.delete(
-      `${API_URL}backups/${backupId}`,
+      `${API_URL}/backups/${backupId}`,
       { headers: authHeader() }
     );
   }
@@ -120,8 +120,8 @@ class BackupService {
    */
   downloadBackup(backupId) {
     return axios.get(
-      `${API_URL}backups/${backupId}/download`,
-      { 
+      `${API_URL}/backups/${backupId}/download`,
+      {
         headers: authHeader(),
         responseType: 'blob'
       }
