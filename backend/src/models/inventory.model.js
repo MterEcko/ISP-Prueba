@@ -156,8 +156,8 @@ module.exports = (sequelize, Sequelize) => {
     },
     reconciliationStatus: {
       type: DataTypes.ENUM('pending', 'reconciled', 'discrepancy'),
-      defaultValue: 'pending',
-      comment: 'Estado de reconciliación del item'
+      defaultValue: 'pending'
+      // Nota: pending=pendiente, reconciled=reconciliado, discrepancy=discrepancia
     },
 
     // ==========================================
@@ -175,8 +175,8 @@ module.exports = (sequelize, Sequelize) => {
     },
     unitType: {
       type: DataTypes.ENUM('piece', 'meters', 'grams', 'box', 'liters', 'kilograms'),
-      defaultValue: 'piece',
-      comment: 'Tipo de unidad de medida'
+      defaultValue: 'piece'
+      // Nota: piece=pieza, meters=metros, grams=gramos, box=caja, liters=litros, kilograms=kilogramos
     },
     parentInventoryId: {
       type: DataTypes.INTEGER,
