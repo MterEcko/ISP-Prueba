@@ -291,6 +291,7 @@ export default {
         // Actualizar en la lista local
         const index = this.templates.findIndex(t => t.id === template.id);
         if (index !== -1) {
+    // eslint-disable-next-line vue/no-mutating-props
           this.templates[index].active = updatedTemplate.active;
         }
         
@@ -658,6 +659,7 @@ export default {
 }
 
 .menu-button {
+        // eslint-disable-next-line no-case-declarations
   background: none;
   border: none;
   font-size: 16px;

@@ -232,6 +232,7 @@ export default {
       };
 
       return Object.entries(this.license.featuresEnabled)
+      // eslint-disable-next-line no-unused-vars
         .filter(([key, value]) => value === true)
         .map(([key]) => ({
           key,

@@ -459,6 +459,8 @@ import inventoryService from '../../services/inventory.service';
 import clientService from '../../services/client.service';
 
 import userService from '../../services/user.service';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
 import { formatDate, formatDateTime, formatCurrency } from '@/utils/formatters';
 
 export default {

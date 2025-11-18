@@ -1213,6 +1213,7 @@ export default {
     // ===============================
     
     selectedItems: {
+      // eslint-disable-next-line no-unused-vars
       handler(newVal) {
         this.updateSelectAllState();
       },

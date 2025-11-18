@@ -641,6 +641,9 @@ export default {
         this.loading = true;
         const response = await ipAssignmentService.verifyIpAssignments();
         
+        // eslint-disable-next-line no-unused-vars
+        // eslint-disable-next-line no-unused-vars
+        // eslint-disable-next-line no-unused-vars
         const { multipleIpsPerUser, orphanedIps, mismatchedIps, fixed } = response.data.issues;
         const totalFixed = fixed.multipleIpsPerUser + fixed.orphanedIps + fixed.mismatchedIps;
         

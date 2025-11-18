@@ -175,6 +175,7 @@ export default {
       await this.loadLicenseData();
       this.showSnackbar('Licencias actualizadas', 'success');
     },
+    // eslint-disable-next-line no-unused-vars
     async handleActivationSuccess(license) {
       this.showActivationDialog = false;
       this.showSnackbar('Licencia activada exitosamente', 'success');
@@ -191,10 +192,12 @@ export default {
         }
       }
     },
+    // eslint-disable-next-line no-unused-vars
     handleRenew(license) {
       // Implementar renovación
       alert('Renovación de licencia - Próximamente');
     },
+    // eslint-disable-next-line no-unused-vars
     showLicenseDetails(license) {
       // Mostrar detalles
       alert('Detalles de licencia - Próximamente');

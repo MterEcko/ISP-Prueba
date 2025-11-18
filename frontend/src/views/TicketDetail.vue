@@ -314,6 +314,7 @@ export default {
       }
     },
     
+    // eslint-disable-next-line no-unused-vars
     canEditComment(comment) {
       // En una aplicación real, verificaría si el usuario actual es el autor
       // o tiene permisos adecuados

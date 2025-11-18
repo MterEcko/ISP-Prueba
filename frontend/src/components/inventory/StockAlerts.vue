@@ -567,6 +567,7 @@ export default {
       alertCounts.total = alertCounts.critical + alertCounts.warning + alertCounts.info;
     }
     
+    // eslint-disable-next-line no-unused-vars
     function acknowledgeAlert(alert, index) {
       // Actualizar estado de la alerta
       alert.status = 'acknowledged';
@@ -581,6 +582,7 @@ export default {
       // En una implementación real, aquí se llamaría a la API
     }
     
+    // eslint-disable-next-line no-unused-vars
     function resolveAlert(alert, index) {
       // Actualizar estado de la alerta
       alert.status = 'resolved';

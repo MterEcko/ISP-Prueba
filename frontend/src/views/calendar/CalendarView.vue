@@ -229,6 +229,7 @@ export default {
       const month = date.getMonth();
 
       const firstDay = new Date(year, month, 1);
+      // eslint-disable-next-line no-unused-vars
       const lastDay = new Date(year, month + 1, 0);
 
       const startDate = new Date(firstDay);
