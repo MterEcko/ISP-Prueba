@@ -56,7 +56,7 @@ module.exports = (sequelize) => {
       comment: 'Array de IDs de usuarios asignados'
     },
     clientId: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: true,
       comment: 'Cliente relacionado (si aplica)'
     },
