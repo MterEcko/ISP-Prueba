@@ -237,7 +237,7 @@ module.exports = function(app) {
     async (req, res) => {
       try {
         const db = require('../models');
-        
+
         const packages = await db.ServicePackage.findAll({
           where: { active: true },
           attributes: ['id', 'name', 'downloadSpeedMbps', 'uploadSpeedMbps', 'price'],
@@ -254,8 +254,18 @@ module.exports = function(app) {
       }
     }
   );
-  
-  
+
+  // Search endpoint (must be before /:id route)
+  app.get(
+    "/api/clients/search",
+    [authJwt.verifyToken],
+    (req, res, next) => {
+      // Convert search query 'q' to 'globalSearch' for findAll
+      req.query.globalSearch = req.query.q || req.query.search || req.query.globalSearch;
+      clients.findAll(req, res, next);
+    }
+  );
+
   app.get(
     "/api/clients/:id",
     //[authJwt.verifyToken],

@@ -46,7 +46,7 @@ module.exports = (sequelize) => {
       defaultValue: '#3498db'
     },
     createdBy: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: false,
       comment: 'Usuario que creó el evento'
     },
