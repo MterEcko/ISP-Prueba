@@ -2,7 +2,9 @@
 -- Correcciones necesarias:
 -- - CalendarEvent.createdBy: UUID → INTEGER (para coincidir con Users.id)
 -- - CalendarEvent.clientId: UUID → INTEGER (para coincidir con Client.id)
+-- - CalendarEvent.assignedTo: JSON → JSONB (para operadores de query)
 -- - CalendarIntegration.userId: UUID → INTEGER (para coincidir con Users.id)
+-- - ChatConversation.participants: JSON → JSONB (para operadores de query)
 -- - ChatMessage.senderId: UUID → INTEGER (para coincidir con Users.id)
 
 -- 1. Eliminar tabla CalendarIntegrations primero (tiene FK a Users)

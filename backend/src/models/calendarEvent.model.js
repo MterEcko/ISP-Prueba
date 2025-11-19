@@ -51,7 +51,7 @@ module.exports = (sequelize) => {
       comment: 'Usuario que creó el evento'
     },
     assignedTo: {
-      type: DataTypes.JSON,
+      type: DataTypes.JSONB,
       defaultValue: [],
       comment: 'Array de IDs de usuarios asignados'
     },
