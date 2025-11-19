@@ -2,13 +2,14 @@
 -- Correcciones necesarias:
 -- - CalendarEvent.createdBy: UUID → INTEGER (para coincidir con Users.id)
 -- - CalendarEvent.clientId: UUID → INTEGER (para coincidir con Client.id)
+-- - CalendarIntegration.userId: UUID → INTEGER (para coincidir con Users.id)
 -- - ChatMessage.senderId: UUID → INTEGER (para coincidir con Users.id)
 
--- 1. Eliminar tabla CalendarEvents (se recreará con tipos correctos)
-DROP TABLE IF EXISTS "CalendarEvents" CASCADE;
-
--- 2. Eliminar tabla CalendarIntegrations (depende de Users)
+-- 1. Eliminar tabla CalendarIntegrations primero (tiene FK a Users)
 DROP TABLE IF EXISTS "CalendarIntegrations" CASCADE;
+
+-- 2. Eliminar tabla CalendarEvents (se recreará con tipos correctos)
+DROP TABLE IF EXISTS "CalendarEvents" CASCADE;
 
 -- 3. Eliminar tabla ChatMessages (se recreará con tipo correcto)
 DROP TABLE IF EXISTS "ChatMessages" CASCADE;
