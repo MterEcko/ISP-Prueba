@@ -9,9 +9,10 @@ exports.getConversations = async (req, res) => {
     const userId = req.user.id;
 
     const conversations = await db.ChatConversation.findAll({
-      where: {
-        participants: { [Op.contains]: [userId] }
-      },
+      where: db.sequelize.where(
+        db.sequelize.fn('jsonb_exists', db.sequelize.col('participants'), userId.toString()),
+        true
+      ),
       include: [
         {
           model: db.ChatMessage,
@@ -22,7 +23,7 @@ exports.getConversations = async (req, res) => {
             {
               model: db.User,
               as: 'sender',
-              attributes: ['id', 'firstName', 'lastName', 'email']
+              attributes: ['id', 'username', 'fullName', 'email']
             }
           ]
         }
