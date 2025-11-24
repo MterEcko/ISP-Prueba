@@ -36,8 +36,7 @@ module.exports = (sequelize) => {
     },
     username: {
       type: DataTypes.STRING,
-      //allowNull: false,
-      unique: true
+      //allowNull: false
       //comment: 'Username PPPoE - SINCRONIZABLE'
     },
     passwordEncrypted: {

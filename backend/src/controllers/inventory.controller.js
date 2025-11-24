@@ -70,6 +70,48 @@ exports.create = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+// ================== INVENTORY TYPES ==================
+
+ 
+
+// Obtener todos los tipos de inventario
+
+exports.getAllTypes = async (req, res) => {
+  try {
+    const { includeCategory } = req.query;
+    // Configurar opciones de consulta
+    const options = {
+      order: [['name', 'ASC']]
+    };
+ 
+    // Incluir categoría si se solicita
+    if (includeCategory === 'true') {
+      options.include = [
+        {
+          model: InventoryCategory,
+          as: 'category',
+          attributes: ['id', 'name', 'description', 'active']
+        }
+      ];
+    }
+ 
+    // Obtener tipos
+    const types = await InventoryType.findAll(options);
+
+    return res.status(200).json({
+      success: true,
+      data: types
+    });
+ 
+  } catch (error) {
+    console.error("Error obteniendo tipos de inventario:", error);
+    return res.status(500).json({ message: error.message });
+  }
+
+};
+
+
 // Obtener todos los items con paginación y filtros
 exports.findAll = async (req, res) => {
   try {
@@ -891,43 +933,6 @@ exports.getProductTemplates = async (req, res) => {
 
   } catch (error) {
     console.error("Error obteniendo plantillas de productos:", error);
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-// ================== INVENTORY TYPES ==================
-
-// Obtener todos los tipos de inventario
-exports.getAllTypes = async (req, res) => {
-  try {
-    const { includeCategory } = req.query;
-
-    // Configurar opciones de consulta
-    const options = {
-      order: [['name', 'ASC']]
-    };
-
-    // Incluir categoría si se solicita
-    if (includeCategory === 'true') {
-      options.include = [
-        {
-          model: InventoryCategory,
-          as: 'category',
-          attributes: ['id', 'name', 'description', 'active']
-        }
-      ];
-    }
-
-    // Obtener tipos
-    const types = await InventoryType.findAll(options);
-
-    return res.status(200).json({
-      success: true,
-      data: types
-    });
-
-  } catch (error) {
-    console.error("Error obteniendo tipos de inventario:", error);
     return res.status(500).json({ message: error.message });
   }
 };

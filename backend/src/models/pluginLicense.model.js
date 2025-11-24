@@ -14,7 +14,6 @@ module.exports = (sequelize, Sequelize) => {
     },
     license_key: {
       type: Sequelize.STRING(50),
-      unique: true,
       allowNull: false,
       comment: 'License key del plugin'
     },
@@ -44,7 +43,7 @@ module.exports = (sequelize, Sequelize) => {
       comment: 'Metadata adicional'
     }
   }, {
-    tableName: 'plugin_licenses',
+    tableName: 'PluginLicenses',
     timestamps: true,
     underscored: true,
     indexes: [

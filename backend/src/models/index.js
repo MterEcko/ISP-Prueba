@@ -870,7 +870,7 @@ db.ClientSupport.belongsTo(db.Ticket, {
 db.InventoryCategory.hasMany(db.InventoryType, {
   foreignKey: 'categoryId',
   as: 'types'
-});
+}); 
 
 db.InventoryType.belongsTo(db.InventoryCategory, {
   foreignKey: 'categoryId',
@@ -1409,6 +1409,80 @@ db.Currency.hasMany(db.ExchangeRate, {
 db.Currency.hasMany(db.ExchangeRate, {
   foreignKey: 'toCurrencyId',
   as: 'ratesTo'
+});
+
+// ======================================
+// RELACIONES: SISTEMA DE CALENDARIO
+// ======================================
+
+// User - CalendarEvent (creador)
+db.User.hasMany(db.CalendarEvent, {
+  foreignKey: 'createdBy',
+  as: 'calendarEvents'
+});
+
+db.CalendarEvent.belongsTo(db.User, {
+  foreignKey: 'createdBy',
+  as: 'creator'
+});
+
+// Client - CalendarEvent
+db.Client.hasMany(db.CalendarEvent, {
+  foreignKey: 'clientId',
+  as: 'calendarEvents'
+});
+
+db.CalendarEvent.belongsTo(db.Client, {
+  foreignKey: 'clientId',
+  as: 'client'
+});
+
+// User - CalendarIntegration
+db.User.hasMany(db.CalendarIntegration, {
+  foreignKey: 'userId',
+  as: 'calendarIntegrations'
+});
+
+db.CalendarIntegration.belongsTo(db.User, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+
+// ======================================
+// RELACIONES: SISTEMA DE CHAT
+// ======================================
+
+// ChatConversation - ChatMessage
+db.ChatConversation.hasMany(db.ChatMessage, {
+  foreignKey: 'conversationId',
+  as: 'messages'
+});
+
+db.ChatMessage.belongsTo(db.ChatConversation, {
+  foreignKey: 'conversationId',
+  as: 'conversation'
+});
+
+// User - ChatMessage (sender)
+db.User.hasMany(db.ChatMessage, {
+  foreignKey: 'senderId',
+  as: 'sentMessages'
+});
+
+db.ChatMessage.belongsTo(db.User, {
+  foreignKey: 'senderId',
+  as: 'sender'
+});
+
+// ChatMessage - ChatMessage (auto-referencia para respuestas)
+db.ChatMessage.belongsTo(db.ChatMessage, {
+  foreignKey: 'replyToId',
+  as: 'replyTo'
+});
+
+db.ChatMessage.hasMany(db.ChatMessage, {
+  foreignKey: 'replyToId',
+  as: 'replies'
 });
 
 // Exportar el objeto db

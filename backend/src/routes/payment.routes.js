@@ -22,7 +22,7 @@ module.exports = function(app) {
   app.get(
     "/api/payments",
     //[authJwt.verifyToken, authJwt.checkPermission("view_billing")],
-    [authJwt.verifyToken, upload.single('receipt')],
+    //[authJwt.verifyToken, upload.single('receipt')],
     paymentController.getAllPayments
   );
 

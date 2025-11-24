@@ -69,8 +69,8 @@ exports.getCurrentLicense = async (req, res) => {
   try {
     const license = await SystemLicense.findOne({
       where: {
-        status: 'active',
-        expiration_date: {
+        active: true,
+        expiresAt: {
           [db.Sequelize.Op.gt]: new Date()
         }
       }

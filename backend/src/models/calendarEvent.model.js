@@ -46,17 +46,17 @@ module.exports = (sequelize) => {
       defaultValue: '#3498db'
     },
     createdBy: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: false,
       comment: 'Usuario que creó el evento'
     },
     assignedTo: {
-      type: DataTypes.JSON,
+      type: DataTypes.JSONB,
       defaultValue: [],
       comment: 'Array de IDs de usuarios asignados'
     },
     clientId: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: true,
       comment: 'Cliente relacionado (si aplica)'
     },
@@ -68,7 +68,6 @@ module.exports = (sequelize) => {
     // Integración con Google Calendar
     googleEventId: {
       type: DataTypes.STRING,
-      unique: true,
       allowNull: true,
       comment: 'ID del evento en Google Calendar'
     },
@@ -80,7 +79,6 @@ module.exports = (sequelize) => {
     // Integración con Microsoft Calendar
     microsoftEventId: {
       type: DataTypes.STRING,
-      unique: true,
       allowNull: true,
       comment: 'ID del evento en Microsoft Calendar'
     },

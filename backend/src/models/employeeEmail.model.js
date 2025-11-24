@@ -13,7 +13,6 @@ module.exports = (sequelize) => {
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      unique: true,
       references: {
         model: 'Users',
         key: 'id'
@@ -23,13 +22,11 @@ module.exports = (sequelize) => {
     emailUsername: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      unique: true,
       comment: 'Usuario del correo (juan.perez)'
     },
     emailAddress: {
       type: DataTypes.STRING(255),
       allowNull: false,
-      unique: true,
       comment: 'Correo completo (juan.perez@nombreisp.net)'
     },
     emailPassword: {

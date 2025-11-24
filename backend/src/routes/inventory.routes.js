@@ -107,15 +107,11 @@ module.exports = function(app) {
     inventory.delete
   );
 
-  // ===============================================
-  // INVENTORY TYPES
-  // ===============================================
-
   app.get(
     "/api/inventory-types",
     //[authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
     inventory.getAllTypes
   );
-
+  
 
 };

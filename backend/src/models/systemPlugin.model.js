@@ -10,8 +10,7 @@ module.exports = (sequelize) => {
     },
     name: {
       type: DataTypes.STRING,
-      //allowNull: false,
-      unique: true
+      //allowNull: false
       //comment: 'jellyfin, fiber, googlePay, voip'
     },
     version: {

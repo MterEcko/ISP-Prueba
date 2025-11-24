@@ -10,7 +10,6 @@ module.exports = (sequelize) => {
     name: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      unique: true,
       comment: 'Nombre de la categoría (ej: Nómina, Servicios, Renta)'
     },
     type: {
@@ -35,7 +34,7 @@ module.exports = (sequelize) => {
       comment: 'Si la categoría está activa'
     }
   }, {
-    tableName: 'expense_categories',
+    tableName: 'ExpenseCategories',
     timestamps: true,
     indexes: [
       {

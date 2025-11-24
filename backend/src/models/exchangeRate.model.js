@@ -51,7 +51,7 @@ module.exports = (sequelize) => {
       comment: 'Notas sobre esta tasa de cambio'
     }
   }, {
-    tableName: 'exchange_rates',
+    tableName: 'ExchangeRates',
     timestamps: true,
     indexes: [
       {

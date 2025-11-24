@@ -322,10 +322,10 @@
               id="paymentAmount"
               v-model="paymentAmount"
               :max="pendingAmount"
-              step="0.01"
+              step="0.1"
               required
             />
-            <small>Máximo: ${{ formatNumber(pendingAmount) }}</small>
+            <small>Máximo : ${{ formatNumber(pendingAmount) }}</small>
           </div>
 
           <div class="form-group">
@@ -413,9 +413,9 @@
               <input
                 type="number"
                 id="paymentAmount"
-                v-model="paymentForm.amount"
+                v-model="paymentAmount"
                 :max="pendingAmount"
-                step="0.01"
+                step="0.1"
                 required
               />
               <small>Máximo: ${{ formatNumber(pendingAmount) }}</small>
@@ -519,7 +519,7 @@ export default {
       actionReason: '',
       showPaymentModal: false,
       paymentForm: {
-        amount: '',
+        paymenAmount: '',
         paymentMethod: 'cash',
         paymentDate: new Date().toISOString().split('T')[0],
         reference: '',
@@ -537,13 +537,36 @@ export default {
       if (!Array.isArray(this.payments)) {
         return 0;
       }
+
+      const currentInvoiceId = this.invoice.id;
+  
+
       return this.payments
-        .filter(p => p.status === 'completed')
+        .filter(p => {
+        // Condición 1: El pago debe estar completado
+          const isCompleted = p.status === 'completed';
+      
+        // Condición 2: El pago debe pertenecer a ESTA factura
+        // Usamos String() para evitar errores si uno es número y otro texto ('4' vs 4)
+          const belongsToInvoice = String(p.invoiceId) === String(currentInvoiceId);
+      
+        return isCompleted && belongsToInvoice;
+        })
         .reduce((total, p) => total + parseFloat(p.amount || 0), 0);
     },
     
     pendingAmount() {
-      return Math.max(0, parseFloat(this.invoice.totalAmount || 0) - this.paidAmount);
+      // 1. Busca el total. Si totalAmount no existe, usa amount (subtotal).
+      // Si ambos fallan, usa 0.
+      const total = parseFloat(this.invoice.totalAmount) || parseFloat(this.invoice.amount) || 0;
+      
+      const paid = this.paidAmount || 0;
+      
+      // 2. Calcula: Total Real - Pagado
+      const result = total - paid;
+      console.log('Recalculando pendiente:', { total, paid, result });
+      // 3. Devuelve el resultado (evitando números negativos)
+      return Math.max(0, parseFloat(result.toFixed(2)));
     },
     
     penaltyAmount() {
@@ -555,7 +578,8 @@ export default {
     },
     
     totalWithPenalty() {
-      return parseFloat(this.invoice.totalAmount || 0) + this.penaltyAmount;
+      const base = parseFloat(this.invoice.totalAmount || this.invoice.amount || 0);
+      return base + this.penaltyAmount;
     }
   },
 
@@ -672,7 +696,7 @@ export default {
             this.activityLog.push({
               id: `payment-${payment.id}`,
               type: 'payment',
-              description: `Pago registrado: $${this.formatNumber(payment.amount)} (${this.formatPaymentMethod(payment.paymentMethod)})`,
+              description: `Pago registrado: $${this.formatNumber(payment.paymenAmount)} (${this.formatPaymentMethod(payment.paymentMethod)})`,
               userName: payment.Client ? `${payment.Client.firstName} ${payment.Client.lastName}` : 'Cliente',
               createdAt: payment.paymentDate || payment.createdAt
             });
@@ -734,10 +758,21 @@ export default {
     markAsPaid() {
       this.selectedGatewayId = this.defaultGateway?.id || 1;
       this.selectedGatewayType = this.defaultGateway?.gatewayType || 'cash';
-      this.paymentAmount = this.pendingAmount;
+  
+      // 🟢 CAMBIO PRINCIPAL: Lógica robusta para definir el monto
+      let montoAPagar = this.pendingAmount;
+  
+      // Si pendingAmount es 0 o inválido, usamos el amount (subtotal) directo de la factura
+      if (!montoAPagar || montoAPagar <= 0) {
+        montoAPagar = parseFloat(this.invoice.amount) || 0;
+      }
+  
+      // Asignamos el valor calculado al modelo del formulario
+      this.paymentAmount = montoAPagar;
+
       this.paymentReference = '';
-      this.receiptFile = null; // ✅ Resetear comprobante
-      
+      this.receiptFile = null;
+  
       this.showConfirmation(
         'Registrar Pago',
         `¿Desea registrar el pago de la factura ${this.invoice.invoiceNumber}?`,
@@ -767,14 +802,14 @@ export default {
     },
 
     registerPayment() {
-      this.paymentForm.amount = this.pendingAmount;
+      this.paymentForm.paymenAmount = this.pendingAmount;
       this.showPaymentModal = true;
     },
 
     closePaymentModal() {
       this.showPaymentModal = false;
       this.paymentForm = {
-        amount: '',
+        paymenAmount: '',
         paymentMethod: 'cash',
         paymentDate: new Date().toISOString().split('T')[0],
         reference: '',
@@ -787,7 +822,7 @@ export default {
         const paymentData = {
           invoiceId: this.invoice.id,
           clientId: this.invoice.clientId,
-          amount: parseFloat(this.paymentForm.amount),
+          amount: parseFloat(this.paymentForm.paymentAmount),
           paymentMethod: this.paymentForm.paymentMethod,
           paymentDate: this.paymentForm.paymentDate,
           reference: this.paymentForm.reference,
@@ -919,9 +954,11 @@ export default {
             console.log('🆔 ID del usuario que registra:', submittedBy);
             
             const paymentData = {
-              gatewayId: this.selectedGatewayId,
-              paymentMethod: this.getPaymentMethodFromGateway(selectedGateway),
+              invoiceId: this.invoice.id,
+              clientId: this.invoice.clientId,
               amount: parseFloat(this.paymentAmount),
+              paymentMethod: selectedGateway ? selectedGateway.gatewayType : 'cash',
+              gatewayId: this.selectedGatewayId,
               notes: this.actionReason || 'Pago registrado desde detalle de factura',
               paymentDate: new Date().toISOString().split('T')[0],
               paymentReference: this.paymentReference || 

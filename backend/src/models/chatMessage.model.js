@@ -12,7 +12,7 @@ module.exports = (sequelize) => {
       allowNull: false
     },
     senderId: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: false,
       comment: 'Usuario que envió el mensaje'
     },

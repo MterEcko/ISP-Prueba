@@ -159,7 +159,7 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.NOW
     }
   }, {
-    tableName: 'store_customers',
+    tableName: 'StoreCustomers',
     timestamps: true,
     indexes: [
       { fields: ['email'], unique: true },

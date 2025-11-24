@@ -81,11 +81,7 @@ module.exports = (sequelize, DataTypes) => {
     generatedLicenseId: {
       type: DataTypes.UUID,
       allowNull: true,
-      references: {
-        model: 'Licenses',
-        key: 'id'
-      },
-      comment: 'License generated for this purchase'
+      comment: 'License generated for this purchase (references PluginLicenses.id)'
     },
 
     // Tipo de licencia (si aplica)
@@ -135,7 +131,7 @@ module.exports = (sequelize, DataTypes) => {
       comment: 'Additional item metadata'
     }
   }, {
-    tableName: 'store_order_items',
+    tableName: 'StoreOrderItems',
     timestamps: true,
     indexes: [
       { fields: ['orderId'] },

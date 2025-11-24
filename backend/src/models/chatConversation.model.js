@@ -18,7 +18,7 @@ module.exports = (sequelize) => {
       // Nota: Tipo de conversación
     },
     participants: {
-      type: DataTypes.JSON,
+      type: DataTypes.JSONB,
       defaultValue: [],
       comment: 'Array de IDs de usuarios participantes'
     },
