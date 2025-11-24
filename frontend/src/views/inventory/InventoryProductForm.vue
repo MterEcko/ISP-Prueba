@@ -20,7 +20,7 @@
             <select id="typeId" v-model="product.typeId" required class="form-control">
               <option :value="null" disabled>Seleccione un tipo...</option>
               <option v-for="type in types" :key="type.id" :value="type.id">
-                {{ type.name }} (Categoría: {{ type.InventoryCategory ? type.InventoryCategory.name : 'N/A' }})
+                {{ type.name }} (Categoría: {{ type.category ? type.category.name : 'N/A' }})
               </option>
             </select>
             <small class="help-text">Define si es un Equipo, Consumible, Herramienta, etc.</small>
@@ -188,7 +188,7 @@ export default {
       try {
         // Asume que el servicio puede traer los tipos y sus categorías anidadas
         const response = await InventoryService.getAllTypes({ includeCategory: true });
-        this.types = response.data;
+        this.types = response.data.data || response.data || [];
         
         // Si no hay tipos, mostrar un error
         if (this.types.length === 0) {
