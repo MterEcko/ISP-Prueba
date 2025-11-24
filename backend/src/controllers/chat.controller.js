@@ -23,6 +23,7 @@ exports.getConversations = async (req, res) => {
               model: db.User,
               as: 'sender',
               attributes: ['id', 'firstName', 'lastName', 'email']
+              attributes: ['id', 'username', 'fullName', 'email']
             }
           ]
         }
