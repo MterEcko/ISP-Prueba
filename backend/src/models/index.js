@@ -869,10 +869,12 @@ db.ClientSupport.belongsTo(db.Ticket, {
 // Inventario mejorado con scrap
 db.InventoryCategory.hasMany(db.InventoryType, {
   foreignKey: 'categoryId',
-});
+  as: 'types'
+}); 
 
 db.InventoryType.belongsTo(db.InventoryCategory, {
   foreignKey: 'categoryId',
+  as: 'category'
 });
 
 db.InventoryType.hasMany(db.InventoryProduct, {
