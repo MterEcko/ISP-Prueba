@@ -140,9 +140,27 @@ export default [
         path: 'reports',
         name: 'InventoryReports',
         component: () => import('@/views/inventory/ReportGenerator.vue'),
-        meta: { 
+        meta: {
           requiresAuth: true,
           title: 'Informes de Inventario'
+        }
+      },
+      {
+        path: 'categories',
+        name: 'InventoryCategories',
+        component: () => import('@/views/inventory/InventoryCategoriesView.vue'),
+        meta: {
+          requiresAuth: true,
+          title: 'Categorías de Inventario'
+        }
+      },
+      {
+        path: 'types',
+        name: 'InventoryTypes',
+        component: () => import('@/views/inventory/InventoryTypesView.vue'),
+        meta: {
+          requiresAuth: true,
+          title: 'Tipos de Materiales'
         }
       }
     ]

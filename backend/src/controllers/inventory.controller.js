@@ -73,10 +73,7 @@ exports.create = async (req, res) => {
 
 // ================== INVENTORY TYPES ==================
 
- 
-
 // Obtener todos los tipos de inventario
-
 exports.getAllTypes = async (req, res) => {
   try {
     const { includeCategory } = req.query;
@@ -108,9 +105,321 @@ exports.getAllTypes = async (req, res) => {
     console.error("Error obteniendo tipos de inventario:", error);
     return res.status(500).json({ message: error.message });
   }
-
 };
 
+// Crear un nuevo tipo de inventario
+exports.createType = async (req, res) => {
+  try {
+    const { categoryId, name, description, unitType, hasSerial, hasMac, trackableIndividually, defaultScrapPercentage } = req.body;
+
+    // Validar campos requeridos
+    if (!name) {
+      return res.status(400).json({ message: "El nombre del tipo es obligatorio" });
+    }
+
+    if (!categoryId) {
+      return res.status(400).json({ message: "La categoría es obligatoria" });
+    }
+
+    // Validar que la categoría existe
+    const category = await InventoryCategory.findByPk(categoryId);
+    if (!category) {
+      return res.status(404).json({ message: `Categoría con ID ${categoryId} no encontrada` });
+    }
+
+    // Crear tipo
+    const type = await InventoryType.create({
+      categoryId,
+      name,
+      description,
+      unitType: unitType || 'piece',
+      hasSerial: hasSerial !== undefined ? hasSerial : true,
+      hasMac: hasMac !== undefined ? hasMac : false,
+      trackableIndividually: trackableIndividually !== undefined ? trackableIndividually : true,
+      defaultScrapPercentage: defaultScrapPercentage || 0.00
+    });
+
+    // Obtener el tipo creado con la categoría
+    const createdType = await InventoryType.findByPk(type.id, {
+      include: [
+        {
+          model: InventoryCategory,
+          as: 'category',
+          attributes: ['id', 'name', 'description', 'active']
+        }
+      ]
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Tipo de inventario creado exitosamente",
+      data: createdType
+    });
+  } catch (error) {
+    console.error("Error creando tipo de inventario:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// Actualizar tipo de inventario
+exports.updateType = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { categoryId, name, description, unitType, hasSerial, hasMac, trackableIndividually, defaultScrapPercentage } = req.body;
+
+    // Buscar tipo
+    const type = await InventoryType.findByPk(id);
+    if (!type) {
+      return res.status(404).json({ message: `Tipo con ID ${id} no encontrado` });
+    }
+
+    // Validar categoría si se proporciona
+    if (categoryId && categoryId !== type.categoryId) {
+      const category = await InventoryCategory.findByPk(categoryId);
+      if (!category) {
+        return res.status(404).json({ message: `Categoría con ID ${categoryId} no encontrada` });
+      }
+    }
+
+    // Actualizar tipo
+    const [updated] = await InventoryType.update({
+      categoryId: categoryId || type.categoryId,
+      name: name || type.name,
+      description,
+      unitType: unitType || type.unitType,
+      hasSerial: hasSerial !== undefined ? hasSerial : type.hasSerial,
+      hasMac: hasMac !== undefined ? hasMac : type.hasMac,
+      trackableIndividually: trackableIndividually !== undefined ? trackableIndividually : type.trackableIndividually,
+      defaultScrapPercentage: defaultScrapPercentage !== undefined ? defaultScrapPercentage : type.defaultScrapPercentage
+    }, {
+      where: { id: id }
+    });
+
+    if (updated === 0) {
+      return res.status(404).json({ message: `Tipo con ID ${id} no pudo ser actualizado` });
+    }
+
+    // Obtener el tipo actualizado con la categoría
+    const updatedType = await InventoryType.findByPk(id, {
+      include: [
+        {
+          model: InventoryCategory,
+          as: 'category',
+          attributes: ['id', 'name', 'description', 'active']
+        }
+      ]
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Tipo actualizado exitosamente",
+      data: updatedType
+    });
+  } catch (error) {
+    console.error("Error actualizando tipo de inventario:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// Eliminar tipo de inventario
+exports.deleteType = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    // Verificar si existen items de inventario con este tipo
+    const itemsCount = await Inventory.count({
+      where: { typeId: id }
+    });
+
+    if (itemsCount > 0) {
+      return res.status(400).json({
+        message: `No se puede eliminar el tipo. Existen ${itemsCount} items de inventario asociados a este tipo.`
+      });
+    }
+
+    const deleted = await InventoryType.destroy({
+      where: { id: id }
+    });
+
+    if (deleted === 0) {
+      return res.status(404).json({ message: `Tipo con ID ${id} no encontrado` });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Tipo eliminado exitosamente"
+    });
+  } catch (error) {
+    console.error("Error eliminando tipo de inventario:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// ================== INVENTORY CATEGORIES ==================
+
+// Obtener todas las categorías
+exports.getAllCategories = async (req, res) => {
+  try {
+    const { includeTypes, activeOnly } = req.query;
+
+    // Configurar opciones de consulta
+    const options = {
+      order: [['name', 'ASC']]
+    };
+
+    // Filtrar solo categorías activas
+    if (activeOnly === 'true') {
+      options.where = { active: true };
+    }
+
+    // Incluir tipos si se solicita
+    if (includeTypes === 'true') {
+      options.include = [
+        {
+          model: InventoryType,
+          as: 'types',
+          attributes: ['id', 'name', 'description', 'unitType', 'hasSerial', 'hasMac']
+        }
+      ];
+    }
+
+    // Obtener categorías
+    const categories = await InventoryCategory.findAll(options);
+
+    return res.status(200).json({
+      success: true,
+      data: categories
+    });
+
+  } catch (error) {
+    console.error("Error obteniendo categorías de inventario:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// Crear una nueva categoría
+exports.createCategory = async (req, res) => {
+  try {
+    const { name, description, active } = req.body;
+
+    // Validar campos requeridos
+    if (!name) {
+      return res.status(400).json({ message: "El nombre de la categoría es obligatorio" });
+    }
+
+    // Verificar si ya existe una categoría con el mismo nombre
+    const existingCategory = await InventoryCategory.findOne({
+      where: { name: name }
+    });
+
+    if (existingCategory) {
+      return res.status(400).json({ message: `Ya existe una categoría con el nombre "${name}"` });
+    }
+
+    // Crear categoría
+    const category = await InventoryCategory.create({
+      name,
+      description,
+      active: active !== undefined ? active : true
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Categoría creada exitosamente",
+      data: category
+    });
+  } catch (error) {
+    console.error("Error creando categoría de inventario:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// Actualizar categoría
+exports.updateCategory = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { name, description, active } = req.body;
+
+    // Buscar categoría
+    const category = await InventoryCategory.findByPk(id);
+    if (!category) {
+      return res.status(404).json({ message: `Categoría con ID ${id} no encontrada` });
+    }
+
+    // Verificar si el nuevo nombre ya existe en otra categoría
+    if (name && name !== category.name) {
+      const existingCategory = await InventoryCategory.findOne({
+        where: {
+          name: name,
+          id: { [Op.not]: id }
+        }
+      });
+
+      if (existingCategory) {
+        return res.status(400).json({ message: `Ya existe otra categoría con el nombre "${name}"` });
+      }
+    }
+
+    // Actualizar categoría
+    const [updated] = await InventoryCategory.update({
+      name: name || category.name,
+      description,
+      active: active !== undefined ? active : category.active
+    }, {
+      where: { id: id }
+    });
+
+    if (updated === 0) {
+      return res.status(404).json({ message: `Categoría con ID ${id} no pudo ser actualizada` });
+    }
+
+    // Obtener la categoría actualizada
+    const updatedCategory = await InventoryCategory.findByPk(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Categoría actualizada exitosamente",
+      data: updatedCategory
+    });
+  } catch (error) {
+    console.error("Error actualizando categoría de inventario:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// Eliminar categoría
+exports.deleteCategory = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    // Verificar si existen tipos asociados a esta categoría
+    const typesCount = await InventoryType.count({
+      where: { categoryId: id }
+    });
+
+    if (typesCount > 0) {
+      return res.status(400).json({
+        message: `No se puede eliminar la categoría. Existen ${typesCount} tipos de inventario asociados a esta categoría.`
+      });
+    }
+
+    const deleted = await InventoryCategory.destroy({
+      where: { id: id }
+    });
+
+    if (deleted === 0) {
+      return res.status(404).json({ message: `Categoría con ID ${id} no encontrada` });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Categoría eliminada exitosamente"
+    });
+  } catch (error) {
+    console.error("Error eliminando categoría de inventario:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
 
 // Obtener todos los items con paginación y filtros
 exports.findAll = async (req, res) => {

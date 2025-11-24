@@ -670,10 +670,57 @@ getInventoryStats(params = {}) {
   getAllTypes(params = {}) {
     const queryParams = new URLSearchParams();
     if (params.includeCategory) queryParams.append('includeCategory', params.includeCategory);
-    
-    // ⬇️ ¡ASEGÚRATE DE QUE ESTA RUTA SEA CORRECTA EN TU BACKEND!
-    return axios.get(`${API_URL}inventory-types?${queryParams.toString()}`, { 
-      headers: authHeader() 
+
+    return axios.get(`${API_URL}inventory-types?${queryParams.toString()}`, {
+      headers: authHeader()
+    });
+  }
+
+  createType(data) {
+    return axios.post(`${API_URL}inventory-types`, data, {
+      headers: authHeader()
+    });
+  }
+
+  updateType(id, data) {
+    return axios.put(`${API_URL}inventory-types/${id}`, data, {
+      headers: authHeader()
+    });
+  }
+
+  deleteType(id) {
+    return axios.delete(`${API_URL}inventory-types/${id}`, {
+      headers: authHeader()
+    });
+  }
+
+  // --- Métodos para CATEGORIES (Categorías de Inventario) ---
+
+  getAllCategories(params = {}) {
+    const queryParams = new URLSearchParams();
+    if (params.includeTypes) queryParams.append('includeTypes', params.includeTypes);
+    if (params.activeOnly) queryParams.append('activeOnly', params.activeOnly);
+
+    return axios.get(`${API_URL}inventory-categories?${queryParams.toString()}`, {
+      headers: authHeader()
+    });
+  }
+
+  createCategory(data) {
+    return axios.post(`${API_URL}inventory-categories`, data, {
+      headers: authHeader()
+    });
+  }
+
+  updateCategory(id, data) {
+    return axios.put(`${API_URL}inventory-categories/${id}`, data, {
+      headers: authHeader()
+    });
+  }
+
+  deleteCategory(id) {
+    return axios.delete(`${API_URL}inventory-categories/${id}`, {
+      headers: authHeader()
     });
   }
 

@@ -107,11 +107,60 @@ module.exports = function(app) {
     inventory.delete
   );
 
+  // ===============================================
+  // RUTAS PARA INVENTORY TYPES
+  // ===============================================
+
   app.get(
     "/api/inventory-types",
     //[authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
     inventory.getAllTypes
   );
-  
+
+  app.post(
+    "/api/inventory-types",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    inventory.createType
+  );
+
+  app.put(
+    "/api/inventory-types/:id",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    inventory.updateType
+  );
+
+  app.delete(
+    "/api/inventory-types/:id",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    inventory.deleteType
+  );
+
+  // ===============================================
+  // RUTAS PARA INVENTORY CATEGORIES
+  // ===============================================
+
+  app.get(
+    "/api/inventory-categories",
+    //[authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
+    inventory.getAllCategories
+  );
+
+  app.post(
+    "/api/inventory-categories",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    inventory.createCategory
+  );
+
+  app.put(
+    "/api/inventory-categories/:id",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    inventory.updateCategory
+  );
+
+  app.delete(
+    "/api/inventory-categories/:id",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    inventory.deleteCategory
+  );
 
 };
