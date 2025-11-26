@@ -1,5 +1,6 @@
 // Rutas para operaciones con Mikrotik
 const MikrotikController = require('../controllers/mikrotik.controller');
+const MikrotikRouterController = require('../controllers/mikrotikRouter.controller');
 const MikrotikSyncController = require('../controllers/mikrotik.sync.controller');
 const { authJwt } = require('../middleware');
 
@@ -29,7 +30,70 @@ module.exports = function(app) {
     );
     next();
   });
-  
+
+  // ======================================
+  // CRUD BÁSICO PARA MIKROTIK ROUTERS
+  // ======================================
+
+  /**
+   * @route    GET /api/mikrotik/routers
+   * @desc     Obtener todos los routers Mikrotik
+   * @access   Privado (Admin, Técnico)
+   */
+  app.get(
+    "/api/mikrotik/routers",
+    //[authJwt.verifyToken, authJwt.checkRole('technician')],
+    MikrotikRouterController.findAll
+  );
+
+  /**
+   * @route    GET /api/mikrotik/routers/:id
+   * @desc     Obtener un router Mikrotik por ID
+   * @access   Privado (Admin, Técnico)
+   */
+  app.get(
+    "/api/mikrotik/routers/:id",
+    //[authJwt.verifyToken, authJwt.checkRole('technician')],
+    MikrotikRouterController.findOne
+  );
+
+  /**
+   * @route    POST /api/mikrotik/routers
+   * @desc     Crear un nuevo router Mikrotik
+   * @access   Privado (Admin)
+   */
+  app.post(
+    "/api/mikrotik/routers",
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
+    MikrotikRouterController.create
+  );
+
+  /**
+   * @route    PUT /api/mikrotik/routers/:id
+   * @desc     Actualizar un router Mikrotik
+   * @access   Privado (Admin)
+   */
+  app.put(
+    "/api/mikrotik/routers/:id",
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
+    MikrotikRouterController.update
+  );
+
+  /**
+   * @route    DELETE /api/mikrotik/routers/:id
+   * @desc     Eliminar un router Mikrotik
+   * @access   Privado (Admin)
+   */
+  app.delete(
+    "/api/mikrotik/routers/:id",
+    //[authJwt.verifyToken, authJwt.checkRole('admin')],
+    MikrotikRouterController.delete
+  );
+
+  // ======================================
+  // OPERACIONES CON DISPOSITIVOS MIKROTIK
+  // ======================================
+
   /**
    * @route    POST /api/mikrotik/test-connection
    * @desc     Probar conexión con un dispositivo Mikrotik

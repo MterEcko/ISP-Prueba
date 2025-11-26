@@ -84,7 +84,7 @@ exports.getAllTypes = async (req, res) => {
     const options = {
       order: [['name', 'ASC']]
     };
- 
+
     // Incluir categoría si se solicita
     if (includeCategory === 'true') {
       options.include = [
@@ -95,7 +95,7 @@ exports.getAllTypes = async (req, res) => {
         }
       ];
     }
- 
+
     // Obtener tipos
     const types = await InventoryType.findAll(options);
 
@@ -103,12 +103,152 @@ exports.getAllTypes = async (req, res) => {
       success: true,
       data: types
     });
- 
+
   } catch (error) {
     console.error("Error obteniendo tipos de inventario:", error);
     return res.status(500).json({ message: error.message });
   }
 
+};
+
+// Crear un nuevo tipo de inventario
+exports.createType = async (req, res) => {
+  try {
+    // Validar request
+    if (!req.body.name || !req.body.categoryId) {
+      return res.status(400).json({
+        success: false,
+        message: "El nombre y la categoría son obligatorios"
+      });
+    }
+
+    // Verificar que la categoría existe
+    const category = await InventoryCategory.findByPk(req.body.categoryId);
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: `Categoría con ID ${req.body.categoryId} no encontrada`
+      });
+    }
+
+    // Crear tipo
+    const type = await InventoryType.create({
+      categoryId: req.body.categoryId,
+      name: req.body.name,
+      description: req.body.description,
+      unitType: req.body.unitType || 'piece',
+      hasSerial: req.body.hasSerial !== undefined ? req.body.hasSerial : true,
+      hasMac: req.body.hasMac || false,
+      trackableIndividually: req.body.trackableIndividually !== undefined ? req.body.trackableIndividually : true,
+      defaultScrapPercentage: req.body.defaultScrapPercentage || 0.00
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Tipo de inventario creado exitosamente",
+      data: type
+    });
+  } catch (error) {
+    console.error("Error creando tipo de inventario:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// Actualizar un tipo de inventario
+exports.updateType = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Buscar tipo
+    const type = await InventoryType.findByPk(id);
+    if (!type) {
+      return res.status(404).json({
+        success: false,
+        message: `Tipo de inventario con ID ${id} no encontrado`
+      });
+    }
+
+    // Si se actualiza la categoría, verificar que existe
+    if (req.body.categoryId) {
+      const category = await InventoryCategory.findByPk(req.body.categoryId);
+      if (!category) {
+        return res.status(404).json({
+          success: false,
+          message: `Categoría con ID ${req.body.categoryId} no encontrada`
+        });
+      }
+    }
+
+    // Actualizar tipo
+    await type.update({
+      categoryId: req.body.categoryId !== undefined ? req.body.categoryId : type.categoryId,
+      name: req.body.name !== undefined ? req.body.name : type.name,
+      description: req.body.description !== undefined ? req.body.description : type.description,
+      unitType: req.body.unitType !== undefined ? req.body.unitType : type.unitType,
+      hasSerial: req.body.hasSerial !== undefined ? req.body.hasSerial : type.hasSerial,
+      hasMac: req.body.hasMac !== undefined ? req.body.hasMac : type.hasMac,
+      trackableIndividually: req.body.trackableIndividually !== undefined ? req.body.trackableIndividually : type.trackableIndividually,
+      defaultScrapPercentage: req.body.defaultScrapPercentage !== undefined ? req.body.defaultScrapPercentage : type.defaultScrapPercentage
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Tipo de inventario actualizado exitosamente",
+      data: type
+    });
+  } catch (error) {
+    console.error("Error actualizando tipo de inventario:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// Eliminar un tipo de inventario
+exports.deleteType = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Buscar tipo
+    const type = await InventoryType.findByPk(id);
+    if (!type) {
+      return res.status(404).json({
+        success: false,
+        message: `Tipo de inventario con ID ${id} no encontrado`
+      });
+    }
+
+    // Verificar si hay productos asociados a este tipo
+    const db = require('../models');
+    const productsCount = await db.InventoryProduct.count({
+      where: { typeId: id }
+    });
+
+    if (productsCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `No se puede eliminar el tipo porque tiene ${productsCount} producto(s) asociado(s)`
+      });
+    }
+
+    // Eliminar tipo
+    await type.destroy();
+
+    return res.status(200).json({
+      success: true,
+      message: "Tipo de inventario eliminado exitosamente"
+    });
+  } catch (error) {
+    console.error("Error eliminando tipo de inventario:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };
 
 

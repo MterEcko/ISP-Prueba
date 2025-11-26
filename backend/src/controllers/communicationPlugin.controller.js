@@ -246,6 +246,66 @@ exports.activateChannel = async (req, res) => {
 };
 
 /**
+ * Eliminar canal de comunicación
+ * DELETE /api/communication-channels/:id
+ */
+exports.deleteChannel = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const channel = await CommunicationChannel.findByPk(id);
+    if (!channel) {
+      return res.status(404).json({
+        success: false,
+        message: 'Canal no encontrado'
+      });
+    }
+
+    // Verificar si hay plantillas asociadas
+    const templatesCount = await db.MessageTemplate.count({
+      where: { channelId: id }
+    });
+
+    if (templatesCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `No se puede eliminar el canal porque tiene ${templatesCount} plantilla(s) asociada(s)`
+      });
+    }
+
+    // Verificar si hay logs de comunicación
+    const logsCount = await db.CommunicationLog.count({
+      where: { channelId: id }
+    });
+
+    if (logsCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `No se puede eliminar el canal porque tiene ${logsCount} registro(s) de comunicación. Considere desactivarlo en su lugar.`
+      });
+    }
+
+    const channelName = channel.name;
+    await channel.destroy();
+
+    logger.info(`Canal ${channelName} eliminado`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Canal eliminado exitosamente'
+    });
+
+  } catch (error) {
+    logger.error(`Error eliminando canal ${req.params.id}: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Obtener plugins disponibles para comunicación
  * GET /api/communication-channels/plugins
  */

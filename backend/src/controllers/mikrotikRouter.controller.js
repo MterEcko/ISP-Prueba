@@ -315,8 +315,82 @@ update: async (req, res) => {
       message: 'Error al actualizar router Mikrotik',
       error: error.message
     });
+  },
+
+  // Eliminar router Mikrotik y su Device asociado
+  delete: async (req, res) => {
+    const transaction = await db.sequelize.transaction();
+
+    try {
+      const { id } = req.params;
+
+      // Verificar que el router existe
+      const router = await MikrotikRouter.findByPk(id, {
+        include: [{ model: Device, as: 'device' }]
+      });
+
+      if (!router) {
+        return res.status(404).json({
+          success: false,
+          message: `Router con ID ${id} no encontrado`
+        });
+      }
+
+      // Verificar si tiene IpPools asociados
+      const ipPoolsCount = await db.IpPool.count({
+        where: { mikrotikRouterId: id }
+      });
+
+      if (ipPoolsCount > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `No se puede eliminar el router porque tiene ${ipPoolsCount} pool(s) de IP asociado(s)`
+        });
+      }
+
+      // Verificar si tiene Profiles asociados
+      const profilesCount = await db.MikrotikProfile.count({
+        where: { mikrotikRouterId: id }
+      });
+
+      if (profilesCount > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `No se puede eliminar el router porque tiene ${profilesCount} perfil(es) asociado(s)`
+        });
+      }
+
+      const deviceId = router.deviceId;
+
+      // Eliminar el MikrotikRouter primero
+      await router.destroy({ transaction });
+
+      // Eliminar el Device asociado
+      await Device.destroy({
+        where: { id: deviceId },
+        transaction
+      });
+
+      await transaction.commit();
+
+      logger.info(`Router Mikrotik ${id} y su Device ${deviceId} eliminados exitosamente`);
+
+      return res.json({
+        success: true,
+        message: 'Router Mikrotik eliminado exitosamente'
+      });
+
+    } catch (error) {
+      await transaction.rollback();
+      logger.error(`Error eliminando router Mikrotik ${req.params.id}: ${error.message}`);
+
+      return res.status(500).json({
+        success: false,
+        message: 'Error al eliminar router Mikrotik',
+        error: error.message
+      });
+    }
   }
-}
 
 };
 

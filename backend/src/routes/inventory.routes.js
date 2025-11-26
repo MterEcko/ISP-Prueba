@@ -107,11 +107,32 @@ module.exports = function(app) {
     inventory.delete
   );
 
+  // ===============================================
+  // INVENTORY TYPES CRUD
+  // ===============================================
+
   app.get(
     "/api/inventory-types",
     //[authJwt.verifyToken, authJwt.checkPermission("view_inventory")],
     inventory.getAllTypes
   );
-  
+
+  app.post(
+    "/api/inventory-types",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    inventory.createType
+  );
+
+  app.put(
+    "/api/inventory-types/:id",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    inventory.updateType
+  );
+
+  app.delete(
+    "/api/inventory-types/:id",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    inventory.deleteType
+  );
 
 };
