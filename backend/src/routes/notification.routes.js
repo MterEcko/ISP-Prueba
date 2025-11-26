@@ -15,6 +15,14 @@ module.exports = function(app) {
   router.get('/', [authJwt.verifyToken], notificationController.getMyNotifications);
 
   /**
+   * PUT /api/notifications/read-all
+   * Marca todas las notificaciones como leídas
+   * Requiere: Usuario autenticado
+   * IMPORTANTE: Debe ir ANTES que /:id/read
+   */
+  router.put('/read-all', [authJwt.verifyToken], notificationController.markAllAsRead);
+
+  /**
    * PUT /api/notifications/:id/read
    * Marca una notificación como leída
    * Requiere: Usuario autenticado
@@ -22,18 +30,25 @@ module.exports = function(app) {
   router.put('/:id/read', [authJwt.verifyToken], notificationController.markAsRead);
 
   /**
-   * PUT /api/notifications/read-all
-   * Marca todas las notificaciones como leídas
-   * Requiere: Usuario autenticado
-   */
-  router.put('/read-all', [authJwt.verifyToken], notificationController.markAllAsRead);
-
-  /**
    * PUT /api/notifications/:id/archive
    * Archiva una notificación
    * Requiere: Usuario autenticado
    */
   router.put('/:id/archive', [authJwt.verifyToken], notificationController.archiveNotification);
+
+  /**
+   * PUT /api/notifications/:id
+   * Actualiza una notificación
+   * Requiere: Usuario autenticado (propietario o admin)
+   */
+  router.put('/:id', [authJwt.verifyToken], notificationController.updateNotification);
+
+  /**
+   * DELETE /api/notifications/:id
+   * Elimina una notificación
+   * Requiere: Usuario autenticado (propietario o admin)
+   */
+  router.delete('/:id', [authJwt.verifyToken], notificationController.deleteNotification);
 
   /**
    * POST /api/notifications/test

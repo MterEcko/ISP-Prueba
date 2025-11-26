@@ -549,3 +549,117 @@ exports.getPayrollSummary = async (req, res) => {
     res.status(500).json({ error: 'Error al obtener resumen de nómina' });
   }
 };
+
+// Actualizar nómina
+exports.updatePayroll = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      period,
+      paymentType,
+      baseSalary,
+      overtimeHours,
+      overtimeAmount,
+      bonus,
+      taxDeduction,
+      socialSecurityDeduction,
+      otherDeductions,
+      deductionNotes,
+      notes
+    } = req.body;
+
+    const payroll = await Payroll.findByPk(id);
+    if (!payroll) {
+      return res.status(404).json({ error: 'Nómina no encontrada' });
+    }
+
+    // No permitir actualizar nóminas ya pagadas
+    if (payroll.status === 'paid') {
+      return res.status(400).json({
+        error: 'No se puede actualizar una nómina que ya ha sido pagada'
+      });
+    }
+
+    // Calcular nuevo salario neto
+    const totalDeductions = (taxDeduction || payroll.taxDeduction) +
+                           (socialSecurityDeduction || payroll.socialSecurityDeduction) +
+                           (otherDeductions || payroll.otherDeductions);
+
+    const netSalary = (baseSalary || payroll.baseSalary) +
+                     (overtimeAmount || payroll.overtimeAmount) +
+                     (bonus || payroll.bonus) -
+                     totalDeductions;
+
+    // Actualizar nómina
+    await payroll.update({
+      period: period || payroll.period,
+      paymentType: paymentType || payroll.paymentType,
+      baseSalary: baseSalary || payroll.baseSalary,
+      overtimeHours: overtimeHours !== undefined ? overtimeHours : payroll.overtimeHours,
+      overtimeAmount: overtimeAmount !== undefined ? overtimeAmount : payroll.overtimeAmount,
+      bonus: bonus !== undefined ? bonus : payroll.bonus,
+      taxDeduction: taxDeduction !== undefined ? taxDeduction : payroll.taxDeduction,
+      socialSecurityDeduction: socialSecurityDeduction !== undefined ? socialSecurityDeduction : payroll.socialSecurityDeduction,
+      otherDeductions: otherDeductions !== undefined ? otherDeductions : payroll.otherDeductions,
+      deductionNotes: deductionNotes || payroll.deductionNotes,
+      netSalary: netSalary,
+      notes: notes || payroll.notes
+    });
+
+    const updatedPayroll = await Payroll.findByPk(id, {
+      include: [
+        {
+          model: User,
+          as: 'employee',
+          attributes: ['id', 'username', 'email', 'firstName', 'lastName']
+        }
+      ]
+    });
+
+    res.json(updatedPayroll);
+  } catch (error) {
+    console.error('Error al actualizar nómina:', error);
+    res.status(500).json({ error: 'Error al actualizar nómina' });
+  }
+};
+
+// Eliminar nómina
+exports.deletePayroll = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const payroll = await Payroll.findByPk(id);
+    if (!payroll) {
+      return res.status(404).json({ error: 'Nómina no encontrada' });
+    }
+
+    // No permitir eliminar nóminas ya pagadas
+    if (payroll.status === 'paid') {
+      return res.status(400).json({
+        error: 'No se puede eliminar una nómina que ya ha sido pagada. Considere cancelarla en su lugar.'
+      });
+    }
+
+    // Verificar si hay pagos asociados
+    const db = require('../models');
+    const paymentsCount = await db.PayrollPayment.count({
+      where: { payrollId: id }
+    });
+
+    if (paymentsCount > 0) {
+      return res.status(400).json({
+        error: `No se puede eliminar la nómina porque tiene ${paymentsCount} pago(s) asociado(s)`
+      });
+    }
+
+    await payroll.destroy();
+
+    res.json({
+      success: true,
+      message: 'Nómina eliminada exitosamente'
+    });
+  } catch (error) {
+    console.error('Error al eliminar nómina:', error);
+    res.status(500).json({ error: 'Error al eliminar nómina' });
+  }
+};

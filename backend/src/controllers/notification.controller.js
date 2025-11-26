@@ -115,6 +115,99 @@ class NotificationController {
   }
 
   /**
+   * Actualiza una notificación
+   * PUT /api/notifications/:id
+   */
+  async updateNotification(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.userId;
+      const { title, message, priority, type, metadata } = req.body;
+
+      const notification = await notificationService.getNotificationById(id);
+
+      if (!notification) {
+        return res.status(404).json({
+          success: false,
+          message: 'Notificación no encontrada'
+        });
+      }
+
+      // Verificar que el usuario sea el propietario o admin
+      if (notification.userId !== userId && !req.isAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permiso para actualizar esta notificación'
+        });
+      }
+
+      const updateData = {};
+      if (title !== undefined) updateData.title = title;
+      if (message !== undefined) updateData.message = message;
+      if (priority !== undefined) updateData.priority = priority;
+      if (type !== undefined) updateData.type = type;
+      if (metadata !== undefined) updateData.metadata = metadata;
+
+      const updated = await notificationService.updateNotification(id, updateData);
+
+      return res.status(200).json({
+        success: true,
+        data: updated,
+        message: 'Notificación actualizada exitosamente'
+      });
+    } catch (error) {
+      console.error('Error en updateNotification:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error actualizando notificación',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Elimina una notificación
+   * DELETE /api/notifications/:id
+   */
+  async deleteNotification(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.userId;
+
+      const notification = await notificationService.getNotificationById(id);
+
+      if (!notification) {
+        return res.status(404).json({
+          success: false,
+          message: 'Notificación no encontrada'
+        });
+      }
+
+      // Verificar que el usuario sea el propietario o admin
+      if (notification.userId !== userId && !req.isAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permiso para eliminar esta notificación'
+        });
+      }
+
+      await notificationService.deleteNotification(id);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Notificación eliminada exitosamente'
+      });
+    } catch (error) {
+      console.error('Error en deleteNotification:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error eliminando notificación',
+        error: error.message
+      });
+    }
+  }
+
+  /**
    * Crea una notificación de prueba (solo admin)
    * POST /api/notifications/test
    */

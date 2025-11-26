@@ -186,3 +186,165 @@ exports.getTelegramStatus = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Actualizar conversación
+exports.updateConversation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+    const { name, metadata } = req.body;
+
+    const conversation = await db.ChatConversation.findByPk(id);
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Conversación no encontrada'
+      });
+    }
+
+    // Verificar que el usuario sea participante
+    const isParticipant = conversation.participants.some(p => p.userId === userId);
+    if (!isParticipant) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permiso para actualizar esta conversación'
+      });
+    }
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (metadata !== undefined) updateData.metadata = metadata;
+
+    await conversation.update(updateData);
+
+    res.json({
+      success: true,
+      data: conversation,
+      message: 'Conversación actualizada exitosamente'
+    });
+  } catch (error) {
+    logger.error('Error updating conversation:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Eliminar conversación
+exports.deleteConversation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+
+    const conversation = await db.ChatConversation.findByPk(id);
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Conversación no encontrada'
+      });
+    }
+
+    // Verificar que el usuario sea participante
+    const isParticipant = conversation.participants.some(p => p.userId === userId);
+    if (!isParticipant) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permiso para eliminar esta conversación'
+      });
+    }
+
+    // Eliminar todos los mensajes de la conversación
+    await db.ChatMessage.destroy({
+      where: { conversationId: id }
+    });
+
+    // Eliminar la conversación
+    await conversation.destroy();
+
+    res.json({
+      success: true,
+      message: 'Conversación eliminada exitosamente'
+    });
+  } catch (error) {
+    logger.error('Error deleting conversation:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Actualizar mensaje
+exports.updateMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+    const { content, metadata } = req.body;
+
+    const message = await db.ChatMessage.findByPk(id);
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Mensaje no encontrado'
+      });
+    }
+
+    // Verificar que el usuario sea el remitente
+    if (message.senderId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Solo puedes editar tus propios mensajes'
+      });
+    }
+
+    const updateData = {};
+    if (content !== undefined) updateData.content = content;
+    if (metadata !== undefined) updateData.metadata = metadata;
+    updateData.edited = true;
+    updateData.editedAt = new Date();
+
+    await message.update(updateData);
+
+    res.json({
+      success: true,
+      data: message,
+      message: 'Mensaje actualizado exitosamente'
+    });
+  } catch (error) {
+    logger.error('Error updating message:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Eliminar mensaje
+exports.deleteMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+
+    const message = await db.ChatMessage.findByPk(id);
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Mensaje no encontrado'
+      });
+    }
+
+    // Verificar que el usuario sea el remitente
+    if (message.senderId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Solo puedes eliminar tus propios mensajes'
+      });
+    }
+
+    await message.destroy();
+
+    res.json({
+      success: true,
+      message: 'Mensaje eliminado exitosamente'
+    });
+  } catch (error) {
+    logger.error('Error deleting message:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
