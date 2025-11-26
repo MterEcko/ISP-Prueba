@@ -681,16 +681,114 @@ exports.getConfigByModule = async (req, res) => {
 exports.invalidateCache = async (req, res) => {
   try {
     configHelper.invalidateCache();
-    
+
     return res.status(200).json({
       success: true,
       message: 'Caché de configuraciones invalidado correctamente'
     });
   } catch (error) {
     console.error('Error invalidando caché:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: 'Error invalidando caché',
-      error: error.message 
+      error: error.message
+    });
+  }
+};
+
+// ===============================
+// CREAR CONFIGURACIÓN PERSONALIZADA
+// ===============================
+
+exports.createSetting = async (req, res) => {
+  try {
+    const { key, value, module, description } = req.body;
+
+    if (!key || value === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'La clave y el valor son obligatorios'
+      });
+    }
+
+    // Verificar si la configuración ya existe
+    const existing = await configHelper.get(key);
+    if (existing !== null) {
+      return res.status(400).json({
+        success: false,
+        message: `La configuración con clave "${key}" ya existe`
+      });
+    }
+
+    // Crear nueva configuración
+    const setting = await configHelper.set(key, value, {
+      module: module || 'custom',
+      description: description || `Configuración personalizada: ${key}`
+    });
+
+    configHelper.invalidateCache();
+
+    return res.status(201).json({
+      success: true,
+      data: setting,
+      message: 'Configuración creada exitosamente'
+    });
+  } catch (error) {
+    console.error('Error creando configuración:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error creando configuración',
+      error: error.message
+    });
+  }
+};
+
+// ===============================
+// ELIMINAR CONFIGURACIÓN
+// ===============================
+
+exports.deleteSetting = async (req, res) => {
+  try {
+    const { key } = req.params;
+
+    // Verificar que la configuración existe
+    const setting = await configHelper.get(key);
+    if (setting === null) {
+      return res.status(404).json({
+        success: false,
+        message: `Configuración con clave "${key}" no encontrada`
+      });
+    }
+
+    // No permitir eliminar configuraciones críticas del sistema
+    const protectedKeys = [
+      'company_name',
+      'database_version',
+      'smtp_host',
+      'smtp_port',
+      'system_initialized'
+    ];
+
+    if (protectedKeys.includes(key)) {
+      return res.status(403).json({
+        success: false,
+        message: 'No se pueden eliminar configuraciones críticas del sistema'
+      });
+    }
+
+    // Eliminar configuración
+    await configHelper.delete(key);
+    configHelper.invalidateCache();
+
+    return res.status(200).json({
+      success: true,
+      message: `Configuración "${key}" eliminada exitosamente`
+    });
+  } catch (error) {
+    console.error('Error eliminando configuración:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error eliminando configuración',
+      error: error.message
     });
   }
 };

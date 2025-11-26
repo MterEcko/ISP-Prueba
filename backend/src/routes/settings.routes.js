@@ -208,4 +208,22 @@ module.exports = function(app) {
     //[authJwt.verifyToken, authJwt.checkRole("admin")],
     controller.invalidateCache
   );
+
+  // ===============================
+  // CRUD PERSONALIZADO
+  // ===============================
+
+  // Crear nueva configuración personalizada
+  app.post(
+    "/api/settings",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.createSetting
+  );
+
+  // Eliminar configuración
+  app.delete(
+    "/api/settings/:key",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.deleteSetting
+  );
 };

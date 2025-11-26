@@ -60,4 +60,11 @@ module.exports = function(app) {
     //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
     reconciliationController.closeUnregistered
   );
+
+  // Eliminar reconciliación
+  app.delete(
+    "/api/inventory/reconciliations/:id",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_inventory")],
+    reconciliationController.deleteReconciliation
+  );
 };

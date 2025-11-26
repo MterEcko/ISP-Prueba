@@ -669,3 +669,47 @@ exports.closeUnregistered = async (req, res) => {
     });
   }
 };
+
+// Eliminar reconciliación
+exports.deleteReconciliation = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
+
+  try {
+    const { id } = req.params;
+
+    const reconciliation = await TechnicianInventoryReconciliation.findByPk(id);
+
+    if (!reconciliation) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Reconciliación no encontrada"
+      });
+    }
+
+    // No permitir eliminar reconciliaciones aprobadas
+    if (reconciliation.status === 'approved') {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "No se puede eliminar una reconciliación que ya ha sido aprobada"
+      });
+    }
+
+    await reconciliation.destroy({ transaction });
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Reconciliación eliminada exitosamente"
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error("Error eliminando reconciliación:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
