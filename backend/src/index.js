@@ -508,6 +508,14 @@ try {
   console.error('❌ Error en inventoryMovement.routes:', error.message);
 }
 
+try {
+  console.log('Registrando inventoryProduct.routes...');
+  require('./routes/inventoryProduct.routes')(app);
+  console.log('✅ inventoryProduct.routes registradas');
+} catch (error) {
+  console.error('❌ Error en inventoryProduct.routes:', error.message);
+}
+
 // Luego las rutas generales
 try {
   console.log('Registrando inventory.routes...');

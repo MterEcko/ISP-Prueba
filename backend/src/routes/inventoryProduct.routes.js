@@ -8,9 +8,34 @@ module.exports = function(app) {
     next();
   });
 
-  app.get("/api/inventory-products", [authJwt.verifyToken], inventoryProductController.getAll);
-  app.get("/api/inventory-products/:id", [authJwt.verifyToken], inventoryProductController.getById);
-  app.post("/api/inventory-products", [authJwt.verifyToken], inventoryProductController.create);
-  app.put("/api/inventory-products/:id", [authJwt.verifyToken], inventoryProductController.update);
-  app.delete("/api/inventory-products/:id", [authJwt.verifyToken], inventoryProductController.delete);
+  app.get(
+    "/api/inventory-products", 
+    //[authJwt.verifyToken], 
+    inventoryProductController.getAll
+  );
+  
+  app.get(
+    "/api/inventory-products/:id", 
+    [authJwt.verifyToken], 
+    inventoryProductController.getById
+  );
+  
+  app.post(
+    "/api/inventory-products", 
+    [authJwt.verifyToken], 
+    inventoryProductController.create
+  );
+  
+  app.put(
+    "/api/inventory-products/:id", 
+    [authJwt.verifyToken], 
+    inventoryProductController.update
+  );
+  
+  app.delete(
+    "/api/inventory-products/:id", 
+    [authJwt.verifyToken], 
+    inventoryProductController.delete
+  );
+  
 };

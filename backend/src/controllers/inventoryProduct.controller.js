@@ -14,7 +14,7 @@ exports.getAll = async (req, res) => {
 
     const products = await InventoryProduct.findAndCountAll({
       where,
-      include: [{ model: InventoryType, as: 'type' }],
+      include: [{ model: InventoryType, as: 'InventoryType' }],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['brand', 'ASC'], ['model', 'ASC']]
