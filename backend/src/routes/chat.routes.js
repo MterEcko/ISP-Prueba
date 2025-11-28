@@ -6,8 +6,8 @@ const authJwt = require('../middleware/auth.jwt');
 module.exports = function(app) {
   // === CONVERSACIONES ===
   app.get(
-    '/api/chat/conversations', 
-    //[authJwt.verifyToken], 
+    '/api/chat/conversations',
+    [authJwt.verifyToken],
     chatController.getConversations
   );
   
@@ -62,8 +62,8 @@ module.exports = function(app) {
 
   // === TELEGRAM ===
   app.get(
-    '/api/chat/telegram/status', 
-    //[authJwt.verifyToken], 
+    '/api/chat/telegram/status',
+    [authJwt.verifyToken],
     chatController.getTelegramStatus
   );
   
