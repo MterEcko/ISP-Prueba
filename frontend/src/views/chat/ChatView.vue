@@ -112,7 +112,7 @@
 
               <div class="message-content">
                 <div v-if="!isOwnMessage(message)" class="message-sender">
-                  {{ message.sender?.firstName }} {{ message.sender?.lastName }}
+                  {{ message.sender?.fullName || message.sender?.username }}
                 </div>
 
                 <div class="message-bubble">
