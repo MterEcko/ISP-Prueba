@@ -141,7 +141,7 @@ exports.sendMessage = async (req, res) => {
 // Marcar mensajes como leídos
 exports.markAsRead = async (req, res) => {
   try {
-    const { conversationId } = req.params;
+    const conversationId = req.params.id || req.params.conversationId;
     const userId = req.user.id;
 
     await db.ChatMessage.update(
