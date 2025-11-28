@@ -28,6 +28,14 @@
               <span>{{ currentConversation.name }}</span>
             </div>
           </div>
+          <div class="header-actions" v-if="currentConversation">
+            <button @click="startVoiceCall" class="btn-call" title="Llamada de voz">
+              📞
+            </button>
+            <button @click="startVideoCall" class="btn-call" title="Videollamada">
+              📹
+            </button>
+          </div>
           <div class="header-actions">
             <button @click="minimize" class="btn-minimize" title="Minimizar">−</button>
             <button @click="closeChat" class="btn-close" title="Cerrar">×</button>
@@ -158,6 +166,16 @@
         </div>
       </div>
     </transition>
+
+    <!-- Componente de video llamada -->
+    <VideoCallWindow
+      ref="videoCall"
+      @call-initiated="handleCallInitiated"
+      @call-accepted="handleCallAccepted"
+      @call-rejected="handleCallRejected"
+      @call-ended="handleCallEnded"
+      @ice-candidate="handleIceCandidate"
+    />
   </div>
 </template>
 
@@ -165,9 +183,14 @@
 import { mapState, mapGetters, mapActions } from 'vuex';
 import chatService from '@/services/chat.service';
 import userService from '@/services/user.service';
+import VideoCallWindow from '@/components/VideoCallWindow.vue';
 
 export default {
   name: 'FloatingChat',
+
+  components: {
+    VideoCallWindow
+  },
 
   data() {
     return {
@@ -383,6 +406,76 @@ export default {
       this.userSearchQuery = '';
       this.selectedUsers = [];
       this.availableUsers = [];
+    },
+
+    // === MÉTODOS DE VIDEO LLAMADAS ===
+
+    startVoiceCall() {
+      if (!this.currentConversation) return;
+
+      // Obtener ID del otro usuario (conversación directa)
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const otherParticipant = this.currentConversation.participants?.find(
+        p => p !== currentUser.id
+      );
+
+      if (otherParticipant) {
+        this.$refs.videoCall.startCall(
+          otherParticipant,
+          this.currentConversation.name,
+          'audio'
+        );
+      }
+    },
+
+    startVideoCall() {
+      if (!this.currentConversation) return;
+
+      // Obtener ID del otro usuario (conversación directa)
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const otherParticipant = this.currentConversation.participants?.find(
+        p => p !== currentUser.id
+      );
+
+      if (otherParticipant) {
+        this.$refs.videoCall.startCall(
+          otherParticipant,
+          this.currentConversation.name,
+          'video'
+        );
+      }
+    },
+
+    // Handlers de señalización WebRTC
+    handleCallInitiated(data) {
+      // Enviar señal de llamada al servidor
+      console.log('Call initiated:', data);
+      // TODO: Implementar envío de señalización mediante WebSocket o API REST
+      // Ejemplo: this.$socket.emit('call-offer', data);
+    },
+
+    handleCallAccepted(data) {
+      console.log('Call accepted:', data);
+      // TODO: Enviar respuesta al servidor
+      // Ejemplo: this.$socket.emit('call-answer', data);
+    },
+
+    handleCallRejected(data) {
+      console.log('Call rejected:', data);
+      // TODO: Notificar rechazo al servidor
+      // Ejemplo: this.$socket.emit('call-reject', data);
+    },
+
+    handleCallEnded(data) {
+      console.log('Call ended:', data);
+      // TODO: Notificar fin de llamada al servidor
+      // Ejemplo: this.$socket.emit('call-end', data);
+    },
+
+    handleIceCandidate(data) {
+      console.log('ICE candidate:', data);
+      // TODO: Enviar ICE candidate al servidor
+      // Ejemplo: this.$socket.emit('ice-candidate', data);
     }
   }
 };
@@ -492,6 +585,26 @@ export default {
 .header-actions {
   display: flex;
   gap: 8px;
+}
+
+.btn-call {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-call:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
 }
 
 .btn-minimize,
