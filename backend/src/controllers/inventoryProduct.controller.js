@@ -38,7 +38,7 @@ exports.getAll = async (req, res) => {
 exports.getById = async (req, res) => {
   try {
     const product = await InventoryProduct.findByPk(req.params.id, {
-      include: [{ model: InventoryType, as: 'type' }]
+      include: [{ model: InventoryType, as: 'InventoryType' }]
     });
     if (!product) {
       return res.status(404).json({ success: false, message: "Producto no encontrado" });
