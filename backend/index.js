@@ -63,6 +63,7 @@ sequelize.sync({ force: process.env.DB_FORCE_SYNC === "true" }) // force: true d
 
 // Incluir rutas
 require('./routes/auth.routes')(app);
+require('./src/routes/user.routes')(app);
 require('./routes/client.routes')(app);
 require('./routes/network.routes')(app);
 require('./routes/device.routes')(app);

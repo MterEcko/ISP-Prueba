@@ -59,8 +59,8 @@ exports.findAll = async (req, res) => {
 
     // Construir condiciones de filtrado
     const condition = {};
-    if (username) condition.username = { [Op.Like]: `%${username}%` };
-    if (email) condition.email = { [Op.Like]: `%${email}%` };
+    if (username) condition.username = { [Op.like]: `%${username}%` };
+    if (email) condition.email = { [Op.like]: `%${email}%` };
     if (active !== undefined) condition.active = active === 'true';
     
     // Condiciones para rol
