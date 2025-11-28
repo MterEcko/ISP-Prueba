@@ -670,10 +670,34 @@ getInventoryStats(params = {}) {
   getAllTypes(params = {}) {
     const queryParams = new URLSearchParams();
     if (params.includeCategory) queryParams.append('includeCategory', params.includeCategory);
-    
+
     // ⬇️ ¡ASEGÚRATE DE QUE ESTA RUTA SEA CORRECTA EN TU BACKEND!
-    return axios.get(`${API_URL}inventory-types?${queryParams.toString()}`, { 
-      headers: authHeader() 
+    return axios.get(`${API_URL}inventory-types?${queryParams.toString()}`, {
+      headers: authHeader()
+    });
+  },
+
+  createType(typeData) {
+    return axios.post(`${API_URL}inventory-types`, typeData, {
+      headers: authHeader()
+    });
+  },
+
+  updateType(id, typeData) {
+    return axios.put(`${API_URL}inventory-types/${id}`, typeData, {
+      headers: authHeader()
+    });
+  },
+
+  deleteType(id) {
+    return axios.delete(`${API_URL}inventory-types/${id}`, {
+      headers: authHeader()
+    });
+  },
+
+  getAllCategories() {
+    return axios.get(`${API_URL}inventory-categories`, {
+      headers: authHeader()
     });
   }
 

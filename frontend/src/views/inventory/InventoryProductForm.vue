@@ -17,12 +17,17 @@
         <div class="form-row">
           <div class="form-group">
             <label for="typeId">Tipo de Inventario *</label>
-            <select id="typeId" v-model="product.typeId" required class="form-control">
-              <option :value="null" disabled>Seleccione un tipo...</option>
-              <option v-for="type in types" :key="type.id" :value="type.id">
-                {{ type.name }} (Categoría: {{ type.category ? type.category.name : 'N/A' }})
-              </option>
-            </select>
+            <div class="select-with-action">
+              <select id="typeId" v-model="product.typeId" required class="form-control">
+                <option :value="null" disabled>Seleccione un tipo...</option>
+                <option v-for="type in types" :key="type.id" :value="type.id">
+                  {{ type.name }} (Categoría: {{ type.category ? type.category.name : 'N/A' }})
+                </option>
+              </select>
+              <button type="button" @click="createNewType" class="btn-quick-add" title="Crear nuevo tipo">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
             <small class="help-text">Define si es un Equipo, Consumible, Herramienta, etc.</small>
           </div>
         </div>
@@ -199,6 +204,10 @@ export default {
         console.error('Error cargando tipos de inventario:', error);
         this.errorMessage = 'Error al cargar los tipos de inventario.';
       }
+    },
+
+    createNewType() {
+      this.$router.push('/inventory/type/new');
     },
 
     /**
@@ -453,6 +462,40 @@ textarea {
 }
 .checkbox-label input[type="checkbox"] {
   width: auto;
+}
+
+.select-with-action {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.select-with-action select {
+  flex: 1;
+}
+
+.btn-quick-add {
+  padding: 0 15px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.btn-quick-add:hover {
+  background: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(76, 175, 80, 0.3);
+}
+
+.btn-quick-add:active {
+  transform: translateY(0);
 }
 
 

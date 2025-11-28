@@ -38,6 +38,7 @@ import InventoryManagement from '../views/InventoryManagement.vue';
 import InventoryManagementView from '../views/inventory/InventoryManagementView.vue';
 import InventoryBatchForm from '../views/inventory/InventoryBatchForm.vue';
 import InventoryBatchRegisterForm from '../views/inventory/BatchRegisterForm.vue';
+import InventoryTypeForm from '../views/inventory/InventoryTypeForm.vue';
 
 
 
@@ -191,6 +192,18 @@ const routes = [
     path: '/inventory/newproduct',
     name: 'NewInventoryProduct',
     component: InventoryProductForm,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory/type/new',
+    name: 'NewInventoryType',
+    component: InventoryTypeForm,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/inventory/type/:id/edit',
+    name: 'EditInventoryType',
+    component: InventoryTypeForm,
     meta: { requiresAuth: true }
   },
   {
