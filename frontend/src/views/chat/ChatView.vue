@@ -151,14 +151,73 @@
     </div>
 
     <!-- Dialog nueva conversación -->
-    <div v-if="showNewChatDialog" class="dialog-overlay" @click.self="showNewChatDialog = false">
-      <div class="dialog-content">
+    <div v-if="showNewChatDialog" class="dialog-overlay" @click.self="closeNewChatDialog">
+      <div class="dialog-content new-chat-dialog">
         <div class="dialog-header">
-          <h3>Nueva Conversación</h3>
-          <button @click="showNewChatDialog = false" class="btn-close">✕</button>
+          <h3>Nueva conversación</h3>
+          <button @click="closeNewChatDialog" class="btn-close">✕</button>
         </div>
         <div class="dialog-body">
-          <p>Funcionalidad de nueva conversación próximamente...</p>
+          <!-- Búsqueda de usuarios -->
+          <div class="search-users">
+            <div class="search-label">Para:</div>
+            <div class="search-input-container">
+              <!-- Usuarios seleccionados -->
+              <div class="selected-users">
+                <span
+                  v-for="user in selectedUsers"
+                  :key="user.id"
+                  class="user-chip"
+                >
+                  {{ user.fullName || user.username }}
+                  <button @click="removeUser(user)" class="chip-remove">×</button>
+                </span>
+              </div>
+
+              <!-- Input de búsqueda -->
+              <input
+                v-model="userSearchQuery"
+                @input="searchUsers"
+                @focus="showUserResults = true"
+                placeholder="Buscar personas..."
+                class="user-search-input"
+              />
+            </div>
+          </div>
+
+          <!-- Resultados de búsqueda -->
+          <div v-if="showUserResults && filteredUsers.length > 0" class="user-results">
+            <div
+              v-for="user in filteredUsers"
+              :key="user.id"
+              @click="selectUser(user)"
+              class="user-result-item"
+            >
+              <div class="user-avatar" :style="{ backgroundColor: getUserColor(user) }">
+                {{ getUserInitials(user) }}
+              </div>
+              <div class="user-info">
+                <div class="user-name">{{ user.fullName || user.username }}</div>
+                <div class="user-email">{{ user.email }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mensaje cuando no hay resultados -->
+          <div v-if="showUserResults && userSearchQuery && filteredUsers.length === 0" class="no-results">
+            No se encontraron usuarios
+          </div>
+
+          <!-- Botón crear -->
+          <div class="dialog-footer">
+            <button
+              @click="createNewConversation"
+              :disabled="selectedUsers.length === 0 || creatingConversation"
+              class="btn-create-chat"
+            >
+              {{ creatingConversation ? 'Creando...' : 'Crear conversación' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -168,6 +227,7 @@
 <script>
 import { mapState, mapGetters, mapActions } from 'vuex';
 import chatService from '@/services/chat.service';
+import userService from '@/services/user.service';
 
 export default {
   name: 'ChatView',
@@ -176,7 +236,13 @@ export default {
     return {
       searchQuery: '',
       newMessage: '',
-      showNewChatDialog: false
+      showNewChatDialog: false,
+      // Nuevo diálogo de conversación
+      userSearchQuery: '',
+      selectedUsers: [],
+      availableUsers: [],
+      showUserResults: false,
+      creatingConversation: false
     };
   },
 
@@ -194,6 +260,20 @@ export default {
         conv.name?.toLowerCase().includes(query) ||
         conv.lastMessagePreview?.toLowerCase().includes(query)
       );
+    },
+
+    filteredUsers() {
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+      return this.availableUsers.filter(user => {
+        // Excluir usuario actual
+        if (user.id === currentUser.id) return false;
+
+        // Excluir usuarios ya seleccionados
+        if (this.selectedUsers.some(selected => selected.id === user.id)) return false;
+
+        return true;
+      });
     }
   },
 
@@ -274,6 +354,99 @@ export default {
           container.scrollTop = container.scrollHeight;
         }
       });
+    },
+
+    // === MÉTODOS PARA NUEVA CONVERSACIÓN ===
+
+    async searchUsers() {
+      if (!this.userSearchQuery || this.userSearchQuery.length < 2) {
+        this.availableUsers = [];
+        return;
+      }
+
+      try {
+        const response = await userService.getAllUsers({
+          username: this.userSearchQuery,
+          size: 10
+        });
+
+        this.availableUsers = response.data.users || response.data.data || response.data || [];
+      } catch (error) {
+        console.error('Error searching users:', error);
+        this.availableUsers = [];
+      }
+    },
+
+    selectUser(user) {
+      // Evitar duplicados
+      if (!this.selectedUsers.some(u => u.id === user.id)) {
+        this.selectedUsers.push(user);
+      }
+
+      // Limpiar búsqueda
+      this.userSearchQuery = '';
+      this.availableUsers = [];
+      this.showUserResults = false;
+    },
+
+    removeUser(user) {
+      this.selectedUsers = this.selectedUsers.filter(u => u.id !== user.id);
+    },
+
+    async createNewConversation() {
+      if (this.selectedUsers.length === 0) return;
+
+      this.creatingConversation = true;
+
+      try {
+        const participantIds = this.selectedUsers.map(u => u.id);
+
+        // Determinar nombre y tipo de conversación
+        let name = null;
+        let type = 'direct';
+
+        if (this.selectedUsers.length === 1) {
+          // Conversación directa
+          name = this.selectedUsers[0].fullName || this.selectedUsers[0].username;
+          type = 'direct';
+        } else {
+          // Conversación grupal
+          const names = this.selectedUsers.map(u => u.fullName || u.username);
+          name = names.join(', ');
+          type = 'group';
+        }
+
+        // Crear conversación
+        const response = await chatService.createConversation(participantIds, name, type);
+
+        if (response.success) {
+          // Recargar conversaciones
+          await this.fetchConversations();
+
+          // Seleccionar la nueva conversación
+          const newConversation = response.data;
+          await this.selectConversation(newConversation);
+
+          // Cerrar diálogo
+          this.closeNewChatDialog();
+
+          this.$notify?.({ type: 'success', message: 'Conversación creada exitosamente' });
+        }
+      } catch (error) {
+        console.error('Error creating conversation:', error);
+        this.$notify?.({ type: 'error', message: 'Error al crear conversación' });
+      } finally {
+        this.creatingConversation = false;
+      }
+    },
+
+    closeNewChatDialog() {
+      this.showNewChatDialog = false;
+      this.userSearchQuery = '';
+      this.selectedUsers = [];
+      this.availableUsers = [];
+      this.showUserResults = false;
+      this.creatingConversation = false;
     }
   }
 };
@@ -635,5 +808,183 @@ export default {
 
 .dialog-body {
   padding: 20px;
+}
+
+/* === ESTILOS NUEVA CONVERSACIÓN (Estilo Facebook) === */
+.new-chat-dialog {
+  min-height: 400px;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.new-chat-dialog .dialog-body {
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.search-users {
+  padding: 15px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background: white;
+}
+
+.search-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.search-input-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #f8f9fa;
+  min-height: 42px;
+}
+
+.selected-users {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #3498db;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.chip-remove:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.user-search-input {
+  flex: 1;
+  min-width: 150px;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 4px;
+  font-size: 14px;
+}
+
+.user-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.user-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.user-result-item:hover {
+  background: #f0f2f5;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #050505;
+  margin-bottom: 2px;
+}
+
+.user-email {
+  font-size: 13px;
+  color: #65676b;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 14px;
+}
+
+.dialog-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #e0e0e0;
+  background: white;
+}
+
+.btn-create-chat {
+  width: 100%;
+  padding: 12px 24px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-create-chat:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.btn-create-chat:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+/* Ajustar tamaño del diálogo */
+.new-chat-dialog.dialog-content {
+  max-width: 550px;
 }
 </style>
