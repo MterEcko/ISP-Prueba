@@ -7,7 +7,7 @@ module.exports = function(app) {
   // === CONVERSACIONES ===
   app.get(
     '/api/chat/conversations',
-    //[authJwt.verifyToken],
+    [authJwt.verifyToken],
     chatController.getConversations
   );
   
