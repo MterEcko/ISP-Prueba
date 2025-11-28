@@ -183,6 +183,7 @@
 import { mapState, mapGetters, mapActions } from 'vuex';
 import chatService from '@/services/chat.service';
 import userService from '@/services/user.service';
+import socketService from '@/services/socket.service';
 import VideoCallWindow from '@/components/VideoCallWindow.vue';
 
 export default {
@@ -208,7 +209,10 @@ export default {
 
       // Polling
       pollInterval: null,
-      POLL_INTERVAL: 5000 // 5 segundos
+      POLL_INTERVAL: 5000, // 5 segundos
+
+      // WebRTC
+      activeCallUserId: null
     };
   },
 
@@ -251,10 +255,30 @@ export default {
 
   mounted() {
     this.fetchConversations();
+
+    // Conectar socket
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    if (currentUser.id) {
+      socketService.connect(currentUser.id);
+
+      // Registrar handlers de llamadas
+      socketService.on('incoming-call', this.handleIncomingCall);
+      socketService.on('call-answered', this.handleCallAnsweredFromSocket);
+      socketService.on('call-rejected', this.handleCallRejectedFromSocket);
+      socketService.on('call-ended', this.handleCallEndedFromSocket);
+      socketService.on('ice-candidate', this.handleIceCandidateFromSocket);
+    }
   },
 
   beforeUnmount() {
     this.stopPolling();
+
+    // Desconectar socket y limpiar handlers
+    socketService.off('incoming-call', this.handleIncomingCall);
+    socketService.off('call-answered', this.handleCallAnsweredFromSocket);
+    socketService.off('call-rejected', this.handleCallRejectedFromSocket);
+    socketService.off('call-ended', this.handleCallEndedFromSocket);
+    socketService.off('ice-candidate', this.handleIceCandidateFromSocket);
   },
 
   methods: {
@@ -446,36 +470,63 @@ export default {
       }
     },
 
-    // Handlers de señalización WebRTC
+    // Handlers de señalización WebRTC (enviar al servidor)
     handleCallInitiated(data) {
-      // Enviar señal de llamada al servidor
-      console.log('Call initiated:', data);
-      // TODO: Implementar envío de señalización mediante WebSocket o API REST
-      // Ejemplo: this.$socket.emit('call-offer', data);
+      this.activeCallUserId = data.userId;
+      socketService.sendCallOffer(data.userId, data.offer, data.callType);
     },
 
     handleCallAccepted(data) {
-      console.log('Call accepted:', data);
-      // TODO: Enviar respuesta al servidor
-      // Ejemplo: this.$socket.emit('call-answer', data);
+      socketService.sendCallAnswer(data.userId, data.answer);
     },
 
     handleCallRejected(data) {
-      console.log('Call rejected:', data);
-      // TODO: Notificar rechazo al servidor
-      // Ejemplo: this.$socket.emit('call-reject', data);
+      socketService.sendCallReject(data.userId);
+      this.activeCallUserId = null;
     },
 
     handleCallEnded(data) {
-      console.log('Call ended:', data);
-      // TODO: Notificar fin de llamada al servidor
-      // Ejemplo: this.$socket.emit('call-end', data);
+      if (data && data.userId) {
+        socketService.sendCallEnd(data.userId);
+      }
+      this.activeCallUserId = null;
     },
 
     handleIceCandidate(data) {
-      console.log('ICE candidate:', data);
-      // TODO: Enviar ICE candidate al servidor
-      // Ejemplo: this.$socket.emit('ice-candidate', data);
+      socketService.sendIceCandidate(data.userId, data.candidate);
+    },
+
+    // Handlers de señalización WebRTC (recibir del servidor)
+    handleIncomingCall(data) {
+      const { callerId, offer, callType } = data;
+      this.activeCallUserId = callerId;
+
+      // Buscar nombre del llamador
+      const callerConv = this.conversations.find(c =>
+        c.participants && c.participants.includes(callerId)
+      );
+      const callerName = callerConv ? callerConv.name : 'Usuario';
+
+      // Mostrar llamada entrante en VideoCallWindow
+      this.$refs.videoCall.receiveCall(callerId, callerName, offer, callType);
+    },
+
+    handleCallAnsweredFromSocket(data) {
+      this.$refs.videoCall.handleAnswer(data.answer);
+    },
+
+    handleCallRejectedFromSocket() {
+      this.$refs.videoCall.endCall();
+      this.activeCallUserId = null;
+    },
+
+    handleCallEndedFromSocket() {
+      this.$refs.videoCall.endCall();
+      this.activeCallUserId = null;
+    },
+
+    handleIceCandidateFromSocket(data) {
+      this.$refs.videoCall.addIceCandidate(data.candidate);
     }
   }
 };

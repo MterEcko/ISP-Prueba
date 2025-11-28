@@ -4,14 +4,25 @@ const cors = require('cors');
 const morgan = require("morgan");
 const helmet = require('helmet');
 const dotenv = require("dotenv");
+const http = require('http');
+const { Server } = require('socket.io');
 
-const sequelize = require("./config/database"); // Asegúrate que la ruta a tu config de DB sea correcta
-const allRoutes = require("./routes"); // Importará el index.js de la carpeta routes
+const sequelize = require("./config/database");
+const allRoutes = require("./routes");
 
 const path = require('path');
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: ['http://localhost:8080', 'http://localhost:3000', 'http://10.10.1.163:8080'],
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -47,12 +58,89 @@ app.get('/', (req, res) => {
 // Base de datos
 const db = require('./models');
 
+// WebSocket - Almacenar usuarios conectados
+const connectedUsers = new Map();
+
+// Socket.io - Manejo de señalización WebRTC
+io.on('connection', (socket) => {
+  console.log('Usuario conectado:', socket.id);
+
+  // Registrar usuario
+  socket.on('register-user', (userId) => {
+    connectedUsers.set(userId, socket.id);
+    console.log(`Usuario ${userId} registrado con socket ${socket.id}`);
+  });
+
+  // Oferta de llamada
+  socket.on('call-offer', ({ userId, offer, callType }) => {
+    const targetSocketId = connectedUsers.get(userId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('incoming-call', {
+        callerId: Array.from(connectedUsers.entries()).find(([_, socketId]) => socketId === socket.id)?.[0],
+        offer,
+        callType
+      });
+      console.log(`Llamada enviada de ${socket.id} a ${targetSocketId}`);
+    } else {
+      socket.emit('call-error', { message: 'Usuario no disponible' });
+    }
+  });
+
+  // Respuesta a llamada
+  socket.on('call-answer', ({ userId, answer }) => {
+    const targetSocketId = connectedUsers.get(userId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('call-answered', { answer });
+      console.log(`Respuesta enviada de ${socket.id} a ${targetSocketId}`);
+    }
+  });
+
+  // ICE Candidate
+  socket.on('ice-candidate', ({ userId, candidate }) => {
+    const targetSocketId = connectedUsers.get(userId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('ice-candidate', { candidate });
+    }
+  });
+
+  // Rechazar llamada
+  socket.on('call-reject', ({ userId }) => {
+    const targetSocketId = connectedUsers.get(userId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('call-rejected');
+      console.log(`Llamada rechazada por ${socket.id}`);
+    }
+  });
+
+  // Terminar llamada
+  socket.on('call-end', ({ userId }) => {
+    const targetSocketId = connectedUsers.get(userId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('call-ended');
+      console.log(`Llamada terminada por ${socket.id}`);
+    }
+  });
+
+  // Desconexión
+  socket.on('disconnect', () => {
+    // Remover usuario de la lista
+    for (const [userId, socketId] of connectedUsers.entries()) {
+      if (socketId === socket.id) {
+        connectedUsers.delete(userId);
+        console.log(`Usuario ${userId} desconectado`);
+        break;
+      }
+    }
+  });
+});
+
 // Sincronizar con la base de datos y arrancar el servidor
-sequelize.sync({ force: process.env.DB_FORCE_SYNC === "true" }) // force: true dropeará las tablas y las recreará (cuidado en producción)
+sequelize.sync({ force: process.env.DB_FORCE_SYNC === "true" })
   .then(() => {
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Servidor corriendo en el puerto ${PORT} desde src/index`);
+      console.log('Socket.io iniciado para llamadas WebRTC');
     });
   })
   .catch(err => {
