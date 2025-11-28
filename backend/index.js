@@ -82,7 +82,7 @@ require('./routes/inventoryMovement.routes')(app);
 app.use('/api/calendar', require('./src/routes/calendar.routes'));
 
 // Rutas del chat
-app.use('/api/chat', require('./src/routes/chat.routes'));
+require('./src/routes/chat.routes')(app);
 
 // Rutas del Store (Marketplace)
 app.use('/api/store', require('./src/routes/storeCustomer.routes'));
