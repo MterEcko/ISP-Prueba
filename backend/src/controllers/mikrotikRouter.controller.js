@@ -315,7 +315,8 @@ update: async (req, res) => {
       message: 'Error al actualizar router Mikrotik',
       error: error.message
     });
-  },
+  }
+},
 
   // Eliminar router Mikrotik y su Device asociado
   delete: async (req, res) => {
