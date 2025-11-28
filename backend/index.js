@@ -93,6 +93,44 @@ app.use('/api/plugin-upload', require('./src/routes/pluginUpload.routes'));
 // Rutas de n8n Integration
 app.use('/api/n8n', require('./src/routes/n8n.routes'));
 
+// ==================== NUEVAS RUTAS AGREGADAS ====================
+
+// Rutas de configuración de red de clientes
+require('./src/routes/clientNetworkConfig.routes')(app);
+
+// Rutas de tipos y adjuntos de tickets
+require('./src/routes/ticketType.routes')(app);
+require('./src/routes/ticketAttachment.routes')(app);
+
+// Rutas de parámetros de comandos
+require('./src/routes/commandParameter.routes')(app);
+
+// Rutas de categorías y productos de inventario
+require('./src/routes/inventoryCategory.routes')(app);
+require('./src/routes/inventoryProduct.routes')(app);
+require('./src/routes/inventoryScrap.routes')(app);
+
+// Rutas de materiales de instalación
+require('./src/routes/installationMaterial.routes')(app);
+
+// Rutas de Mikrotik (PPPoE, IPs, Profiles)
+require('./src/routes/mikrotikPPPOE.routes')(app);
+require('./src/routes/mikrotikIp.routes')(app);
+require('./src/routes/mikrotikProfile.routes')(app);
+
+// Rutas de notificaciones
+require('./src/routes/notificationRule.routes')(app);
+require('./src/routes/notificationQueue.routes')(app);
+
+// Rutas de comunicación
+require('./src/routes/communicationContact.routes')(app);
+require('./src/routes/communicationEvent.routes')(app);
+
+// Rutas de pagos de nómina
+require('./src/routes/payrollPayment.routes')(app);
+
+// ==================== FIN NUEVAS RUTAS ====================
+
 
 // Función para crear datos iniciales mínimos si no existen
 async function initial() {

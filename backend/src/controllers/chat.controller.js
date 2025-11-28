@@ -22,7 +22,6 @@ exports.getConversations = async (req, res) => {
             {
               model: db.User,
               as: 'sender',
-              attributes: ['id', 'firstName', 'lastName', 'email']
               attributes: ['id', 'username', 'fullName', 'email']
             }
           ]
@@ -60,19 +59,19 @@ exports.createConversation = async (req, res) => {
 // Obtener mensajes de conversación
 exports.getMessages = async (req, res) => {
   try {
-    const { conversationId } = req.params;
+    const { id } = req.params;
     const { limit = 50, offset = 0 } = req.query;
 
     const messages = await db.ChatMessage.findAll({
       where: {
-        conversationId,
+        conversationId: id,
         isDeleted: false
       },
       include: [
         {
           model: db.User,
           as: 'sender',
-          attributes: ['id', 'firstName', 'lastName', 'email']
+          attributes: ['id', 'username', 'fullName', 'email']
         }
       ],
       order: [['createdAt', 'DESC']],
@@ -191,7 +190,7 @@ exports.getTelegramStatus = async (req, res) => {
 exports.updateConversation = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.userId;
+    const userId = req.user.id;
     const { name, metadata } = req.body;
 
     const conversation = await db.ChatConversation.findByPk(id);
@@ -233,7 +232,7 @@ exports.updateConversation = async (req, res) => {
 exports.deleteConversation = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.userId;
+    const userId = req.user.id;
 
     const conversation = await db.ChatConversation.findByPk(id);
 
@@ -275,7 +274,7 @@ exports.deleteConversation = async (req, res) => {
 exports.updateMessage = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.userId;
+    const userId = req.user.id;
     const { content, metadata } = req.body;
 
     const message = await db.ChatMessage.findByPk(id);
@@ -318,7 +317,7 @@ exports.updateMessage = async (req, res) => {
 exports.deleteMessage = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.userId;
+    const userId = req.user.id;
 
     const message = await db.ChatMessage.findByPk(id);
 
