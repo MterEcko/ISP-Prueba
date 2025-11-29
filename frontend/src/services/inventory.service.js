@@ -699,7 +699,7 @@ getInventoryStats(params = {}) {
     return axios.get(`${API_URL}inventory-categories`, {
       headers: authHeader()
     });
-  }
+  },
 
   // --- Métodos para PRODUCTS (Catálogo) ---
 
@@ -709,31 +709,31 @@ getInventoryStats(params = {}) {
     if (params.size) queryParams.append('size', params.size);
 
     // ⬇️ ¡ASEGÚRATE DE QUE ESTA RUTA SEA CORRECTA EN TU BACKEND!
-    return axios.get(`${API_URL}inventory-products?${queryParams.toString()}`, { 
-      headers: authHeader() 
+    return axios.get(`${API_URL}inventory-products?${queryParams.toString()}`, {
+      headers: authHeader()
     });
-  }
+  },
 
   getProduct(id) {
-    return axios.get(`${API_URL}inventory-products/${id}`, { 
-      headers: authHeader() 
+    return axios.get(`${API_URL}inventory-products/${id}`, {
+      headers: authHeader()
     });
-  }
+  },
 
   createProduct(data) {
-    return axios.post(`${API_URL}inventory-products`, data, { 
-      headers: authHeader() 
+    return axios.post(`${API_URL}inventory-products`, data, {
+      headers: authHeader()
     });
-  }
+  },
 
   updateProduct(id, data) {
-    return axios.put(`${API_URL}inventory-products/${id}`, data, { 
-      headers: authHeader() 
+    return axios.put(`${API_URL}inventory-products/${id}`, data, {
+      headers: authHeader()
     });
-  }
+  },
 
 
-  
+
   // --- Métodos para IMPORT/EXPORT ---
   
   bulkImport(formData, options = {}) {
