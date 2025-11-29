@@ -87,6 +87,40 @@ module.exports = function(app) {
     controller.updateWhatsAppSettings
   );
 
+  app.post(
+    "/api/settings/whatsapp/test",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.testWhatsAppSettings
+  );
+
+  // ===============================
+  // CONFIGURACIÓN DE SMS
+  // ===============================
+
+  app.get(
+    "/api/settings/sms",
+    //[authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.getSMSSettings
+  );
+
+  app.put(
+    "/api/settings/sms",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.updateSMSSettings
+  );
+
+  app.post(
+    "/api/settings/sms/test",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.testSMSSettings
+  );
+
+  app.get(
+    "/api/settings/sms/status",
+    //[authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.getSMSGatewayStatus
+  );
+
   // ===============================
   // CONFIGURACIÓN DE JELLYFIN
   // ===============================

@@ -173,6 +173,12 @@ app.use('/api/calendar', require('./src/routes/calendar.routes'));
 // Rutas del chat
 require('./src/routes/chat.routes')(app);
 
+// Rutas de WhatsApp
+require('./src/routes/whatsapp.routes')(app);
+
+// Rutas de SMS
+require('./src/routes/sms.routes')(app);
+
 // Rutas del Store (Marketplace)
 app.use('/api/store', require('./src/routes/storeCustomer.routes'));
 

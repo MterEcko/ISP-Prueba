@@ -306,11 +306,121 @@ async function handleCreateInvoice(data) {
 }
 
 async function handleSendNotification(data) {
-  // Aquí se integraría con el sistema de notificaciones
-  // Por ahora solo retorna success
-  console.log('Sending notification:', data);
+  const { channel, recipient, message, templateId, variables, clientId } = data;
+
+  let result;
+
+  switch (channel) {
+    case 'whatsapp':
+      result = await handleSendWhatsApp(data);
+      break;
+
+    case 'sms':
+      result = await handleSendSMS(data);
+      break;
+
+    case 'telegram':
+      result = await handleSendTelegram(data);
+      break;
+
+    case 'email':
+      result = await handleSendEmail(data);
+      break;
+
+    default:
+      throw new Error(`Canal no soportado: ${channel}`);
+  }
+
+  return result;
+}
+
+async function handleSendWhatsApp(data) {
+  const whatsappService = require('../services/whatsapp.service');
+  const { recipient, message, templateId, variables, clientId } = data;
+
+  if (templateId) {
+    // Enviar con template
+    const template = await db.MessageTemplate.findByPk(templateId);
+    if (!template) {
+      throw new Error('Template no encontrado');
+    }
+
+    let client = null;
+    if (clientId) {
+      client = await db.Client.findByPk(clientId);
+    }
+
+    const templateController = require('./template.controller');
+    const processedMessage = templateController._processTemplate(
+      template.messageBody,
+      variables || {},
+      client
+    );
+
+    await whatsappService.sendMessage(recipient, processedMessage);
+  } else {
+    // Enviar mensaje simple
+    await whatsappService.sendMessage(recipient, message);
+  }
 
   return {
-    message: 'Notificación enviada correctamente'
+    channel: 'whatsapp',
+    recipient,
+    message: 'Mensaje de WhatsApp enviado correctamente'
+  };
+}
+
+async function handleSendSMS(data) {
+  const smsService = require('../services/sms.service');
+  const { recipient, message, templateId, variables, clientId } = data;
+
+  if (templateId) {
+    // Enviar con template
+    await smsService.sendSMSWithTemplate(recipient, templateId, variables || {}, clientId);
+  } else {
+    // Enviar mensaje simple
+    await smsService.sendSMS(recipient, message);
+  }
+
+  return {
+    channel: 'sms',
+    recipient,
+    message: 'SMS enviado correctamente'
+  };
+}
+
+async function handleSendTelegram(data) {
+  const telegramService = require('../services/telegramBot.service');
+  const { recipient, message } = data;
+
+  if (!telegramService.isActive()) {
+    throw new Error('Telegram no esta configurado');
+  }
+
+  await telegramService.sendMessage(recipient, message);
+
+  return {
+    channel: 'telegram',
+    recipient,
+    message: 'Mensaje de Telegram enviado correctamente'
+  };
+}
+
+async function handleSendEmail(data) {
+  const emailService = require('../services/email.service');
+  const { recipient, subject, message, templateId } = data;
+
+  if (emailService && emailService.sendEmail) {
+    await emailService.sendEmail({
+      to: recipient,
+      subject: subject || 'Notificacion',
+      html: message
+    });
+  }
+
+  return {
+    channel: 'email',
+    recipient,
+    message: 'Email enviado correctamente'
   };
 }

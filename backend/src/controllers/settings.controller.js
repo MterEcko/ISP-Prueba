@@ -267,46 +267,211 @@ exports.testTelegramSettings = async (req, res) => {
 
 exports.getWhatsAppSettings = async (req, res) => {
   try {
-    const settings = await configHelper.getWhatsAppConfig();
-    
-    return res.status(200).json({
-      enabled: settings.enabled,
-      apiUrl: settings.apiUrl,
-      hasToken: !!settings.token
-    });
+    const method = await configHelper.get('whatsappMethod', 'twilio');
+    const enabled = await configHelper.get('whatsappEnabled', false);
+
+    const settings = {
+      enabled: enabled === 'true' || enabled === true,
+      method: method
+    };
+
+    // Configuracion de Meta API
+    if (method === 'api') {
+      settings.api = {
+        apiUrl: await configHelper.get('whatsappApiUrl', 'https://graph.facebook.com/v17.0/'),
+        phoneNumberId: await configHelper.get('whatsappPhoneNumberId', ''),
+        hasToken: !!(await configHelper.get('whatsappApiToken'))
+      };
+    }
+
+    // Configuracion de Twilio
+    if (method === 'twilio') {
+      settings.twilio = {
+        phoneNumber: await configHelper.get('whatsappTwilioNumber', ''),
+        hasAccountSid: !!(await configHelper.get('whatsappTwilioAccountSid')),
+        hasAuthToken: !!(await configHelper.get('whatsappTwilioAuthToken'))
+      };
+    }
+
+    return res.status(200).json(settings);
   } catch (error) {
     console.error('Error obteniendo configuración de WhatsApp:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: 'Error obteniendo configuración de WhatsApp',
-      error: error.message 
+      error: error.message
     });
   }
 };
 
 exports.updateWhatsAppSettings = async (req, res) => {
   try {
-    const { enabled, apiUrl, token } = req.body;
-    
+    const { enabled, method, api, twilio } = req.body;
+
     const updates = {
       whatsappEnabled: String(enabled),
-      whatsappApiUrl: apiUrl
+      whatsappMethod: method || 'twilio'
     };
 
-    if (token && token.trim() !== '') {
-      updates.whatsappToken = token;
+    // Configuracion Meta API
+    if (api) {
+      if (api.apiUrl) updates.whatsappApiUrl = api.apiUrl;
+      if (api.phoneNumberId) updates.whatsappPhoneNumberId = api.phoneNumberId;
+      if (api.apiToken && api.apiToken.trim() !== '') {
+        updates.whatsappApiToken = api.apiToken;
+      }
+    }
+
+    // Configuracion Twilio
+    if (twilio) {
+      if (twilio.phoneNumber) updates.whatsappTwilioNumber = twilio.phoneNumber;
+      if (twilio.accountSid && twilio.accountSid.trim() !== '') {
+        updates.whatsappTwilioAccountSid = twilio.accountSid;
+      }
+      if (twilio.authToken && twilio.authToken.trim() !== '') {
+        updates.whatsappTwilioAuthToken = twilio.authToken;
+      }
     }
 
     await configHelper.updateModule('whatsapp', updates);
-    
+
+    // Reinicializar servicio de WhatsApp
+    const whatsappService = require('../services/whatsapp.service');
+    await whatsappService.initialize();
+
     return res.status(200).json({
       success: true,
       message: 'Configuración de WhatsApp actualizada correctamente'
     });
   } catch (error) {
     console.error('Error actualizando configuración de WhatsApp:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: 'Error actualizando configuración de WhatsApp',
-      error: error.message 
+      error: error.message
+    });
+  }
+};
+
+exports.testWhatsAppSettings = async (req, res) => {
+  try {
+    const { testPhoneNumber } = req.body;
+
+    if (!testPhoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Número de teléfono de prueba requerido'
+      });
+    }
+
+    const whatsappService = require('../services/whatsapp.service');
+    const result = await whatsappService.testConnection(testPhoneNumber);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Error en prueba de WhatsApp:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error enviando mensaje de prueba',
+      error: error.message
+    });
+  }
+};
+
+// ===============================
+// CONFIGURACIÓN DE SMS
+// ===============================
+
+exports.getSMSSettings = async (req, res) => {
+  try {
+    const enabled = await configHelper.get('smsEnabled', false);
+    const gatewayType = await configHelper.get('smsGatewayType', 'generic');
+    const gatewayUrl = await configHelper.get('smsGatewayUrl', '');
+
+    const settings = {
+      enabled: enabled === 'true' || enabled === true,
+      gatewayType: gatewayType,
+      gatewayUrl: gatewayUrl,
+      hasToken: !!(await configHelper.get('smsGatewayToken'))
+    };
+
+    return res.status(200).json(settings);
+  } catch (error) {
+    console.error('Error obteniendo configuración de SMS:', error);
+    return res.status(500).json({
+      message: 'Error obteniendo configuración de SMS',
+      error: error.message
+    });
+  }
+};
+
+exports.updateSMSSettings = async (req, res) => {
+  try {
+    const { enabled, gatewayType, gatewayUrl, gatewayToken } = req.body;
+
+    const updates = {
+      smsEnabled: String(enabled),
+      smsGatewayType: gatewayType || 'generic',
+      smsGatewayUrl: gatewayUrl || ''
+    };
+
+    if (gatewayToken && gatewayToken.trim() !== '') {
+      updates.smsGatewayToken = gatewayToken;
+    }
+
+    await configHelper.updateModule('sms', updates);
+
+    // Reinicializar servicio de SMS
+    const smsService = require('../services/sms.service');
+    await smsService.initialize();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Configuración de SMS actualizada correctamente'
+    });
+  } catch (error) {
+    console.error('Error actualizando configuración de SMS:', error);
+    return res.status(500).json({
+      message: 'Error actualizando configuración de SMS',
+      error: error.message
+    });
+  }
+};
+
+exports.testSMSSettings = async (req, res) => {
+  try {
+    const { testPhoneNumber } = req.body;
+
+    if (!testPhoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Número de teléfono de prueba requerido'
+      });
+    }
+
+    const smsService = require('../services/sms.service');
+    const result = await smsService.testConnection(testPhoneNumber);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Error en prueba de SMS:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error enviando SMS de prueba',
+      error: error.message
+    });
+  }
+};
+
+exports.getSMSGatewayStatus = async (req, res) => {
+  try {
+    const smsService = require('../services/sms.service');
+    const status = await smsService.getGatewayStatus();
+
+    return res.status(200).json(status);
+  } catch (error) {
+    console.error('Error obteniendo estado del gateway SMS:', error);
+    return res.status(500).json({
+      message: 'Error obteniendo estado del gateway',
+      error: error.message
     });
   }
 };
