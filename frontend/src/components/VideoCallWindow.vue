@@ -125,8 +125,21 @@ export default {
 
       // Configuración ICE servers (STUN/TURN)
       iceServers: [
+        // Google STUN (gratis) - Para detectar IP pública
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+
+        // Servidor TURN propio (para relay cuando peer-to-peer falla)
+        {
+          urls: 'turn:turn.isp.serviciosqbit.net:3478',
+          username: 'ispuser',
+          credential: 'SecurePassword2024!'
+        },
+        {
+          urls: 'turns:turn.isp.serviciosqbit.net:5349',
+          username: 'ispuser',
+          credential: 'SecurePassword2024!'
+        }
       ]
     };
   },
@@ -277,12 +290,22 @@ export default {
     // Crear conexión WebRTC
     createPeerConnection() {
       this.peerConnection = new RTCPeerConnection({
-        iceServers: this.iceServers
+        iceServers: this.iceServers,
+        iceCandidatePoolSize: 10
       });
 
       // Manejar ICE candidates
       this.peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
+          // Mostrar tipo de conexion en consola
+          console.log('ICE Candidate type:', event.candidate.type);
+          console.log('Connection via:',
+            event.candidate.type === 'host' ? 'LAN directa' :
+            event.candidate.type === 'srflx' ? 'STUN (peer-to-peer via internet)' :
+            event.candidate.type === 'relay' ? 'TURN (relay via servidor)' :
+            'Desconocido'
+          );
+
           this.$emit('ice-candidate', {
             userId: this.callerId,
             candidate: event.candidate

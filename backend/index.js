@@ -15,9 +15,19 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+
+// Origenes permitidos (incluye Cloudflare, localhost, e IPs)
+const allowedOrigins = [
+  'http://localhost:8080',
+  'http://localhost:3000',
+  'http://10.10.1.163:8080',
+  'https://isp.serviciosqbit.net',
+  'http://isp.serviciosqbit.net'
+];
+
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:8080', 'http://localhost:3000', 'http://10.10.1.163:8080'],
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -28,7 +38,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:3000', 'http://10.10.1.163:8080'], // Frontend URLs permitidas
+  origin: allowedOrigins, // Usar la misma lista de origenes
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'x-access-token', 'Authorization', 'Origin', 'Accept'],
   credentials: true, // Permite cookies y headers de autenticación

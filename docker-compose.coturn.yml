@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  coturn:
+    image: coturn/coturn:latest
+    container_name: isp-coturn
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+      - ./coturn/logs:/var/log/coturn
+    environment:
+      - DETECT_EXTERNAL_IP=yes
+      - DETECT_RELAY_IP=yes
+    command:
+      - "-c"
+      - "/etc/coturn/turnserver.conf"
+      - "--log-file=/var/log/coturn/turn.log"
+      - "--verbose"
+
+# Configuracion de red (alternativa si network_mode: host no funciona en Windows)
+# networks:
+#   coturn_network:
+#     driver: bridge
