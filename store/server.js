@@ -18,14 +18,46 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 // ==================== MIDDLEWARE ====================
 
-// Security headers
-app.use(helmet());
+// Security headers: Configuración personalizada para permitir 'scripts' en línea
+// Esto resuelve el error "Executing inline script violates..."
+app.use(helmet({
+    // Deshabilita la cabecera X-Content-Type-Options si causa problemas con estáticos
+    // xContentTypeOptions: false,
+    
+    // Configuración detallada de CSP:
+    contentSecurityPolicy: {
+        directives: {
+            // Fuentes permitidas para SCRIPTS: 'self', scripts en línea, y unpkg.com
+            scriptSrc: [
+                "'self'", 
+                "'unsafe-inline'", // Permite <script>...</script> en el HTML
+                "https://unpkg.com" // *** SOLUCIÓN 1: Permite cargar leaflet.js ***
+            ], 
+            
+            // Fuentes permitidas para ESTILOS: 'self', estilos en línea, y unpkg.com
+            styleSrc: [
+                "'self'", 
+                "'unsafe-inline'", // Permite estilos en línea
+                "https://unpkg.com" // *** SOLUCIÓN 2: Permite cargar leaflet.css ***
+            ],
+            
+            // Si usas imágenes de Leaflet o de otros lados:
+            imgSrc: ["'self'", "data:", "https://unpkg.com", "https://tile.openstreetmap.org"],
+            
+            // Deshabilitar la directiva script-src-attr
+            // Esto es necesario porque algunas versiones de Helmet la configuran como 'none'
+            // y bloquean los onclick, onchange, etc.
+            scriptSrcAttr: null, // *** SOLUCIÓN 3: Permite los onclick, onchange, etc. ***
+        },
+    },
+}));
 
 // Compression
 app.use(compression());
 
 // CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8080'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8080', 'http://localhost:3001'];
+// AHORA PERMITE EL ORIGEN 3001
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
