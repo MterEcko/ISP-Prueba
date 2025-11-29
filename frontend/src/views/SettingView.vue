@@ -52,12 +52,19 @@
       >
         Email (SMTP)
       </button>
-      <button 
-        class="tab-button" 
+      <button
+        class="tab-button"
         :class="{ active: activeTab === 'telegram' }"
         @click="activeTab = 'telegram'"
       >
         Telegram
+      </button>
+      <button
+        class="tab-button"
+        :class="{ active: activeTab === 'whatsapp' }"
+        @click="activeTab = 'whatsapp'"
+      >
+        WhatsApp
       </button>
     </div>
     
@@ -552,7 +559,241 @@
     </div>
   </div>
 </div>
-      
+
+      <!-- Configuración de WhatsApp -->
+      <div v-if="activeTab === 'whatsapp'" class="tab-pane">
+        <div class="card">
+          <h2>Configuracion de WhatsApp</h2>
+
+          <div class="telegram-status">
+            <div class="status-badge" :class="whatsappSettings.enabled ? 'status-active' : 'status-inactive'">
+              {{ whatsappSettings.enabled ? 'Activo' : 'Inactivo' }}
+            </div>
+          </div>
+
+          <form @submit.prevent="saveWhatsAppSettings">
+            <div class="form-check mb-4">
+              <input
+                type="checkbox"
+                id="whatsappEnabled"
+                v-model="whatsappSettings.enabled"
+              />
+              <label for="whatsappEnabled">
+                <strong>Habilitar WhatsApp para chat de soporte</strong>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label>Metodo de Conexion</label>
+              <select v-model="whatsappSettings.method" :disabled="!whatsappSettings.enabled" class="form-control">
+                <option value="api">WhatsApp Business API</option>
+                <option value="twilio">Twilio</option>
+                <option value="web">WhatsApp Web (QR)</option>
+              </select>
+            </div>
+
+            <!-- API Oficial de WhatsApp Business -->
+            <div v-if="whatsappSettings.method === 'api'">
+              <h4 class="mt-4">API Oficial de WhatsApp Business</h4>
+
+              <div class="form-group">
+                <label for="whatsappApiUrl">URL de la API</label>
+                <input
+                  type="text"
+                  id="whatsappApiUrl"
+                  v-model="whatsappSettings.apiUrl"
+                  placeholder="https://graph.facebook.com/v17.0/"
+                  :disabled="!whatsappSettings.enabled"
+                />
+                <small class="form-hint">URL del endpoint de WhatsApp Business API</small>
+              </div>
+
+              <div class="form-group">
+                <label for="whatsappApiToken">Token de Acceso</label>
+                <input
+                  type="password"
+                  id="whatsappApiToken"
+                  v-model="whatsappSettings.apiToken"
+                  :placeholder="whatsappSettings.hasToken ? '••••••••••••••••••••' : 'EAAFZBpX...'"
+                  :disabled="!whatsappSettings.enabled"
+                />
+                <small class="form-hint">
+                  {{ whatsappSettings.hasToken ? 'Dejar en blanco para mantener el token actual' : 'Token de acceso de Meta Business' }}
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="whatsappPhoneNumberId">Phone Number ID</label>
+                <input
+                  type="text"
+                  id="whatsappPhoneNumberId"
+                  v-model="whatsappSettings.phoneNumberId"
+                  placeholder="123456789012345"
+                  :disabled="!whatsappSettings.enabled"
+                />
+                <small class="form-hint">ID del numero de telefono en WhatsApp Business</small>
+              </div>
+            </div>
+
+            <!-- Twilio -->
+            <div v-if="whatsappSettings.method === 'twilio'">
+              <h4 class="mt-4">Twilio WhatsApp</h4>
+
+              <div class="form-group">
+                <label for="twilioAccountSid">Account SID</label>
+                <input
+                  type="text"
+                  id="twilioAccountSid"
+                  v-model="whatsappSettings.twilioAccountSid"
+                  placeholder="AC..."
+                  :disabled="!whatsappSettings.enabled"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="twilioAuthToken">Auth Token</label>
+                <input
+                  type="password"
+                  id="twilioAuthToken"
+                  v-model="whatsappSettings.twilioAuthToken"
+                  :placeholder="whatsappSettings.hasTwilioToken ? '••••••••••••••••••••' : ''"
+                  :disabled="!whatsappSettings.enabled"
+                />
+                <small class="form-hint">
+                  {{ whatsappSettings.hasTwilioToken ? 'Dejar en blanco para mantener el token actual' : 'Token de autenticacion de Twilio' }}
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="twilioWhatsAppNumber">Numero de WhatsApp</label>
+                <input
+                  type="text"
+                  id="twilioWhatsAppNumber"
+                  v-model="whatsappSettings.twilioWhatsAppNumber"
+                  placeholder="whatsapp:+14155238886"
+                  :disabled="!whatsappSettings.enabled"
+                />
+                <small class="form-hint">Formato: whatsapp:+14155238886</small>
+              </div>
+            </div>
+
+            <!-- WhatsApp Web (QR) -->
+            <div v-if="whatsappSettings.method === 'web'">
+              <h4 class="mt-4">WhatsApp Web (Escanear QR)</h4>
+
+              <div class="alert alert-info">
+                <p>Este metodo conecta usando WhatsApp Web. Es mas facil de configurar pero:</p>
+                <ul>
+                  <li>El telefono debe estar conectado a internet</li>
+                  <li>No es oficial de WhatsApp Business</li>
+                  <li>Puede ser bloqueado por WhatsApp</li>
+                </ul>
+              </div>
+
+              <div class="qr-container" v-if="whatsappQR">
+                <img :src="whatsappQR" alt="Codigo QR de WhatsApp" />
+                <p>Escanea este codigo con WhatsApp en tu telefono</p>
+              </div>
+
+              <button type="button" @click="generateWhatsAppQR" class="btn btn-secondary" :disabled="!whatsappSettings.enabled">
+                Generar Codigo QR
+              </button>
+            </div>
+
+            <!-- Resultado de prueba -->
+            <div v-if="testResults.whatsapp" class="test-result" :class="testResults.whatsapp.success ? 'success' : 'error'">
+              <div class="test-result-icon">
+                {{ testResults.whatsapp.success ? 'Si' : 'No' }}
+              </div>
+              <div class="test-result-message">
+                {{ testResults.whatsapp.message }}
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                @click="testWhatsAppConnection"
+                :disabled="saving || !whatsappSettings.enabled"
+              >
+                <span v-if="saving">Probando...</span>
+                <span v-else>Enviar Mensaje de Prueba</span>
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="saving">
+                <span v-if="saving">Guardando...</span>
+                <span v-else">Guardar Configuracion</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Guia de configuracion -->
+          <div class="info-box mt-4">
+            <h4>Como configurar WhatsApp</h4>
+
+            <div v-if="whatsappSettings.method === 'api'">
+              <h5>Opcion 1: API Oficial de WhatsApp Business</h5>
+              <ol class="setup-steps">
+                <li>
+                  <strong>Crear cuenta de Meta Business:</strong>
+                  <p>Ve a <a href="https://business.facebook.com" target="_blank">business.facebook.com</a></p>
+                </li>
+                <li>
+                  <strong>Configurar WhatsApp Business API:</strong>
+                  <p>En Meta Business Suite, agrega WhatsApp Business</p>
+                </li>
+                <li>
+                  <strong>Obtener credenciales:</strong>
+                  <p>Copia el Phone Number ID y genera un token de acceso</p>
+                </li>
+                <li>
+                  <strong>Configurar webhook:</strong>
+                  <p>URL: <code>https://tu-dominio.com/api/plugins/whatsapp/webhook</code></p>
+                  <p>Verify Token: (el que configures en variables de entorno)</p>
+                </li>
+              </ol>
+            </div>
+
+            <div v-if="whatsappSettings.method === 'twilio'">
+              <h5>Opcion 2: Twilio (Recomendado para empezar)</h5>
+              <ol class="setup-steps">
+                <li>
+                  <strong>Crear cuenta en Twilio:</strong>
+                  <p>Ve a <a href="https://www.twilio.com" target="_blank">twilio.com</a></p>
+                </li>
+                <li>
+                  <strong>Activar WhatsApp Sandbox:</strong>
+                  <p>En Twilio Console, ve a Messaging → Try it out → Try WhatsApp</p>
+                </li>
+                <li>
+                  <strong>Obtener credenciales:</strong>
+                  <p>Copia Account SID y Auth Token del Dashboard</p>
+                </li>
+                <li>
+                  <strong>Numero de WhatsApp:</strong>
+                  <p>Sandbox: <code>whatsapp:+14155238886</code></p>
+                  <p>Produccion: Solicita aprobacion de tu numero</p>
+                </li>
+              </ol>
+            </div>
+
+            <div v-if="whatsappSettings.method === 'web'">
+              <h5>Opcion 3: WhatsApp Web (QR)</h5>
+              <p class="alert alert-warning">
+                <strong>Advertencia:</strong> Este metodo no es oficial y puede ser bloqueado por WhatsApp.
+                Solo para desarrollo o uso personal.
+              </p>
+              <ol class="setup-steps">
+                <li>Click en "Generar Codigo QR"</li>
+                <li>Abre WhatsApp en tu telefono</li>
+                <li>Ve a Configuracion → Dispositivos vinculados</li>
+                <li>Escanea el codigo QR</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Configuración de Notificaciones -->
       <div v-if="activeTab === 'notifications'" class="tab-pane">
         <div class="card">
