@@ -675,31 +675,31 @@ getInventoryStats(params = {}) {
     return axios.get(`${API_URL}inventory-types?${queryParams.toString()}`, {
       headers: authHeader()
     });
-  },
+  }
 
   createType(typeData) {
     return axios.post(`${API_URL}inventory-types`, typeData, {
       headers: authHeader()
     });
-  },
+  }
 
   updateType(id, typeData) {
     return axios.put(`${API_URL}inventory-types/${id}`, typeData, {
       headers: authHeader()
     });
-  },
+  }
 
   deleteType(id) {
     return axios.delete(`${API_URL}inventory-types/${id}`, {
       headers: authHeader()
     });
-  },
+  }
 
   getAllCategories() {
     return axios.get(`${API_URL}inventory-categories`, {
       headers: authHeader()
     });
-  },
+  }
 
   // --- Métodos para PRODUCTS (Catálogo) ---
 
@@ -712,25 +712,25 @@ getInventoryStats(params = {}) {
     return axios.get(`${API_URL}inventory-products?${queryParams.toString()}`, {
       headers: authHeader()
     });
-  },
+  }
 
   getProduct(id) {
     return axios.get(`${API_URL}inventory-products/${id}`, {
       headers: authHeader()
     });
-  },
+  }
 
   createProduct(data) {
     return axios.post(`${API_URL}inventory-products`, data, {
       headers: authHeader()
     });
-  },
+  }
 
   updateProduct(id, data) {
     return axios.put(`${API_URL}inventory-products/${id}`, data, {
       headers: authHeader()
     });
-  },
+  }
 
 
 
