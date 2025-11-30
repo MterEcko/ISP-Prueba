@@ -65,6 +65,18 @@
           </router-link>
         </li>
         <li>
+          <router-link to="/device-families">
+            <span class="icon">📋</span>
+            <span class="text" v-if="!isCollapsed">Familias</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/device-brands">
+            <span class="icon">🏷️</span>
+            <span class="text" v-if="!isCollapsed">Marcas</span>
+          </router-link>
+        </li>
+        <li>
           <router-link to="/inventory">
             <span class="icon">📦</span>
             <span class="text" v-if="!isCollapsed">Inventario</span>
@@ -97,6 +109,12 @@
           <router-link to="/billing/overdue">
             <span class="icon">⏰</span>
             <span class="text" v-if="!isCollapsed">Vencidos</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/accounting/payroll">
+            <span class="icon">💼</span>
+            <span class="text" v-if="!isCollapsed">Nóminas</span>
           </router-link>
         </li>
 
