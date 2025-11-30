@@ -16,18 +16,85 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// Origenes permitidos (incluye Cloudflare, localhost, e IPs)
-const allowedOrigins = [
+// ==================== CORS DINAMICO DESDE BASE DE DATOS ====================
+let allowedOrigins = [
   'http://localhost:8080',
   'http://localhost:3000',
-  'http://10.10.1.163:8080',
-  'https://isp.serviciosqbit.net',
-  'http://isp.serviciosqbit.net'
+  'http://127.0.0.1:8080',
+  'http://127.0.0.1:3000'
 ];
+
+// Funcion para cargar origenes permitidos desde DB
+async function loadAllowedOrigins() {
+  try {
+    const db = require('./models');
+
+    // Obtener dominio principal configurado
+    const mainDomain = await db.SystemConfiguration.findOne({
+      where: { configKey: 'system_domain' }
+    });
+
+    // Obtener dominios adicionales configurados
+    const additionalDomains = await db.SystemConfiguration.findOne({
+      where: { configKey: 'allowed_origins' }
+    });
+
+    if (mainDomain && mainDomain.configValue) {
+      const domain = mainDomain.configValue;
+      allowedOrigins.push(`https://${domain}`);
+      allowedOrigins.push(`http://${domain}`);
+      allowedOrigins.push(`https://www.${domain}`);
+      allowedOrigins.push(`http://www.${domain}`);
+    }
+
+    if (additionalDomains && additionalDomains.configValue) {
+      try {
+        const domains = JSON.parse(additionalDomains.configValue);
+        domains.forEach(domain => {
+          allowedOrigins.push(domain);
+        });
+      } catch (e) {
+        console.log('Error parsing additional domains:', e.message);
+      }
+    }
+
+    console.log('[CORS] Allowed origins:', allowedOrigins);
+  } catch (error) {
+    console.log('[CORS] Using default origins (DB not ready):', error.message);
+  }
+}
+
+// CORS dinamico - verifica contra la lista actualizada
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (Postman, mobile apps, etc)
+    if (!origin) return callback(null, true);
+
+    // Verificar si el origin esta en la lista
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('[CORS] Blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'x-access-token', 'Authorization', 'Origin', 'Accept'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+};
 
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -37,14 +104,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 
-app.use(cors({
-  origin: allowedOrigins, // Usar la misma lista de origenes
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'x-access-token', 'Authorization', 'Origin', 'Accept'],
-  credentials: true, // Permite cookies y headers de autenticación
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-}));
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(helmet()); // Ayuda a securizar la app estableciendo varios headers HTTP
 app.use(morgan("dev")); // Logger de peticiones HTTP para desarrollo
@@ -146,8 +206,12 @@ io.on('connection', (socket) => {
 
 // Sincronizar con la base de datos y arrancar el servidor
 sequelize.sync({ force: process.env.DB_FORCE_SYNC === "true" })
-  .then(() => {
+  .then(async () => {
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
+
+    // Cargar origenes permitidos desde DB
+    await loadAllowedOrigins();
+
     server.listen(PORT, () => {
       console.log(`Servidor corriendo en el puerto ${PORT} desde src/index`);
       console.log('Socket.io iniciado para llamadas WebRTC');
@@ -343,6 +407,10 @@ async function initial() {
   } catch (error) {
     console.error("Error al crear datos iniciales desde src/index:", error);
   }
-  
-  
+
+
 }
+
+// ==================== EXPORTAR FUNCIONES PARA CONFIGURACION DINAMICA ====================
+
+module.exports.reloadAllowedOrigins = loadAllowedOrigins;

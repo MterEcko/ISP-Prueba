@@ -782,6 +782,102 @@ exports.getNetworkSettings = async (req, res) => {
 };
 
 // ===============================
+// CONFIGURACIÓN DE DOMINIO Y CORS
+// ===============================
+
+exports.getDomainSettings = async (req, res) => {
+  try {
+    const systemDomain = await configHelper.get('system_domain', '');
+    const allowedOrigins = await configHelper.get('allowed_origins', '[]');
+
+    let parsedOrigins = [];
+    try {
+      parsedOrigins = JSON.parse(allowedOrigins);
+    } catch (e) {
+      parsedOrigins = [];
+    }
+
+    return res.status(200).json({
+      systemDomain,
+      allowedOrigins: parsedOrigins
+    });
+  } catch (error) {
+    console.error('Error obteniendo configuración de dominio:', error);
+    return res.status(500).json({
+      message: 'Error obteniendo configuración de dominio',
+      error: error.message
+    });
+  }
+};
+
+exports.updateDomainSettings = async (req, res) => {
+  try {
+    const { systemDomain, allowedOrigins } = req.body;
+
+    const updates = {};
+
+    if (systemDomain !== undefined) {
+      updates.system_domain = systemDomain;
+    }
+
+    if (allowedOrigins !== undefined) {
+      // Validar que sea un array
+      if (!Array.isArray(allowedOrigins)) {
+        return res.status(400).json({
+          success: false,
+          message: 'allowedOrigins debe ser un array'
+        });
+      }
+
+      updates.allowed_origins = JSON.stringify(allowedOrigins);
+    }
+
+    await configHelper.updateModule('domain', updates);
+
+    // Recargar origenes permitidos en el servidor
+    const mainApp = require('../../index');
+    if (mainApp.reloadAllowedOrigins) {
+      await mainApp.reloadAllowedOrigins();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Configuración de dominio actualizada correctamente'
+    });
+  } catch (error) {
+    console.error('Error actualizando configuración de dominio:', error);
+    return res.status(500).json({
+      message: 'Error actualizando configuración de dominio',
+      error: error.message
+    });
+  }
+};
+
+exports.reloadCors = async (req, res) => {
+  try {
+    const mainApp = require('../../index');
+    if (mainApp.reloadAllowedOrigins) {
+      await mainApp.reloadAllowedOrigins();
+      return res.status(200).json({
+        success: true,
+        message: 'Orígenes CORS recargados correctamente'
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: 'Función de recarga no disponible'
+      });
+    }
+  } catch (error) {
+    console.error('Error recargando CORS:', error);
+    return res.status(500).json({
+      message: 'Error recargando CORS',
+      error: error.message
+    });
+  }
+};
+
+// ===============================
 // TODAS LAS CONFIGURACIONES
 // ===============================
 

@@ -212,6 +212,28 @@ module.exports = function(app) {
   );
 
   // ===============================
+  // CONFIGURACIÓN DE DOMINIO Y CORS
+  // ===============================
+
+  app.get(
+    "/api/settings/domain",
+    //[authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.getDomainSettings
+  );
+
+  app.put(
+    "/api/settings/domain",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.updateDomainSettings
+  );
+
+  app.post(
+    "/api/settings/cors/reload",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.reloadCors
+  );
+
+  // ===============================
   // ENDPOINTS GENERALES
   // ===============================
 
