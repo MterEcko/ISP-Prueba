@@ -1,4 +1,6 @@
 import { io } from 'socket.io-client';
+import AuthService from './auth.service';
+
 
 class SocketService {
   constructor() {
@@ -14,13 +16,24 @@ class SocketService {
       return;
     }
 
+    // 1. Obtener el token ANTES de conectar (¡La lógica clave!)
+    const user = AuthService.getCurrentUser();
+    const token = user ? user.accessToken : null;
+
+    if (!token) {
+        console.error('Socket connection aborted: Authentication token not found. El usuario debe iniciar sesión.');
+        return; 
+    }
     const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 
     this.socket = io(API_URL, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5
+      reconnectionAttempts: 5, 
+      auth: {
+          token: token 
+      }
     });
 
     this.socket.on('connect', () => {
