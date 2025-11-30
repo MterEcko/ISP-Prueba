@@ -145,6 +145,7 @@
               </div>
             </th>
             <th>IP de Servicio</th>
+            <th>Fecha Inicio</th>
             <th class="filterable">
               <div class="column-header">
                 <span>Día Pago</span>
@@ -217,6 +218,14 @@
                 </div>
               </div>
               <span v-else class="no-service">Sin servicio</span>
+            </td>
+            <td class="service-start-date">
+              <div v-if="client.Subscriptions && client.Subscriptions.length > 0">
+                <div v-for="subscription in client.Subscriptions" :key="subscription.id" class="date-item">
+                  {{ subscription.startDate ? formatDate(subscription.startDate) : '-' }}
+                </div>
+              </div>
+              <span v-else class="no-date">-</span>
             </td>
             <td class="billing-day">
               <div v-if="client.ClientBilling">

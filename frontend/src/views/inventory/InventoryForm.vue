@@ -410,20 +410,22 @@ export default {
     },
     async loadProducts() {
       try {
-        // ¡NECESITAS CREAR ESTE MÉTODO EN InventoryService!
-        const response = await InventoryService.getAllProducts(); 
-        this.products = response.data;
+        const response = await InventoryService.getAllProducts();
+        // El backend devuelve {success: true, data: [...]}
+        this.products = response.data.data || response.data || [];
       } catch (error) {
         console.error('Error cargando productos:', error);
+        this.products = [];
       }
     },
     async loadBatches() {
       try {
-        // ¡NECESITAS CREAR ESTE MÉTODO EN InventoryService!
         const response = await InventoryService.getAllBatches({ status: 'completed' });
-        this.batches = response.data;
+        // El backend devuelve {success: true, data: [...]}
+        this.batches = response.data.data || response.data || [];
       } catch (error) {
         console.error('Error cargando lotes:', error);
+        this.batches = [];
       }
     },
     async loadTechnicians() {
