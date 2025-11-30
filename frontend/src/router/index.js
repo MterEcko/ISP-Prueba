@@ -396,6 +396,17 @@ const routes = [
   }
 },
 
+// Automatización de facturación (suspensión automática)
+{
+  path: '/billing/automation',
+  name: 'BillingAutomation',
+  component: () => import('../views/BillingAutomation.vue'),
+  meta: {
+    requiresAuth: true,
+    title: 'Automatización de Facturación'
+  }
+},
+
 // Configuraci�n de pasarelas de pago
 {
   path: '/billing/gateways',

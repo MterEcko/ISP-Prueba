@@ -112,6 +112,12 @@
           </router-link>
         </li>
         <li>
+          <router-link to="/billing/automation">
+            <span class="icon">🤖</span>
+            <span class="text" v-if="!isCollapsed">Automatización</span>
+          </router-link>
+        </li>
+        <li>
           <router-link to="/accounting/payroll">
             <span class="icon">💼</span>
             <span class="text" v-if="!isCollapsed">Nóminas</span>

@@ -87,4 +87,86 @@ module.exports = function(app) {
       });
     }
   );
+
+  /**
+   * @route    POST /api/billing/jobs/suspend-overdue
+   * @desc     Ejecutar manualmente suspensión de servicios vencidos
+   * @access   Privado (Admin)
+   */
+  app.post(
+    "/api/billing/jobs/suspend-overdue",
+    [authJwt.verifyToken, authJwt.isAdmin],
+    async (req, res) => {
+      try {
+        const BillingJob = require('../jobs/billing-job');
+        const result = await BillingJob.runBillingTaskOnDemand('suspend_services');
+
+        res.status(200).json({
+          success: true,
+          message: 'Suspensión de servicios ejecutada',
+          data: result
+        });
+      } catch (error) {
+        console.error('Error ejecutando suspensión manual:', error);
+        res.status(500).json({
+          success: false,
+          message: error.message
+        });
+      }
+    }
+  );
+
+  /**
+   * @route    GET /api/billing/jobs/stats
+   * @desc     Obtener estadísticas del sistema de facturación
+   * @access   Privado (Admin)
+   */
+  app.get(
+    "/api/billing/jobs/stats",
+    [authJwt.verifyToken, authJwt.isAdmin],
+    async (req, res) => {
+      try {
+        const BillingJob = require('../jobs/billing-job');
+        const stats = await BillingJob.getBillingStats();
+
+        res.status(200).json({
+          success: true,
+          data: stats
+        });
+      } catch (error) {
+        console.error('Error obteniendo stats:', error);
+        res.status(500).json({
+          success: false,
+          message: error.message
+        });
+      }
+    }
+  );
+
+  /**
+   * @route    GET /api/billing/jobs/health
+   * @desc     Verificar salud del sistema de facturación
+   * @access   Privado (Admin)
+   */
+  app.get(
+    "/api/billing/jobs/health",
+    [authJwt.verifyToken, authJwt.isAdmin],
+    async (req, res) => {
+      try {
+        const BillingJob = require('../jobs/billing-job');
+        const health = await BillingJob.healthCheck();
+
+        res.status(200).json({
+          success: true,
+          data: health
+        });
+      } catch (error) {
+        console.error('Error en health check:', error);
+        res.status(500).json({
+          success: false,
+          message: error.message
+        });
+      }
+    }
+  );
 }
