@@ -117,6 +117,12 @@
             <span class="text" v-if="!isCollapsed">Nóminas</span>
           </router-link>
         </li>
+        <li>
+          <router-link to="/service-packages">
+            <span class="icon">📦</span>
+            <span class="text" v-if="!isCollapsed">Paquetes</span>
+          </router-link>
+        </li>
 
         <!-- Sección de Comunicaciones -->
         <li class="menu-separator" v-if="!isCollapsed">
