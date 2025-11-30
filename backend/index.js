@@ -141,12 +141,7 @@ const frontendPath = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendPath));
 
 // Nota: Las rutas de la API se importan individualmente más abajo
-
-
-// Rutas
-app.get('/', (req, res) => {
-  res.json({ message: 'API del Sistema ISP funcionando correctamente desde src/index' });
-});
+// La ruta '/' sirve automáticamente index.html desde frontendPath
 
 // Base de datos
 const db = require('./src/models');
