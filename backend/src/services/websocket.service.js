@@ -32,14 +32,20 @@ class WebSocketService {
     this.io.use((socket, next) => {
       const token = socket.handshake.auth.token || socket.handshake.query.token;
 
+      console.log('🔐 Socket auth - Token recibido:', token ? `${token.substring(0, 20)}...` : 'NO');
+
       if (!token) {
+        console.error('❌ Socket auth - Token no proporcionado');
         return next(new Error('Authentication error: Token not provided'));
       }
 
       jwt.verify(token, config.secret, (err, decoded) => {
         if (err) {
+          console.error('❌ Socket auth - Error verificando token:', err.message);
           return next(new Error('Authentication error: Invalid token'));
         }
+
+        console.log('✅ Socket auth - Token válido. Usuario:', decoded.username || decoded.id);
 
         // Guardar información del usuario en el socket
         socket.userId = decoded.id;
