@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 import AuthService from './auth.service';
-
+import { API_URL } from './frontend_apiConfig';
 
 class SocketService {
   constructor() {
@@ -22,18 +22,23 @@ class SocketService {
 
     if (!token) {
         console.error('Socket connection aborted: Authentication token not found. El usuario debe iniciar sesión.');
-        return; 
+        return;
     }
-    const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
 
-    this.socket = io(API_URL, {
+    // 2. Convertir URL de API a URL base del socket (remover /api/)
+    const SOCKET_URL = API_URL.replace(/\/api\/$/, '');
+
+    console.log('🔌 Conectando socket a:', SOCKET_URL);
+    console.log('🔑 Token presente:', !!token);
+
+    this.socket = io(SOCKET_URL, {
+      auth: {
+        token: token
+      },
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5, 
-      auth: {
-          token: token 
-      }
+      reconnectionAttempts: 5
     });
 
     this.socket.on('connect', () => {
@@ -91,66 +96,59 @@ class SocketService {
   }
 
   // Emitir evento de llamada
-  sendCallOffer(userId, offer, callType) {
-    if (!this.socket || !this.connected) {
-      console.error('Socket not connected');
-      return;
+  initiateCall(targetUserId, offer) {
+    if (this.socket) {
+      this.socket.emit('call-user', {
+        to: targetUserId,
+        from: this.userId,
+        offer: offer
+      });
     }
-
-    this.socket.emit('call-offer', {
-      userId,
-      offer,
-      callType
-    });
   }
 
   // Responder llamada
-  sendCallAnswer(userId, answer) {
-    if (!this.socket || !this.connected) {
-      console.error('Socket not connected');
-      return;
+  answerCall(targetUserId, answer) {
+    if (this.socket) {
+      this.socket.emit('answer-call', {
+        to: targetUserId,
+        from: this.userId,
+        answer: answer
+      });
     }
-
-    this.socket.emit('call-answer', {
-      userId,
-      answer
-    });
-  }
-
-  // Enviar ICE candidate
-  sendIceCandidate(userId, candidate) {
-    if (!this.socket || !this.connected) {
-      console.error('Socket not connected');
-      return;
-    }
-
-    this.socket.emit('ice-candidate', {
-      userId,
-      candidate
-    });
   }
 
   // Rechazar llamada
-  sendCallReject(userId) {
-    if (!this.socket || !this.connected) {
-      console.error('Socket not connected');
-      return;
+  rejectCall(targetUserId) {
+    if (this.socket) {
+      this.socket.emit('reject-call', {
+        to: targetUserId,
+        from: this.userId
+      });
     }
-
-    this.socket.emit('call-reject', { userId });
   }
 
-  // Terminar llamada
-  sendCallEnd(userId) {
-    if (!this.socket || !this.connected) {
-      console.error('Socket not connected');
-      return;
+  // Finalizar llamada
+  endCall(targetUserId) {
+    if (this.socket) {
+      this.socket.emit('end-call', {
+        to: targetUserId,
+        from: this.userId
+      });
     }
-
-    this.socket.emit('call-end', { userId });
   }
 
-  // Registrar manejador de eventos
+  // Enviar ICE candidate
+  sendIceCandidate(targetUserId, candidate) {
+    if (this.socket) {
+      this.socket.emit('ice-candidate', {
+        to: targetUserId,
+        from: this.userId,
+        candidate: candidate
+      });
+    }
+  }
+
+  // Sistema de eventos personalizado
   on(event, handler) {
     if (!this.eventHandlers[event]) {
       this.eventHandlers[event] = [];
@@ -158,22 +156,16 @@ class SocketService {
     this.eventHandlers[event].push(handler);
   }
 
-  // Remover manejador de eventos
   off(event, handler) {
-    if (!this.eventHandlers[event]) return;
-
-    this.eventHandlers[event] = this.eventHandlers[event].filter(h => h !== handler);
+    if (this.eventHandlers[event]) {
+      this.eventHandlers[event] = this.eventHandlers[event].filter(h => h !== handler);
+    }
   }
 
-  // Emitir eventos internos
   emit(event, data) {
     if (this.eventHandlers[event]) {
       this.eventHandlers[event].forEach(handler => handler(data));
     }
-  }
-
-  isConnected() {
-    return this.connected;
   }
 }
 
