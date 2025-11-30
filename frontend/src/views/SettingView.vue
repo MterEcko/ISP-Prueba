@@ -729,7 +729,7 @@
               </button>
               <button type="submit" class="btn btn-primary" :disabled="saving">
                 <span v-if="saving">Guardando...</span>
-                <span v-else">Guardar Configuracion</span>
+                <span v-else>Guardar Configuración</span>
               </button>
             </div>
           </form>

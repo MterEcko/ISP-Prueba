@@ -814,12 +814,16 @@ exports.updateDomainSettings = async (req, res) => {
   try {
     const { systemDomain, allowedOrigins } = req.body;
 
-    const updates = {};
-
+    // Actualizar system_domain si se proporciona
     if (systemDomain !== undefined) {
-      updates.system_domain = systemDomain;
+      await configHelper.set('system_domain', systemDomain, {
+        configType: 'string',
+        module: 'domain',
+        description: 'Dominio principal del sistema'
+      });
     }
 
+    // Actualizar allowed_origins si se proporciona
     if (allowedOrigins !== undefined) {
       // Validar que sea un array
       if (!Array.isArray(allowedOrigins)) {
@@ -829,10 +833,12 @@ exports.updateDomainSettings = async (req, res) => {
         });
       }
 
-      updates.allowed_origins = JSON.stringify(allowedOrigins);
+      await configHelper.set('allowed_origins', JSON.stringify(allowedOrigins), {
+        configType: 'string',
+        module: 'domain',
+        description: 'Orígenes permitidos para CORS'
+      });
     }
-
-    await configHelper.updateModule('domain', updates);
 
     // Recargar origenes permitidos en el servidor
     const mainApp = require('../../index');

@@ -7,8 +7,8 @@ const dotenv = require("dotenv");
 const http = require('http');
 const { Server } = require('socket.io');
 
-const sequelize = require("./config/database");
-const allRoutes = require("./routes");
+const sequelize = require("./src/config/database");
+const allRoutes = require("./src/routes");
 
 const path = require('path');
 dotenv.config();

@@ -333,15 +333,27 @@ class ConfigHelper {
   // ACTUALIZAR CONFIGURACIONES
   // ===============================
 
-  async set(key, value, configType = 'string') {
+  async set(key, value, options = {}) {
     try {
       if (!this.db || !this.db.SystemConfiguration) {
         throw new Error('DB no inicializada en ConfigHelper');
       }
 
+      // Soportar tanto string como objeto para retrocompatibilidad
+      let configType, module, description;
+      if (typeof options === 'string') {
+        configType = options;
+        module = 'general';
+        description = null;
+      } else {
+        configType = options.configType || options.type || 'string';
+        module = options.module || 'general';
+        description = options.description || null;
+      }
+
       // Procesar valor según tipo
       let processedValue = value;
-      
+
       if (configType === 'encrypted') {
         processedValue = this.encrypt(value);
       } else if (configType === 'json') {
@@ -356,7 +368,8 @@ class ConfigHelper {
         defaults: {
           configValue: processedValue,
           configType: configType,
-          module: 'general', // Se puede mejorar para detectar automáticamente
+          module: module,
+          description: description,
           active: true
         }
       });
@@ -364,7 +377,9 @@ class ConfigHelper {
       if (!created) {
         await config.update({
           configValue: processedValue,
-          configType: configType
+          configType: configType,
+          module: module,
+          description: description || config.description
         });
       }
 
