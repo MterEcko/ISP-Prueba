@@ -24,7 +24,7 @@ class CalendarService {
           {
             model: db.User,
             as: 'creator',
-            attributes: ['id', 'username', 'firstName', 'lastName', 'email']
+            attributes: ['id', 'username', 'fullName', 'email']
           }
         ]
       });
@@ -57,7 +57,7 @@ class CalendarService {
           {
             model: db.User,
             as: 'creator',
-            attributes: ['id', 'username', 'firstName', 'lastName', 'email']
+            attributes: ['id', 'username', 'fullName', 'email']
           }
         ]
       });
