@@ -8,7 +8,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 const sequelize = require("./src/config/database");
-const allRoutes = require("./src/routes");
+// Las rutas se importan individualmente más abajo (no se usa un índice de rutas)
 
 const path = require('path');
 dotenv.config();
@@ -27,7 +27,7 @@ let allowedOrigins = [
 // Funcion para cargar origenes permitidos desde DB
 async function loadAllowedOrigins() {
   try {
-    const db = require('./models');
+    const db = require('./src/models');
 
     // Obtener dominio principal configurado
     const mainDomain = await db.SystemConfiguration.findOne({
@@ -123,8 +123,7 @@ const frontendPath = path.join(__dirname, '../frontend/dist');
 // Servir archivos estáticos del frontend (JS, CSS, imágenes)
 app.use(express.static(frontendPath));
 
-// Rutas de la API
-app.use("/api", allRoutes);
+// Nota: Las rutas de la API se importan individualmente más abajo
 
 
 // Rutas
@@ -133,7 +132,7 @@ app.get('/', (req, res) => {
 });
 
 // Base de datos
-const db = require('./models');
+const db = require('./src/models');
 
 // WebSocket - Almacenar usuarios conectados
 const connectedUsers = new Map();
@@ -231,22 +230,22 @@ sequelize.sync({ force: process.env.DB_FORCE_SYNC === "true" })
 
 
 // Incluir rutas
-require('./routes/auth.routes')(app);
+require('./src/routes/auth.routes')(app);
 require('./src/routes/user.routes')(app);
-require('./routes/client.routes')(app);
-require('./routes/network.routes')(app);
-require('./routes/device.routes')(app);
-require('./routes/ticket.routes')(app);
+require('./src/routes/client.routes')(app);
+require('./src/routes/network.routes')(app);
+require('./src/routes/device.routes')(app);
+require('./src/routes/ticket.routes')(app);
 // Nuevas rutas para Mikrotik
-require('./routes/mikrotik.routes')(app);
-require('./routes/client.mikrotik.routes')(app);
-require('./routes/equiposFibraOptica.routes')(app);
-//require('./routes/dispositivosRed.routes')(app);
+require('./src/routes/mikrotik.routes')(app);
+require('./src/routes/client.mikrotik.routes')(app);
+// require('./src/routes/equiposFibraOptica.routes')(app); // Comentado - verificar si existe
+//require('./src/routes/dispositivosRed.routes')(app);
 
 // Rutas del inventario
-require('./routes/inventory.routes')(app);
-require('./routes/inventoryLocation.routes')(app);
-require('./routes/inventoryMovement.routes')(app);
+require('./src/routes/inventory.routes')(app);
+require('./src/routes/inventoryLocation.routes')(app);
+require('./src/routes/inventoryMovement.routes')(app);
 
 // Rutas del calendario
 app.use('/api/calendar', require('./src/routes/calendar.routes'));
