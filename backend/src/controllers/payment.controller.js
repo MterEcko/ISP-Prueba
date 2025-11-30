@@ -130,7 +130,8 @@ exports.getPaymentById = async (req, res) => {
         },
         {
           model: PaymentGateway,
-          attributes: ['id', 'name', 'gatewayType', 'country']
+          attributes: ['id', 'name', 'gatewayType'],
+          required: false
         }
       ]
     });
