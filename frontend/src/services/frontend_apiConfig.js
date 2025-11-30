@@ -9,9 +9,6 @@
  * - Dominio público (ISP.serviciosqbit.net)
  */
 
-// Detectar si estamos en desarrollo o producción
-const isDevelopment = process.env.NODE_ENV === 'development';
-
 // Obtener la URL base del servidor actual
 const getApiUrl = () => {
   // 1. Si hay variable de entorno configurada, usarla
@@ -22,14 +19,15 @@ const getApiUrl = () => {
   // 2. Detectar automáticamente según el hostname
   const hostname = window.location.hostname;
   const protocol = window.location.protocol; // http: o https:
-  const port = isDevelopment ? '3000' : window.location.port || '3000';
 
-  // Si es localhost, usar localhost
+  // ==================== LOCALHOST ====================
+  // Si es localhost, usar puerto 3000 explícito
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return `${protocol}//${hostname}:3000/api/`;
   }
 
-  // Si es IP de red local (ejemplo: 10.10.0.121)
+  // ==================== IP LOCAL ====================
+  // Si es IP de red local (10.x.x.x, 192.168.x.x, 172.16-31.x.x)
   if (hostname.match(/^10\.\d+\.\d+\.\d+$/) ||
       hostname.match(/^192\.168\.\d+\.\d+$/) ||
       hostname.match(/^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/)) {
@@ -37,15 +35,11 @@ const getApiUrl = () => {
     return `${protocol}//${hostname}:3000/api/`;
   }
 
-  // Si es un dominio (ejemplo: ISP.serviciosqbit.net)
-  // Asumir que el backend está en el mismo dominio con /api
-  if (port === '80' || port === '443' || !port) {
-    // Sin puerto específico (producción típica)
-    return `${protocol}//${hostname}/api/`;
-  } else {
-    // Con puerto específico
-    return `${protocol}//${hostname}:3000/api/`;
-  }
+  // ==================== DOMINIO PÚBLICO ====================
+  // Para dominios (isp.serviciosqbit.net, etc.)
+  // NO agregar puerto - Cloudflare/Nginx hace proxy internamente
+  // Ejemplo: https://isp.serviciosqbit.net/api/ (sin :3000)
+  return `${protocol}//${hostname}/api/`;
 };
 
 export const API_URL = getApiUrl();
