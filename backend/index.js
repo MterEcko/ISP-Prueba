@@ -320,13 +320,19 @@ require('./src/routes/payrollPayment.routes')(app);
 
 // ==================== RUTA CATCH-ALL PARA SPA (Vue Router) ====================
 // IMPORTANTE: Esto debe ir DESPUES de todas las rutas de API
-// Todas las rutas que NO sean /api/* o /uploads/* redirigen al index.html
-app.get('/*', (req, res) => {
-  // Solo servir index.html si no es una ruta de API o archivos estáticos
+// Usar middleware en lugar de app.get('/*') para evitar PathError en Express 5.x
+app.use((req, res, next) => {
+  // Si la ruta no es de API, uploads o socket.io, servir el index.html del frontend
   if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads') && !req.path.startsWith('/socket.io')) {
-    res.sendFile(path.join(frontendPath, 'index.html'));
+    res.sendFile(path.join(frontendPath, 'index.html'), (err) => {
+      if (err) {
+        console.error('Error sirviendo index.html:', err);
+        res.status(500).send('Error al cargar la aplicación');
+      }
+    });
   } else {
-    res.status(404).json({ message: 'Endpoint no encontrado' });
+    // Para rutas de API que no existen, pasar al siguiente middleware (404)
+    next();
   }
 });
 

@@ -727,9 +727,21 @@ console.log("Todas las rutas han sido procesadas");
 
 // ==================== RUTA CATCH-ALL PARA SPA (Vue Router) ====================
 // IMPORTANTE: Esto debe ir DESPUES de todas las rutas de API
-// NOTA: NO usar app.get('/*') porque causa PathError en Express 5.x
-// En su lugar, todas las rutas no-API se manejan con express.static automáticamente
-// El middleware express.static ya configurado arriba sirve index.html para rutas desconocidas
+// Usar middleware en lugar de app.get('/*') para evitar PathError en Express 5.x
+app.use((req, res, next) => {
+  // Si la ruta no es de API, uploads o socket.io, servir el index.html del frontend
+  if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads') && !req.path.startsWith('/socket.io')) {
+    res.sendFile(path.join(frontendPath, 'index.html'), (err) => {
+      if (err) {
+        console.error('Error sirviendo index.html:', err);
+        res.status(500).send('Error al cargar la aplicación');
+      }
+    });
+  } else {
+    // Para rutas de API que no existen, pasar al siguiente middleware (404)
+    next();
+  }
+});
 
 // Función para crear datos iniciales mínimos si no existen
 async function initial() {
