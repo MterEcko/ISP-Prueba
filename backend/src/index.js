@@ -727,15 +727,9 @@ console.log("Todas las rutas han sido procesadas");
 
 // ==================== RUTA CATCH-ALL PARA SPA (Vue Router) ====================
 // IMPORTANTE: Esto debe ir DESPUES de todas las rutas de API
-// Todas las rutas que NO sean /api/* o /uploads/* redirigen al index.html
-app.get('/*', (req, res) => {
-  // Solo servir index.html si no es una ruta de API o archivos estáticos
-  if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads') && !req.path.startsWith('/socket.io')) {
-    res.sendFile(path.join(frontendPath, 'index.html'));
-  } else {
-    res.status(404).json({ message: 'Endpoint no encontrado' });
-  }
-});
+// NOTA: NO usar app.get('/*') porque causa PathError en Express 5.x
+// En su lugar, todas las rutas no-API se manejan con express.static automáticamente
+// El middleware express.static ya configurado arriba sirve index.html para rutas desconocidas
 
 // Función para crear datos iniciales mínimos si no existen
 async function initial() {
