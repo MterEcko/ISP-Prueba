@@ -29,6 +29,14 @@ async function loadAllowedOrigins() {
   try {
     const db = require('./src/models');
 
+    // Reiniciar allowedOrigins a valores por defecto
+    allowedOrigins = [
+      'http://localhost:8080',
+      'http://localhost:3000',
+      'http://127.0.0.1:8080',
+      'http://127.0.0.1:3000'
+    ];
+
     // Obtener dominio principal configurado
     const mainDomain = await db.SystemConfiguration.findOne({
       where: { configKey: 'system_domain' }
@@ -40,23 +48,32 @@ async function loadAllowedOrigins() {
     });
 
     if (mainDomain && mainDomain.configValue) {
-      const domain = mainDomain.configValue;
-      allowedOrigins.push(`https://${domain}`);
-      allowedOrigins.push(`http://${domain}`);
-      allowedOrigins.push(`https://www.${domain}`);
-      allowedOrigins.push(`http://www.${domain}`);
+      const domain = mainDomain.configValue.trim();
+      if (domain) {
+        allowedOrigins.push(`https://${domain}`);
+        allowedOrigins.push(`http://${domain}`);
+        allowedOrigins.push(`https://www.${domain}`);
+        allowedOrigins.push(`http://www.${domain}`);
+      }
     }
 
     if (additionalDomains && additionalDomains.configValue) {
       try {
         const domains = JSON.parse(additionalDomains.configValue);
         domains.forEach(domain => {
-          allowedOrigins.push(domain);
+          // Normalizar: quitar barras finales y espacios
+          const normalizedDomain = domain.trim().replace(/\/+$/, '');
+          if (normalizedDomain && !allowedOrigins.includes(normalizedDomain)) {
+            allowedOrigins.push(normalizedDomain);
+          }
         });
       } catch (e) {
         console.log('Error parsing additional domains:', e.message);
       }
     }
+
+    // Eliminar duplicados
+    allowedOrigins = [...new Set(allowedOrigins)];
 
     console.log('[CORS] Allowed origins:', allowedOrigins);
   } catch (error) {
@@ -309,7 +326,7 @@ require('./src/routes/payrollPayment.routes')(app);
 // ==================== RUTA CATCH-ALL PARA SPA (Vue Router) ====================
 // IMPORTANTE: Esto debe ir DESPUES de todas las rutas de API
 // Todas las rutas que NO sean /api/* o /uploads/* redirigen al index.html
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   // Solo servir index.html si no es una ruta de API o archivos estáticos
   if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads') && !req.path.startsWith('/socket.io')) {
     res.sendFile(path.join(frontendPath, 'index.html'));
