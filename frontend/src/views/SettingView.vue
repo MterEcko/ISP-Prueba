@@ -66,6 +66,13 @@
       >
         WhatsApp
       </button>
+      <button
+        class="tab-button"
+        :class="{ active: activeTab === 'domain' }"
+        @click="activeTab = 'domain'"
+      >
+        Dominio
+      </button>
     </div>
     
     <div class="tab-content">
@@ -794,6 +801,93 @@
         </div>
       </div>
 
+      <!-- Configuración de Dominio -->
+      <div v-if="activeTab === 'domain'" class="tab-pane">
+        <div class="card">
+          <h2>Configuración de Dominio y CORS</h2>
+          <p class="card-description">
+            Configura el dominio principal de tu sistema y los orígenes permitidos para CORS.
+            Esto permite que tu sistema funcione correctamente con tu dominio personalizado.
+          </p>
+
+          <form @submit.prevent="saveDomainSettings">
+            <div class="form-group">
+              <label for="systemDomain">Dominio Principal</label>
+              <input
+                type="text"
+                id="systemDomain"
+                v-model="domainSettings.systemDomain"
+                placeholder="ejemplo: miempresa-isp.com"
+              />
+              <small>El dominio principal de tu sistema (sin https://)</small>
+            </div>
+
+            <div class="form-group">
+              <label>Orígenes Permitidos (CORS)</label>
+              <div class="origins-list">
+                <div
+                  v-for="(origin, index) in domainSettings.allowedOrigins"
+                  :key="index"
+                  class="origin-item"
+                >
+                  <input
+                    type="text"
+                    v-model="domainSettings.allowedOrigins[index]"
+                    placeholder="https://ejemplo.com"
+                  />
+                  <button
+                    type="button"
+                    class="btn-remove"
+                    @click="removeOrigin(index)"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="btn-add"
+                @click="addOrigin"
+              >
+                + Agregar Origen
+              </button>
+              <small>URLs completas permitidas para acceder al sistema</small>
+            </div>
+
+            <div class="alert alert-info">
+              <strong>Ejemplo de configuración:</strong>
+              <ul>
+                <li>Dominio: miempresa-isp.com</li>
+                <li>Orígenes:
+                  <ul>
+                    <li>https://miempresa-isp.com</li>
+                    <li>https://www.miempresa-isp.com</li>
+                    <li>http://localhost:8080 (desarrollo)</li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">
+                Guardar Configuración
+              </button>
+              <button
+                type="button"
+                class="btn-secondary"
+                @click="reloadCors"
+              >
+                Recargar CORS
+              </button>
+            </div>
+          </form>
+
+          <div v-if="domainMessage" :class="['message', domainMessageType]">
+            {{ domainMessage }}
+          </div>
+        </div>
+      </div>
+
       <!-- Configuración de Notificaciones -->
       <div v-if="activeTab === 'notifications'" class="tab-pane">
         <div class="card">
@@ -1214,7 +1308,15 @@ export default {
         token: '',
         hasToken: false
       },
-      
+
+      domainSettings: {
+        systemDomain: '',
+        allowedOrigins: []
+      },
+
+      domainMessage: '',
+      domainMessageType: '',
+
       jellyfinSettings: {
         enabled: false,
         url: '',
@@ -1390,6 +1492,7 @@ export default {
           this.loadEmailSettings(),
           this.loadTelegramSettings(),
           this.loadWhatsAppSettings(),
+          this.loadDomainSettings(),
           this.loadJellyfinSettings(),
           this.loadPaymentSettings(),
           this.loadMapSettings(),
@@ -1442,7 +1545,80 @@ export default {
         console.error('Error cargando configuración de WhatsApp:', error);
       }
     },
-    
+
+    async loadDomainSettings() {
+      try {
+        const response = await SettingsService.getDomainSettings();
+        this.domainSettings.systemDomain = response.data.systemDomain || '';
+        this.domainSettings.allowedOrigins = response.data.allowedOrigins || [];
+
+        // Si no hay orígenes, agregar uno por defecto
+        if (this.domainSettings.allowedOrigins.length === 0) {
+          this.domainSettings.allowedOrigins.push('');
+        }
+      } catch (error) {
+        console.error('Error cargando configuración de dominio:', error);
+      }
+    },
+
+    async saveDomainSettings() {
+      try {
+        this.saving = true;
+        this.domainMessage = '';
+
+        // Filtrar orígenes vacíos
+        const allowedOrigins = this.domainSettings.allowedOrigins.filter(o => o.trim() !== '');
+
+        const response = await SettingsService.updateDomainSettings({
+          systemDomain: this.domainSettings.systemDomain,
+          allowedOrigins
+        });
+
+        if (response.data.success) {
+          this.domainMessage = 'Configuración guardada correctamente';
+          this.domainMessageType = 'success';
+
+          // Recargar CORS automáticamente
+          await this.reloadCors();
+        }
+      } catch (error) {
+        console.error('Error guardando configuración de dominio:', error);
+        this.domainMessage = error.response?.data?.message || 'Error al guardar la configuración';
+        this.domainMessageType = 'error';
+      } finally {
+        this.saving = false;
+
+        // Limpiar mensaje después de 5 segundos
+        setTimeout(() => {
+          this.domainMessage = '';
+        }, 5000);
+      }
+    },
+
+    async reloadCors() {
+      try {
+        const response = await SettingsService.reloadCors();
+        if (response.data.success) {
+          this.domainMessage = 'CORS recargado correctamente. Los cambios están activos.';
+          this.domainMessageType = 'success';
+        }
+      } catch (error) {
+        console.error('Error recargando CORS:', error);
+        this.domainMessage = 'Error al recargar CORS';
+        this.domainMessageType = 'error';
+      }
+    },
+
+    addOrigin() {
+      this.domainSettings.allowedOrigins.push('');
+    },
+
+    removeOrigin(index) {
+      if (this.domainSettings.allowedOrigins.length > 1) {
+        this.domainSettings.allowedOrigins.splice(index, 1);
+      }
+    },
+
     async loadJellyfinSettings() {
       try {
         const response = await SettingsService.getJellyfinSettings();
