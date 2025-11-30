@@ -629,34 +629,17 @@ exports.cancelInvoice = async (req, res) => {
       };
       await invoice.update(invoiceUpdateData, { transaction });
 
-      // 2. Crear un registro de "pago nulo" para auditoría
-      const cancellationPayment = await Payment.create({
-        invoiceId: invoice.id,
-        clientId: invoice.clientId,
-        gatewayId: null, // No hay pasarela
-        amount: 0.00, // El monto es CERO
-        paymentMethod: 'other', // Método especial para registros internos
-        paymentReference: `CANCEL-${invoice.invoiceNumber}`,
-        status: 'cancelled', // El estado del pago es 'cancelado'
-        paymentDate: new Date(),
-        paymentData: JSON.stringify({
-          type: 'cancellation_record',
-          notes: `Anulación de factura: ${reason || 'N/A'}`,
-          processedBy: req.user?.id || 'system'
-        })
-      }, { transaction });
+      // 2. NO crear registro de pago - solo actualizar la factura
+      // (El campo gatewayId es requerido en Payment, así que omitimos crear un pago)
 
       // Confirmar la transacción
       await transaction.commit();
 
-      logger.info(`Factura ${id} cancelada y registro de anulación creado. Razón: ${reason}`);
+      logger.info(`Factura ${id} cancelada. Razón: ${reason}`);
 
       return res.status(200).json({
         success: true,
-        data: {
-            invoice,
-            cancellationPayment
-        },
+        data: { invoice },
         message: 'Factura cancelada exitosamente'
       });
 

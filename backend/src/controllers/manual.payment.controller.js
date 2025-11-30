@@ -341,7 +341,8 @@ exports.getManualPaymentDetails = async (req, res) => {
         },
         {
           model: PaymentGateway,
-          attributes: ['id', 'name', 'gatewayType']
+          attributes: ['id', 'name', 'gatewayType'],
+          required: false
         }
       ]
     });
@@ -354,7 +355,7 @@ exports.getManualPaymentDetails = async (req, res) => {
     }
 
     // Verificar que es un pago manual
-    if (payment.PaymentGateway.name !== 'Manual') {
+    if (!payment.PaymentGateway || payment.PaymentGateway.name !== 'Manual') {
       return res.status(400).json({
         success: false,
         message: 'Este no es un pago manual'
