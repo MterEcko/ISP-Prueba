@@ -228,13 +228,13 @@
               <span v-else class="no-date">-</span>
             </td>
             <td class="billing-day">
-              <div v-if="client.ClientBilling">
-                <span class="day-number">{{ ClientBilling.billingDay || '-d' }}</span>
-                <span class="next-due" v-if="client.ClientBilling.nextDueDate">
-                  {{ formatDate(ClientBilling.nextDueDate) }}
+              <div v-if="client.clientBilling">
+                <span class="day-number">{{ client.clientBilling.billingDay || '-d' }}</span>
+                <span class="next-due" v-if="client.clientBilling.nextDueDate">
+                  {{ formatDate(client.clientBilling.nextDueDate) }}
                 </span>
-                <span v-else-if="client.ClientBilling.lastPaymentDate" class="last-payment">
-                  Último: {{ formatDate(client.ClientBilling.lastPaymentDate) }}
+                <span v-else-if="client.clientBilling.lastPaymentDate" class="last-payment">
+                  Último: {{ formatDate(client.clientBilling.lastPaymentDate) }}
                 </span>
               </div>
               <div v-else-if="client.Subscriptions && client.Subscriptions.length > 0">
@@ -784,9 +784,14 @@ export default {
       
       // Aquí puedes agregar lógica adicional según cómo manejes el día de facturación
       // Por ejemplo, si está en la suscripción o calculas basado en startDate
-      if (subscription.nextDueDate) {
+      if (subscription && subscription.nextDueDate) {
         return new Date(subscription.nextDueDate).getDate();
       }
+  
+      // Opción de Fallback si no hay nextDueDate: Usar el día del startDate
+      /*if (subscription.startDate) {
+        return new Date(subscription.startDate).getDate() + ' (base)'; // Indicador de que es el día base
+      }*/
       
       return '-';
     },
