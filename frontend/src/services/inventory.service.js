@@ -701,6 +701,12 @@ getInventoryStats(params = {}) {
     });
   }
 
+  createCategory(data) {
+    return axios.post(`${API_URL}inventory-categories`, data, {
+      headers: authHeader()
+    });
+  }
+
   // --- Métodos para PRODUCTS (Catálogo) ---
 
   getAllProducts(params = {}) {

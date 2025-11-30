@@ -16,12 +16,17 @@
         <div class="form-row">
           <div class="form-group">
             <label for="categoryId">Categoria *</label>
-            <select id="categoryId" v-model="type.categoryId" required class="form-control">
-              <option :value="null" disabled>Seleccione una categoria</option>
-              <option v-for="category in categories" :key="category.id" :value="category.id">
-                {{ category.name }}
-              </option>
-            </select>
+            <div class="select-with-action">
+              <select id="categoryId" v-model="type.categoryId" required class="form-control">
+                <option :value="null" disabled>Seleccione una categoria</option>
+                <option v-for="category in categories" :key="category.id" :value="category.id">
+                  {{ category.name }}
+                </option>
+              </select>
+              <button type="button" @click="createNewCategory" class="btn-quick-add" title="Crear nueva categoria">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
             <small class="help-text">Equipos, Consumibles, Herramientas</small>
           </div>
 
@@ -220,6 +225,37 @@ export default {
       }
     },
 
+    createNewCategory() {
+      // Crear modal o prompt para crear categoria rapida
+      const categoryName = prompt('Ingrese el nombre de la nueva categoria:');
+      if (categoryName && categoryName.trim()) {
+        this.createCategory(categoryName.trim());
+      }
+    },
+
+    async createCategory(name) {
+      try {
+        this.loading = true;
+        const response = await InventoryService.createCategory({ name });
+
+        // Recargar categorias
+        await this.loadCategories();
+
+        // Seleccionar la categoria recien creada
+        const newCategory = response.data.data || response.data;
+        if (newCategory && newCategory.id) {
+          this.type.categoryId = newCategory.id;
+        }
+
+        this.$toast?.success('Categoria creada exitosamente');
+      } catch (error) {
+        console.error('Error creating category:', error);
+        this.$toast?.error(error.response?.data?.message || 'Error al crear la categoria');
+      } finally {
+        this.loading = false;
+      }
+    },
+
     cancel() {
       this.$router.push('/inventory');
     }
@@ -413,5 +449,39 @@ textarea.form-control {
     width: 100%;
     justify-content: center;
   }
+}
+
+.select-with-action {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.select-with-action select {
+  flex: 1;
+}
+
+.btn-quick-add {
+  padding: 0 15px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+}
+
+.btn-quick-add:hover {
+  background: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(76, 175, 80, 0.3);
+}
+
+.btn-quick-add:active {
+  transform: translateY(0);
 }
 </style>
