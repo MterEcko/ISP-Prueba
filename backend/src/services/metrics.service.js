@@ -62,20 +62,18 @@ class MetricsService {
       // Total de clientes
       const totalClients = await Client.count();
 
-      // Clientes activos (estado = 'activo')
+      // Clientes activos (active = true)
       const activeClients = await Client.count({
-        where: { estado: 'activo' }
+        where: { active: true }
       });
 
-      // Clientes suspendidos
+      // Clientes inactivos/suspendidos (active = false)
       const suspendedClients = await Client.count({
-        where: { estado: 'suspendido' }
+        where: { active: false }
       });
 
-      // Clientes por corte
-      const cutClients = await Client.count({
-        where: { estado: 'por_corte' }
-      });
+      // Clientes por corte - por ahora usamos 0 ya que no tenemos esta columna
+      const cutClients = 0;
 
       // Nuevos clientes este mes
       const firstDayOfMonth = new Date();
@@ -102,13 +100,13 @@ class MetricsService {
         }
       });
 
-      // Distribución por estado
+      // Distribución por estado (active boolean)
       const clientsByStatus = await Client.findAll({
         attributes: [
-          'estado',
+          'active',
           [db.sequelize.fn('COUNT', db.sequelize.col('id')), 'count']
         ],
-        group: ['estado']
+        group: ['active']
       });
 
       return {
@@ -119,7 +117,7 @@ class MetricsService {
         new_this_month: newClientsThisMonth,
         new_today: newClientsToday,
         by_status: clientsByStatus.map(item => ({
-          status: item.estado,
+          status: item.active ? 'activo' : 'inactivo',
           count: parseInt(item.get('count'))
         }))
       };
