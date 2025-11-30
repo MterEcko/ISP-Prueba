@@ -277,6 +277,11 @@ app.use('/api/store', require('./src/routes/storeCustomer.routes'));
 // Rutas de Upload de Plugins
 app.use('/api/plugin-upload', require('./src/routes/pluginUpload.routes'));
 
+// Rutas de Plugins del Sistema
+require('./src/routes/systemPlugin.routes')(app);
+require('./src/routes/systemLicense.routes')(app);
+require('./src/routes/pluginAudit.routes')(app);
+
 // Rutas de n8n Integration
 app.use('/api/n8n', require('./src/routes/n8n.routes'));
 
@@ -310,6 +315,8 @@ require('./src/routes/notificationRule.routes')(app);
 require('./src/routes/notificationQueue.routes')(app);
 
 // Rutas de comunicación
+require('./src/routes/communicationPlugin.routes')(app);
+require('./src/routes/template.routes')(app);
 require('./src/routes/communicationContact.routes')(app);
 require('./src/routes/communicationEvent.routes')(app);
 
