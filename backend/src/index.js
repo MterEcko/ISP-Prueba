@@ -479,6 +479,14 @@ try {
 }
 
 try {
+  console.log('Registrando inventoryCategory.routes...');
+  require("./routes/inventoryCategory.routes")(app);
+  console.log('✅ inventoryCategory.routes registradas');
+} catch (error) {
+  console.error('❌ Error en inventoryCategory.routes:', error.message);
+}
+
+try {
   console.log('Registrando inventoryTechnician.routes...');
   require("./routes/inventoryTechnician.routes")(app);
   console.log('✅ inventoryTechnician.routes registradas');
