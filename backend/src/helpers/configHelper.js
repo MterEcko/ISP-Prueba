@@ -234,21 +234,17 @@ class ConfigHelper {
   async getTelegramConfig() {
     const configs = await this.getByModule('telegram');
 
-    console.log('🔍 DEBUG getTelegramConfig - Raw configs from DB:', configs);
-    console.log('🔍 telegramEnabled value:', configs.telegramEnabled);
-    console.log('🔍 telegramEnabled type:', typeof configs.telegramEnabled);
-    console.log('🔍 telegramEnabled === true:', configs.telegramEnabled === true);
-    console.log('🔍 telegramEnabled === "true":', configs.telegramEnabled === 'true');
+    // PostgreSQL puede devolver 1/0 (número) en lugar de true/false o 'true'/'false'
+    const enabled = configs.telegramEnabled === true ||
+                   configs.telegramEnabled === 'true' ||
+                   configs.telegramEnabled === 1 ||
+                   configs.telegramEnabled === '1';
 
-    const result = {
-      enabled: configs.telegramEnabled === true || configs.telegramEnabled === 'true',
+    return {
+      enabled: enabled,
       botToken: configs.telegramBotToken || '',
       chatId: configs.telegramChatId || ''
     };
-
-    console.log('🔍 Returning result:', result);
-
-    return result;
   }
 
   async getWhatsAppConfig() {
