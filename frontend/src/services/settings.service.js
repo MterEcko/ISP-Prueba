@@ -56,13 +56,17 @@ class SettingsService {
   // ===============================
   // CONFIGURACIÓN DE WHATSAPP
   // ===============================
-  
+
   getWhatsAppSettings() {
     return axios.get(API_URL + 'settings/whatsapp', { headers: authHeader() });
   }
 
   updateWhatsAppSettings(data) {
     return axios.put(API_URL + 'settings/whatsapp', data, { headers: authHeader() });
+  }
+
+  testWhatsAppSettings(testPhoneNumber) {
+    return axios.post(API_URL + 'settings/whatsapp/test', { testPhoneNumber }, { headers: authHeader() });
   }
 
   // ===============================

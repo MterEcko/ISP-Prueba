@@ -1833,15 +1833,15 @@ export default {
     async testTelegramConnection() {
       this.saving = true;
       this.testResults.telegram = null;
-      
+
       try {
         const response = await SettingsService.testTelegramSettings();
-        
+
         this.testResults.telegram = {
           success: response.data.success,
           message: response.data.message
         };
-        
+
         this.$toast?.success('Mensaje de prueba enviado a Telegram');
       } catch (error) {
         console.error('Error probando conexión de Telegram:', error);
@@ -1854,7 +1854,39 @@ export default {
         this.saving = false;
       }
     },
-    
+
+    async testWhatsAppConnection() {
+      // Pedir número de teléfono al usuario
+      const testPhoneNumber = prompt('Ingresa el número de teléfono para enviar el mensaje de prueba (formato internacional, ej: +526141234567):');
+
+      if (!testPhoneNumber) {
+        return; // Usuario canceló
+      }
+
+      this.saving = true;
+      this.testResults.whatsapp = null;
+
+      try {
+        const response = await SettingsService.testWhatsAppSettings(testPhoneNumber);
+
+        this.testResults.whatsapp = {
+          success: response.data.success,
+          message: response.data.message
+        };
+
+        this.$toast?.success('Mensaje de prueba enviado a WhatsApp');
+      } catch (error) {
+        console.error('Error probando conexión de WhatsApp:', error);
+        this.testResults.whatsapp = {
+          success: false,
+          message: error.response?.data?.message || 'Error enviando mensaje de prueba'
+        };
+        this.$toast?.error('Error en la prueba de WhatsApp');
+      } finally {
+        this.saving = false;
+      }
+    },
+
     // ===============================
     // OTROS MÉTODOS
     // ===============================
