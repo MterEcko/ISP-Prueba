@@ -89,7 +89,11 @@ class ConfigHelper {
         where: { active: true }
       });
 
+      console.log(`🔄 loadAllConfigs: Encontradas ${configs.length} configuraciones activas en DB`);
+
       this.cache.clear();
+
+      const whatsappConfigs = [];
 
       configs.forEach(config => {
         let value = config.configValue;
@@ -125,7 +129,21 @@ class ConfigHelper {
           type: config.configType,
           description: config.description
         });
+
+        // Track whatsapp configs for debugging
+        if (config.module === 'whatsapp') {
+          whatsappConfigs.push({
+            key: config.configKey,
+            value: value,
+            rawValue: config.configValue,
+            active: config.active
+          });
+        }
       });
+
+      if (whatsappConfigs.length > 0) {
+        console.log(`📱 Configuraciones de WhatsApp cargadas en caché:`, whatsappConfigs);
+      }
 
       this.lastCacheUpdate = Date.now();
       console.log(`✓ Cargadas ${configs.length} configuraciones en caché`);
@@ -157,12 +175,19 @@ class ConfigHelper {
         await this.loadAllConfigs();
       }
 
+      console.log(`🔍 getByModule('${module}') - Total items in cache:`, this.cache.size);
+
       const configs = {};
+      let foundCount = 0;
       this.cache.forEach((config, key) => {
         if (config.module === module) {
+          console.log(`  ✓ Found ${key}:`, config.value, `(module: ${config.module})`);
           configs[key] = config.value;
+          foundCount++;
         }
       });
+
+      console.log(`📊 getByModule('${module}') returned ${foundCount} configs:`, Object.keys(configs));
 
       return configs;
     } catch (error) {

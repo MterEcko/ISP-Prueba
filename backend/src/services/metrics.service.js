@@ -396,19 +396,10 @@ class MetricsService {
         where: { active: false }
       });
 
-      // Plugins por categoría
-      const pluginsByCategory = await SystemPlugin.findAll({
-        attributes: [
-          'category',
-          [db.sequelize.fn('COUNT', db.sequelize.col('id')), 'count']
-        ],
-        group: ['category']
-      });
-
       // Lista de plugins activos
       const activePluginsList = await SystemPlugin.findAll({
         where: { active: true },
-        attributes: ['id', 'name', 'version', 'category'],
+        attributes: ['id', 'name', 'version', 'active'],
         limit: 10
       });
 
@@ -416,15 +407,11 @@ class MetricsService {
         total: totalPlugins,
         active: activePlugins,
         inactive: inactivePlugins,
-        by_category: pluginsByCategory.map(item => ({
-          category: item.category,
-          count: parseInt(item.get('count'))
-        })),
         active_list: activePluginsList.map(plugin => ({
           id: plugin.id,
           name: plugin.name,
           version: plugin.version,
-          category: plugin.category
+          active: plugin.active
         }))
       };
     } catch (error) {
@@ -433,7 +420,6 @@ class MetricsService {
         total: 0,
         active: 0,
         inactive: 0,
-        by_category: [],
         active_list: []
       };
     }
