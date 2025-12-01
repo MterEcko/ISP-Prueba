@@ -147,12 +147,12 @@ class MetricsService {
 
       // Pagos completados
       const completedPayments = await Payment.count({
-        where: { estado: 'completado' }
+        where: { status: 'completed' }
       });
 
       // Ingresos totales
-      const totalRevenue = await Payment.sum('monto', {
-        where: { estado: 'completado' }
+      const totalRevenue = await Payment.sum('amount', {
+        where: { status: 'completed' }
       }) || 0;
 
       // Ingresos este mes
@@ -160,10 +160,10 @@ class MetricsService {
       firstDayOfMonth.setDate(1);
       firstDayOfMonth.setHours(0, 0, 0, 0);
 
-      const monthRevenue = await Payment.sum('monto', {
+      const monthRevenue = await Payment.sum('amount', {
         where: {
-          estado: 'completado',
-          fecha_pago: {
+          status: 'completed',
+          paymentDate: {
             [Op.gte]: firstDayOfMonth
           }
         }
@@ -173,10 +173,10 @@ class MetricsService {
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
 
-      const todayRevenue = await Payment.sum('monto', {
+      const todayRevenue = await Payment.sum('amount', {
         where: {
-          estado: 'completado',
-          fecha_pago: {
+          status: 'completed',
+          paymentDate: {
             [Op.gte]: startOfToday
           }
         }
@@ -185,22 +185,22 @@ class MetricsService {
       // Pagos por método
       const paymentsByMethod = await Payment.findAll({
         attributes: [
-          'metodo_pago',
+          'paymentMethod',
           [db.sequelize.fn('COUNT', db.sequelize.col('id')), 'count'],
-          [db.sequelize.fn('SUM', db.sequelize.col('monto')), 'total']
+          [db.sequelize.fn('SUM', db.sequelize.col('amount')), 'total']
         ],
-        where: { estado: 'completado' },
-        group: ['metodo_pago']
+        where: { status: 'completed' },
+        group: ['paymentMethod']
       });
 
       // Pagos pendientes
       const pendingPayments = await Payment.count({
-        where: { estado: 'pendiente' }
+        where: { status: 'pending' }
       });
 
       // Pagos fallidos
       const failedPayments = await Payment.count({
-        where: { estado: 'fallido' }
+        where: { status: 'failed' }
       });
 
       return {
@@ -212,7 +212,7 @@ class MetricsService {
         month_revenue: parseFloat(monthRevenue.toFixed(2)),
         today_revenue: parseFloat(todayRevenue.toFixed(2)),
         by_method: paymentsByMethod.map(item => ({
-          method: item.metodo_pago,
+          method: item.paymentMethod,
           count: parseInt(item.get('count')),
           total: parseFloat((item.get('total') || 0).toFixed(2))
         }))
