@@ -249,8 +249,15 @@ class ConfigHelper {
 
   async getWhatsAppConfig() {
     const configs = await this.getByModule('whatsapp');
+
+    // PostgreSQL puede devolver 1/0 (número) en lugar de true/false o 'true'/'false'
+    const enabled = configs.whatsappEnabled === true ||
+                   configs.whatsappEnabled === 'true' ||
+                   configs.whatsappEnabled === 1 ||
+                   configs.whatsappEnabled === '1';
+
     return {
-      enabled: configs.whatsappEnabled === true || configs.whatsappEnabled === 'true',
+      enabled: enabled,
       apiUrl: configs.whatsappApiUrl || '',
       token: configs.whatsappToken || ''
     };

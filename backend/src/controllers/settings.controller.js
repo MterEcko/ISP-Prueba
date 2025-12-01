@@ -338,6 +338,14 @@ exports.updateWhatsAppSettings = async (req, res) => {
   try {
     const { enabled, method, api, twilio } = req.body;
 
+    console.log('📝 UPDATE WhatsApp Settings - Request Body:', {
+      enabled: enabled,
+      enabledType: typeof enabled,
+      method: method,
+      hasApi: !!api,
+      hasTwilio: !!twilio
+    });
+
     const updates = {
       whatsappEnabled: String(enabled),
       whatsappMethod: method || 'twilio'
@@ -363,7 +371,12 @@ exports.updateWhatsAppSettings = async (req, res) => {
       }
     }
 
+    console.log('💾 Guardando WhatsApp updates:', updates);
     await configHelper.updateModule('whatsapp', updates);
+
+    // Verificar qué se guardó realmente
+    const savedConfig = await configHelper.getWhatsAppConfig();
+    console.log('✅ WhatsApp config guardada:', savedConfig);
 
     // Reinicializar servicio de WhatsApp
     const whatsappService = require('../services/whatsapp.service');
@@ -374,7 +387,7 @@ exports.updateWhatsAppSettings = async (req, res) => {
       message: 'Configuración de WhatsApp actualizada correctamente'
     });
   } catch (error) {
-    console.error('Error actualizando configuración de WhatsApp:', error);
+    console.error('❌ Error actualizando configuración de WhatsApp:', error);
     return res.status(500).json({
       message: 'Error actualizando configuración de WhatsApp',
       error: error.message
