@@ -447,15 +447,24 @@ class ConfigHelper {
       }
 
       const updatePromises = Object.entries(configs).map(async ([key, value]) => {
-        const existingConfig = await this.db.SystemConfiguration.findOne({
+        let existingConfig = await this.db.SystemConfiguration.findOne({
           where: { configKey: key }
         });
 
+        // Si no existe, crear la configuración
         if (!existingConfig) {
-          console.warn(`Configuración ${key} no existe en DB`);
-          return null;
+          console.log(`📝 Creando nueva configuración: ${key} en módulo ${module}`);
+          existingConfig = await this.db.SystemConfiguration.create({
+            configKey: key,
+            configValue: String(value),
+            configType: 'text',
+            module: module,
+            description: `Configuración de ${key}`
+          });
+          return existingConfig;
         }
 
+        // Si existe, actualizarla
         let processedValue = value;
         if (existingConfig.configType === 'encrypted') {
           processedValue = this.encrypt(value);
