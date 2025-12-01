@@ -457,7 +457,7 @@ class ConfigHelper {
           existingConfig = await this.db.SystemConfiguration.create({
             configKey: key,
             configValue: String(value),
-            configType: 'text',
+            configType: 'string',
             module: module,
             description: `Configuración de ${key}`
           });
