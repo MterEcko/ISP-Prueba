@@ -384,21 +384,25 @@ exports.updateWhatsAppSettings = async (req, res) => {
 
 exports.testWhatsAppSettings = async (req, res) => {
   try {
+    console.log('📞 TEST WhatsApp - Request Body:', req.body);
     const { testPhoneNumber } = req.body;
 
     if (!testPhoneNumber) {
+      console.log('❌ Falta número de teléfono para test de WhatsApp');
       return res.status(400).json({
         success: false,
         message: 'Número de teléfono de prueba requerido'
       });
     }
 
+    console.log('📤 Probando WhatsApp con número:', testPhoneNumber);
     const whatsappService = require('../services/whatsapp.service');
     const result = await whatsappService.testConnection(testPhoneNumber);
 
+    console.log('✅ Resultado test WhatsApp:', result);
     return res.status(200).json(result);
   } catch (error) {
-    console.error('Error en prueba de WhatsApp:', error);
+    console.error('❌ Error en prueba de WhatsApp:', error);
     return res.status(500).json({
       success: false,
       message: 'Error enviando mensaje de prueba',
