@@ -487,9 +487,10 @@ class ConfigHelper {
               configValue: String(value),
               configType: 'string',
               module: module,
-              description: `Configuración de ${key}`
+              description: `Configuración de ${key}`,
+              active: true
             });
-            console.log(`✅ Configuración ${key} creada exitosamente con valor:`, existingConfig.configValue);
+            console.log(`✅ Configuración ${key} creada exitosamente con valor:`, existingConfig.configValue, `(active: ${existingConfig.active})`);
             return existingConfig;
           } catch (createError) {
             console.error(`❌ Error creando ${key}:`, createError.message);
@@ -501,7 +502,8 @@ class ConfigHelper {
         console.log(`📝 Actualizando configuración existente: ${key}`, {
           valorAnterior: existingConfig.configValue,
           valorNuevo: value,
-          configType: existingConfig.configType
+          configType: existingConfig.configType,
+          active: existingConfig.active
         });
 
         let processedValue = value;
@@ -514,8 +516,12 @@ class ConfigHelper {
         }
 
         try {
-          const updated = await existingConfig.update({ configValue: processedValue });
-          console.log(`✅ Configuración ${key} actualizada a:`, updated.configValue);
+          // Actualizar valor Y asegurarse de que esté activa
+          const updated = await existingConfig.update({
+            configValue: processedValue,
+            active: true
+          });
+          console.log(`✅ Configuración ${key} actualizada a:`, updated.configValue, `(active: ${updated.active})`);
           return updated;
         } catch (updateError) {
           console.error(`❌ Error actualizando ${key}:`, updateError.message);
