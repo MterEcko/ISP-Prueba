@@ -171,7 +171,9 @@ exports.testEmailSettings = async (req, res) => {
 exports.getTelegramSettings = async (req, res) => {
   try {
     const settings = await configHelper.getTelegramConfig();
-    
+
+    console.log('📖 GET Telegram Settings:', settings);
+
     return res.status(200).json({
       enabled: settings.enabled,
       chatId: settings.chatId,
@@ -179,9 +181,9 @@ exports.getTelegramSettings = async (req, res) => {
     });
   } catch (error) {
     console.error('Error obteniendo configuración de Telegram:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: 'Error obteniendo configuración de Telegram',
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -189,7 +191,16 @@ exports.getTelegramSettings = async (req, res) => {
 exports.updateTelegramSettings = async (req, res) => {
   try {
     const { enabled, botToken, chatId } = req.body;
-    
+
+    console.log('📝 UPDATE Telegram Settings - Request Body:', {
+      enabled: enabled,
+      enabledType: typeof enabled,
+      enabledString: String(enabled),
+      hasBotToken: !!botToken,
+      hasChatId: !!chatId,
+      chatId: chatId
+    });
+
     const updates = {
       telegramEnabled: String(enabled),
       telegramChatId: chatId
@@ -200,17 +211,22 @@ exports.updateTelegramSettings = async (req, res) => {
       updates.telegramBotToken = botToken;
     }
 
+    console.log('💾 Guardando updates:', updates);
     await configHelper.updateModule('telegram', updates);
-    
+
+    // Verificar qué se guardó realmente
+    const savedConfig = await configHelper.getTelegramConfig();
+    console.log('✅ Config guardada:', savedConfig);
+
     return res.status(200).json({
       success: true,
       message: 'Configuración de Telegram actualizada correctamente'
     });
   } catch (error) {
     console.error('Error actualizando configuración de Telegram:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: 'Error actualizando configuración de Telegram',
-      error: error.message 
+      error: error.message
     });
   }
 };
