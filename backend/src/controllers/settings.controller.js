@@ -218,25 +218,39 @@ exports.updateTelegramSettings = async (req, res) => {
 exports.testTelegramSettings = async (req, res) => {
   try {
     const config = await configHelper.getTelegramConfig();
-    
+
+    console.log('🔍 DEBUG Telegram Test Config:', {
+      enabled: config.enabled,
+      hasToken: !!config.botToken,
+      tokenLength: config.botToken?.length,
+      hasChatId: !!config.chatId,
+      chatId: config.chatId
+    });
+
     if (!config.enabled) {
-      return res.status(400).json({ 
+      console.log('❌ Telegram no habilitado:', config.enabled);
+      return res.status(400).json({
         success: false,
-        message: 'Telegram no está habilitado' 
+        message: 'Telegram no está habilitado. Actívalo en la configuración primero.'
       });
     }
 
     if (!config.botToken || !config.chatId) {
-      return res.status(400).json({ 
+      console.log('❌ Falta config:', {
+        botToken: config.botToken ? 'presente' : 'FALTA',
+        chatId: config.chatId ? 'presente' : 'FALTA'
+      });
+      return res.status(400).json({
         success: false,
-        message: 'Falta configuración de bot token o chat ID' 
+        message: 'Falta configuración de bot token o chat ID. Verifica que ambos estén guardados.'
       });
     }
 
     // Enviar mensaje de prueba
     const axios = require('axios');
     const url = `https://api.telegram.org/bot${config.botToken}/sendMessage`;
-    
+
+    console.log('📤 Enviando mensaje de prueba a Telegram...');
     const response = await axios.post(url, {
       chat_id: config.chatId,
       text: `✓ Prueba de configuración Telegram\n\nFecha: ${new Date().toLocaleString('es-MX')}\n\nLa integración está funcionando correctamente.`,
@@ -244,6 +258,7 @@ exports.testTelegramSettings = async (req, res) => {
     });
 
     if (response.data.ok) {
+      console.log('✅ Mensaje enviado exitosamente a Telegram');
       return res.status(200).json({
         success: true,
         message: 'Mensaje de prueba enviado correctamente a Telegram'
@@ -252,8 +267,8 @@ exports.testTelegramSettings = async (req, res) => {
       throw new Error(response.data.description || 'Error desconocido');
     }
   } catch (error) {
-    console.error('Error en prueba de Telegram:', error);
-    return res.status(500).json({ 
+    console.error('❌ Error en prueba de Telegram:', error.response?.data || error.message);
+    return res.status(500).json({
       success: false,
       message: 'Error enviando mensaje de prueba',
       error: error.response?.data?.description || error.message
