@@ -388,12 +388,12 @@ class MetricsService {
 
       // Plugins activos
       const activePlugins = await SystemPlugin.count({
-        where: { enabled: true }
+        where: { active: true }
       });
 
       // Plugins inactivos
       const inactivePlugins = await SystemPlugin.count({
-        where: { enabled: false }
+        where: { active: false }
       });
 
       // Plugins por categoría
@@ -407,7 +407,7 @@ class MetricsService {
 
       // Lista de plugins activos
       const activePluginsList = await SystemPlugin.findAll({
-        where: { enabled: true },
+        where: { active: true },
         attributes: ['id', 'name', 'version', 'category'],
         limit: 10
       });
