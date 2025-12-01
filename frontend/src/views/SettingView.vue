@@ -1304,9 +1304,19 @@ export default {
       
       whatsappSettings: {
         enabled: false,
-        apiUrl: '',
-        token: '',
-        hasToken: false
+        method: 'twilio',
+        api: {
+          apiUrl: 'https://graph.facebook.com/v17.0/',
+          phoneNumberId: '',
+          apiToken: '',
+          hasToken: false
+        },
+        twilio: {
+          phoneNumber: '',
+          accountSid: '',
+          authToken: '',
+          hasAuthToken: false
+        }
       },
 
       domainSettings: {
@@ -1767,6 +1777,9 @@ export default {
             authToken: this.whatsappSettings.twilio.authToken || undefined
           };
         }
+
+        console.log('📤 Frontend enviando WhatsApp settings:', data);
+        console.log('📋 Estado actual de whatsappSettings:', this.whatsappSettings);
 
         await SettingsService.updateWhatsAppSettings(data);
 

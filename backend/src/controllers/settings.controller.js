@@ -307,22 +307,18 @@ exports.getWhatsAppSettings = async (req, res) => {
     };
 
     // Configuracion de Meta API
-    if (method === 'api') {
-      settings.api = {
-        apiUrl: await configHelper.get('whatsappApiUrl', 'https://graph.facebook.com/v17.0/'),
-        phoneNumberId: await configHelper.get('whatsappPhoneNumberId', ''),
-        hasToken: !!(await configHelper.get('whatsappApiToken'))
-      };
-    }
+    settings.api = {
+      apiUrl: await configHelper.get('whatsappApiUrl', 'https://graph.facebook.com/v17.0/'),
+      phoneNumberId: await configHelper.get('whatsappPhoneNumberId', ''),
+      hasToken: !!(await configHelper.get('whatsappApiToken'))
+    };
 
     // Configuracion de Twilio
-    if (method === 'twilio') {
-      settings.twilio = {
-        phoneNumber: await configHelper.get('whatsappTwilioNumber', ''),
-        hasAccountSid: !!(await configHelper.get('whatsappTwilioAccountSid')),
-        hasAuthToken: !!(await configHelper.get('whatsappTwilioAuthToken'))
-      };
-    }
+    settings.twilio = {
+      phoneNumber: await configHelper.get('whatsappTwilioNumber', ''),
+      accountSid: await configHelper.get('whatsappTwilioAccountSid', ''),
+      hasAuthToken: !!(await configHelper.get('whatsappTwilioAuthToken'))
+    };
 
     return res.status(200).json(settings);
   } catch (error) {
