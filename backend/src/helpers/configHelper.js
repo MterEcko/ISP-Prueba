@@ -250,16 +250,35 @@ class ConfigHelper {
   async getWhatsAppConfig() {
     const configs = await this.getByModule('whatsapp');
 
+    console.log('🔍 DEBUG getWhatsAppConfig - Raw configs from DB:', configs);
+    console.log('🔍 whatsappEnabled value:', configs.whatsappEnabled);
+    console.log('🔍 whatsappEnabled type:', typeof configs.whatsappEnabled);
+
     // PostgreSQL puede devolver 1/0 (número) en lugar de true/false o 'true'/'false'
     const enabled = configs.whatsappEnabled === true ||
                    configs.whatsappEnabled === 'true' ||
                    configs.whatsappEnabled === 1 ||
                    configs.whatsappEnabled === '1';
 
+    console.log('🔍 Enabled result:', enabled);
+
     return {
       enabled: enabled,
+      method: configs.whatsappMethod || 'twilio',
       apiUrl: configs.whatsappApiUrl || '',
-      token: configs.whatsappToken || ''
+      token: configs.whatsappToken || '',
+      // Twilio específico
+      twilio: {
+        accountSid: configs.whatsappTwilioAccountSid || '',
+        authToken: configs.whatsappTwilioAuthToken || '',
+        phoneNumber: configs.whatsappTwilioNumber || ''
+      },
+      // Meta API específico
+      api: {
+        apiUrl: configs.whatsappApiUrl || '',
+        phoneNumberId: configs.whatsappPhoneNumberId || '',
+        apiToken: configs.whatsappApiToken || ''
+      }
     };
   }
 
