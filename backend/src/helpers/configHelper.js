@@ -447,24 +447,38 @@ class ConfigHelper {
       }
 
       const updatePromises = Object.entries(configs).map(async ([key, value]) => {
+        console.log(`🔍 Procesando config ${key}:`, { value, type: typeof value });
+
         let existingConfig = await this.db.SystemConfiguration.findOne({
           where: { configKey: key }
         });
 
         // Si no existe, crear la configuración
         if (!existingConfig) {
-          console.log(`📝 Creando nueva configuración: ${key} en módulo ${module}`);
-          existingConfig = await this.db.SystemConfiguration.create({
-            configKey: key,
-            configValue: String(value),
-            configType: 'string',
-            module: module,
-            description: `Configuración de ${key}`
-          });
-          return existingConfig;
+          console.log(`📝 Creando nueva configuración: ${key} en módulo ${module}`, { value: String(value) });
+          try {
+            existingConfig = await this.db.SystemConfiguration.create({
+              configKey: key,
+              configValue: String(value),
+              configType: 'string',
+              module: module,
+              description: `Configuración de ${key}`
+            });
+            console.log(`✅ Configuración ${key} creada exitosamente con valor:`, existingConfig.configValue);
+            return existingConfig;
+          } catch (createError) {
+            console.error(`❌ Error creando ${key}:`, createError.message);
+            throw createError;
+          }
         }
 
         // Si existe, actualizarla
+        console.log(`📝 Actualizando configuración existente: ${key}`, {
+          valorAnterior: existingConfig.configValue,
+          valorNuevo: value,
+          configType: existingConfig.configType
+        });
+
         let processedValue = value;
         if (existingConfig.configType === 'encrypted') {
           processedValue = this.encrypt(value);
@@ -474,10 +488,19 @@ class ConfigHelper {
           processedValue = String(value);
         }
 
-        return existingConfig.update({ configValue: processedValue });
+        try {
+          const updated = await existingConfig.update({ configValue: processedValue });
+          console.log(`✅ Configuración ${key} actualizada a:`, updated.configValue);
+          return updated;
+        } catch (updateError) {
+          console.error(`❌ Error actualizando ${key}:`, updateError.message);
+          throw updateError;
+        }
       });
 
-      await Promise.all(updatePromises);
+      const results = await Promise.all(updatePromises);
+      console.log(`📊 Resumen: ${results.length} configuraciones procesadas para módulo ${module}`);
+
       this.invalidateCache();
 
       return true;
