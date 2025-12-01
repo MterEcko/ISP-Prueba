@@ -1734,7 +1734,7 @@ export default {
           botToken: this.telegramSettings.botToken || undefined,
           chatId: this.telegramSettings.chatId
         });
-        
+
         this.$toast?.success('Configuración de Telegram guardada correctamente');
         await this.loadTelegramSettings();
       } catch (error) {
@@ -1744,7 +1744,42 @@ export default {
         this.saving = false;
       }
     },
-    
+
+    async saveWhatsAppSettings() {
+      this.saving = true;
+      try {
+        const data = {
+          enabled: this.whatsappSettings.enabled,
+          method: this.whatsappSettings.method
+        };
+
+        // Agregar configuración según el método seleccionado
+        if (this.whatsappSettings.method === 'api') {
+          data.api = {
+            apiUrl: this.whatsappSettings.api.apiUrl,
+            phoneNumberId: this.whatsappSettings.api.phoneNumberId,
+            apiToken: this.whatsappSettings.api.apiToken || undefined
+          };
+        } else if (this.whatsappSettings.method === 'twilio') {
+          data.twilio = {
+            phoneNumber: this.whatsappSettings.twilio.phoneNumber,
+            accountSid: this.whatsappSettings.twilio.accountSid || undefined,
+            authToken: this.whatsappSettings.twilio.authToken || undefined
+          };
+        }
+
+        await SettingsService.updateWhatsAppSettings(data);
+
+        this.$toast?.success('Configuración de WhatsApp guardada correctamente');
+        await this.loadWhatsAppSettings();
+      } catch (error) {
+        console.error('Error guardando configuración de WhatsApp:', error);
+        this.$toast?.error('Error al guardar la configuración de WhatsApp');
+      } finally {
+        this.saving = false;
+      }
+    },
+
     async saveJellyfinSettings() {
       this.saving = true;
       try {
