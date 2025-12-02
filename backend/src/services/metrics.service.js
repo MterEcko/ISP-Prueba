@@ -213,8 +213,8 @@ class MetricsService {
         today_revenue: parseFloat(todayRevenue.toFixed(2)),
         by_method: paymentsByMethod.map(item => ({
           method: item.paymentMethod,
-          count: parseInt(item.get('count')),
-          total: parseFloat((item.get('total') || 0).toFixed(2))
+          count: parseInt(item.get('count')) || 0,
+          total: parseFloat(Number(item.get('total') || 0).toFixed(2))
         }))
       };
     } catch (error) {
@@ -239,6 +239,18 @@ class MetricsService {
     try {
       const Service = db.Service;
       const Plan = db.Plan;
+
+      // Si los modelos no existen, devolver datos vacíos
+      if (!Service || !Plan) {
+        return {
+          total_services: 0,
+          active_services: 0,
+          suspended_services: 0,
+          total_plans: 0,
+          active_plans: 0,
+          by_plan: []
+        };
+      }
 
       // Total de servicios
       const totalServices = await Service.count();
@@ -433,6 +445,16 @@ class MetricsService {
       const Router = db.Router;
       const Device = db.Device;
 
+      // Si los modelos no existen, devolver datos vacíos
+      if (!Router || !Device) {
+        return {
+          total_routers: 0,
+          active_routers: 0,
+          total_devices: 0,
+          active_devices: 0
+        };
+      }
+
       // Total de routers
       const totalRouters = await Router.count();
 
@@ -479,9 +501,9 @@ class MetricsService {
 
       // Últimas 10 acciones de auditoría
       const recentAudit = await PluginAuditLog.findAll({
-        order: [['createdAt', 'DESC']],
+        order: [['timestamp', 'DESC']],
         limit: 10,
-        attributes: ['id', 'action', 'pluginName', 'username', 'description', 'severity', 'createdAt']
+        attributes: ['id', 'action', 'pluginName', 'username', 'description', 'severity', 'timestamp']
       });
 
       return {
@@ -492,7 +514,7 @@ class MetricsService {
           user: log.username,
           description: log.description,
           severity: log.severity,
-          timestamp: log.createdAt
+          timestamp: log.timestamp
         }))
       };
     } catch (error) {
