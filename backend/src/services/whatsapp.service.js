@@ -292,7 +292,7 @@ class WhatsAppService {
     }
   }
 
-  /**
+/**
    * Enviar via Twilio
    */
   async sendViaTwilio(phoneNumber, text, options = {}) {
@@ -300,13 +300,33 @@ class WhatsAppService {
       const twilio = require('twilio');
       const client = twilio(this.config.accountSid, this.config.authToken);
 
-      // Asegurar formato whatsapp:+numero
-      const to = phoneNumber.startsWith('whatsapp:')
-        ? phoneNumber
-        : `whatsapp:${phoneNumber}`;
+      // --- LOGICA BLINDADA PARA FORMATO DE NUMEROS ---
+
+      // 1. Limpiar el numero DESTINATARIO (TO)
+      let toRaw = String(phoneNumber).replace(/\s+/g, '');
+      // Si no tiene '+' al inicio y no es ya un link whatsapp, se lo ponemos
+      if (!toRaw.startsWith('+') && !toRaw.startsWith('whatsapp:')) {
+        toRaw = '+' + toRaw;
+      }
+      // Formato final requerido por Twilio: whatsapp:+1234567890
+      const to = toRaw.startsWith('whatsapp:') ? toRaw : `whatsapp:${toRaw}`;
+
+
+      // 2. Limpiar el numero REMITENTE (FROM - Tu numero)
+      let fromRaw = String(this.config.phoneNumber).replace(/\s+/g, '');
+      // Si la base de datos se comio el '+', aqui se lo volvemos a poner
+      if (!fromRaw.startsWith('+') && !fromRaw.startsWith('whatsapp:')) {
+        fromRaw = '+' + fromRaw;
+      }
+      // Formato final requerido por Twilio
+      const from = fromRaw.startsWith('whatsapp:') ? fromRaw : `whatsapp:${fromRaw}`;
+
+      // ----------------------------------------------
+
+      logger.info(`Intentando enviar Twilio de [${from}] a [${to}]`);
 
       const message = await client.messages.create({
-        from: this.config.phoneNumber,
+        from: from,
         to: to,
         body: text
       });
@@ -365,6 +385,7 @@ class WhatsAppService {
       throw error;
     }
   }
+
 
   /**
    * Enviar mensaje masivo

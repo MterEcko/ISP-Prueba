@@ -301,7 +301,7 @@ exports.getWhatsAppSettings = async (req, res) => {
     const method = await configHelper.get('whatsappMethod', 'twilio');
     const rawEnabled = await configHelper.get('whatsappEnabled', false);
 
-    // CORRECCIÓN: Detectar todas las formas de "Verdadero" (true, "true", 1, "1")
+    // CORRECCIÓN: Detectar "true", "1", 1, true como VERDADERO
     const isEnabled = rawEnabled === true || rawEnabled === 'true' || rawEnabled === 1 || rawEnabled === '1';
 
     const settings = {
@@ -309,14 +309,14 @@ exports.getWhatsAppSettings = async (req, res) => {
       method: method
     };
 
-    // Configuración de Meta API (Se mantiene igual)
+    // Configuracion de Meta API
     settings.api = {
       apiUrl: await configHelper.get('whatsappApiUrl', 'https://graph.facebook.com/v17.0/'),
       phoneNumberId: await configHelper.get('whatsappPhoneNumberId', ''),
       hasToken: !!(await configHelper.get('whatsappApiToken'))
     };
 
-    // Configuración de Twilio (Se mantiene igual)
+    // Configuracion de Twilio
     settings.twilio = {
       phoneNumber: await configHelper.get('whatsappTwilioNumber', ''),
       accountSid: await configHelper.get('whatsappTwilioAccountSid', ''),
@@ -332,6 +332,7 @@ exports.getWhatsAppSettings = async (req, res) => {
     });
   }
 };
+
 
 exports.updateWhatsAppSettings = async (req, res) => {
   try {
@@ -361,7 +362,20 @@ exports.updateWhatsAppSettings = async (req, res) => {
 
     // Configuracion Twilio
     if (twilio) {
-      if (twilio.phoneNumber) updates.whatsappTwilioNumber = twilio.phoneNumber;
+      // --- INICIO DE LA CORRECCIÓN ---
+      if (twilio.phoneNumber) {
+        // 1. Forzar conversión a Texto (String) y quitar espacios
+        let phoneStr = String(twilio.phoneNumber).trim();
+        
+        // 2. Si no tiene '+' al inicio y no tiene 'whatsapp:', se lo agregamos
+        if (!phoneStr.startsWith('+') && !phoneStr.startsWith('whatsapp:')) {
+          phoneStr = '+' + phoneStr;
+        }
+        
+        updates.whatsappTwilioNumber = phoneStr;
+      }
+      // --- FIN DE LA CORRECCIÓN ---
+
       if (twilio.accountSid && twilio.accountSid.trim() !== '') {
         updates.whatsappTwilioAccountSid = twilio.accountSid;
       }
@@ -393,6 +407,7 @@ exports.updateWhatsAppSettings = async (req, res) => {
     });
   }
 };
+
 
 exports.testWhatsAppSettings = async (req, res) => {
   try {

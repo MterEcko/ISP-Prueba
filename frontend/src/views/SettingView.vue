@@ -76,7 +76,6 @@
     </div>
     
     <div class="tab-content">
-      <!-- Configuración General -->
       <div v-if="activeTab === 'general'" class="tab-pane">
         <div class="card">
           <h2>Configuración General</h2>
@@ -170,7 +169,6 @@
         </div>
       </div>
       
-      <!-- Configuración de Usuario -->
       <div v-if="activeTab === 'user'" class="tab-pane">
         <div class="card">
           <h2>Perfil de Usuario</h2>
@@ -231,7 +229,6 @@
         </div>
       </div>
       
-      <!-- Configuración de Seguridad -->
       <div v-if="activeTab === 'security'" class="tab-pane">
         <div class="card">
           <h2>Cambiar Contraseña</h2>
@@ -322,252 +319,246 @@
           </div>
         </div>
       </div>
-      <!-- Configuración de Email SMTP -->
-<div v-if="activeTab === 'email'" class="tab-pane">
-  <div class="card">
-    <h2>Configuración de Email (SMTP)</h2>
-    
-    <form @submit.prevent="saveEmailSettings">
-      <div class="form-group">
-        <label for="smtpHost">Servidor SMTP</label>
-        <input 
-          type="text" 
-          id="smtpHost" 
-          v-model="emailSettings.host"
-          placeholder="smtp.gmail.com"
-          required
-        />
-        <small class="form-hint">Ejemplo: smtp.gmail.com, smtp.ionos.mx, smtp.office365.com</small>
-      </div>
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label for="smtpPort">Puerto</label>
-          <input 
-            type="number" 
-            id="smtpPort" 
-            v-model="emailSettings.port"
-            placeholder="587"
-            required
-          />
-          <small class="form-hint">587 (TLS) o 465 (SSL)</small>
-        </div>
-        
-        <div class="form-group">
-          <label>Tipo de Conexión</label>
-          <div class="connection-type-display">
-            <span class="badge" :class="emailSettings.port == 465 ? 'badge-success' : 'badge-info'">
-              {{ emailSettings.port == 465 ? 'SSL (Puerto 465)' : 'TLS (Puerto 587)' }}
-            </span>
+
+      <div v-if="activeTab === 'email'" class="tab-pane">
+        <div class="card">
+          <h2>Configuración de Email (SMTP)</h2>
+          
+          <form @submit.prevent="saveEmailSettings">
+            <div class="form-group">
+              <label for="smtpHost">Servidor SMTP</label>
+              <input 
+                type="text" 
+                id="smtpHost" 
+                v-model="emailSettings.host"
+                placeholder="smtp.gmail.com"
+                required
+              />
+              <small class="form-hint">Ejemplo: smtp.gmail.com, smtp.ionos.mx, smtp.office365.com</small>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="smtpPort">Puerto</label>
+                <input 
+                  type="number" 
+                  id="smtpPort" 
+                  v-model="emailSettings.port"
+                  placeholder="587"
+                  required
+                />
+                <small class="form-hint">587 (TLS) o 465 (SSL)</small>
+              </div>
+              
+              <div class="form-group">
+                <label>Tipo de Conexión</label>
+                <div class="connection-type-display">
+                  <span class="badge" :class="emailSettings.port == 465 ? 'badge-success' : 'badge-info'">
+                    {{ emailSettings.port == 465 ? 'SSL (Puerto 465)' : 'TLS (Puerto 587)' }}
+                  </span>
+                </div>
+                <small class="form-hint">Se detecta automáticamente según el puerto</small>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="smtpUser">Usuario / Email</label>
+              <input 
+                type="email" 
+                id="smtpUser" 
+                v-model="emailSettings.user"
+                placeholder="usuario@ejemplo.com"
+                required
+              />
+            </div>
+            
+            <div class="form-group">
+              <label for="smtpPassword">Contraseña SMTP</label>
+              <input 
+                type="password" 
+                id="smtpPassword" 
+                v-model="emailSettings.password"
+                :placeholder="emailSettings.hasPassword ? '••••••••' : 'Ingrese su contraseña'"
+              />
+              <small class="form-hint">
+                {{ emailSettings.hasPassword ? 'Dejar en blanco para mantener la contraseña actual' : 'Para Gmail, use una App Password' }}
+              </small>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="emailFromName">Nombre del Remitente</label>
+                <input 
+                  type="text" 
+                  id="emailFromName" 
+                  v-model="emailSettings.fromName"
+                  placeholder="Mi ISP"
+                  required
+                />
+              </div>
+              
+              <div class="form-group">
+                <label for="emailFromAddress">Email del Remitente</label>
+                <input 
+                  type="email" 
+                  id="emailFromAddress" 
+                  v-model="emailSettings.fromAddress"
+                  placeholder="noreply@miisp.com"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div v-if="testResults.email" class="test-result" :class="testResults.email.success ? 'success' : 'error'">
+              <div class="test-result-icon">
+                {{ testResults.email.success ? '✓' : '✗' }}
+              </div>
+              <div class="test-result-message">
+                {{ testResults.email.message }}
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button 
+                type="button" 
+                class="btn btn-secondary" 
+                @click="testEmailConnection" 
+                :disabled="saving || !emailSettings.user"
+              >
+                <span v-if="saving">Probando...</span>
+                <span v-else>🧪 Probar Conexión</span>
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="saving">
+                <span v-if="saving">Guardando...</span>
+                <span v-else>💾 Guardar Configuración</span>
+              </button>
+            </div>
+          </form>
+          
+          <div class="info-box mt-4">
+            <h4>📝 Configuraciones Comunes</h4>
+            <div class="config-examples">
+              <div class="config-example">
+                <strong>Gmail:</strong>
+                <p>Host: smtp.gmail.com | Puerto: 587 o 465</p>
+                <p><small>Requiere App Password (no la contraseña normal)</small></p>
+              </div>
+              <div class="config-example">
+                <strong>Outlook/Hotmail:</strong>
+                <p>Host: smtp-mail.outlook.com | Puerto: 587</p>
+              </div>
+              <div class="config-example">
+                <strong>Office 365:</strong>
+                <p>Host: smtp.office365.com | Puerto: 587</p>
+              </div>
+              <div class="config-example">
+                <strong>Ionos:</strong>
+                <p>Host: smtp.ionos.mx | Puerto: 465 o 587</p>
+              </div>
+            </div>
           </div>
-          <small class="form-hint">Se detecta automáticamente según el puerto</small>
         </div>
       </div>
-      
-      <div class="form-group">
-        <label for="smtpUser">Usuario / Email</label>
-        <input 
-          type="email" 
-          id="smtpUser" 
-          v-model="emailSettings.user"
-          placeholder="usuario@ejemplo.com"
-          required
-        />
-      </div>
-      
-      <div class="form-group">
-        <label for="smtpPassword">Contraseña SMTP</label>
-        <input 
-          type="password" 
-          id="smtpPassword" 
-          v-model="emailSettings.password"
-          :placeholder="emailSettings.hasPassword ? '••••••••' : 'Ingrese su contraseña'"
-        />
-        <small class="form-hint">
-          {{ emailSettings.hasPassword ? 'Dejar en blanco para mantener la contraseña actual' : 'Para Gmail, use una App Password' }}
-        </small>
-      </div>
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label for="emailFromName">Nombre del Remitente</label>
-          <input 
-            type="text" 
-            id="emailFromName" 
-            v-model="emailSettings.fromName"
-            placeholder="Mi ISP"
-            required
-          />
-        </div>
-        
-        <div class="form-group">
-          <label for="emailFromAddress">Email del Remitente</label>
-          <input 
-            type="email" 
-            id="emailFromAddress" 
-            v-model="emailSettings.fromAddress"
-            placeholder="noreply@miisp.com"
-            required
-          />
-        </div>
-      </div>
-      
-      <!-- Resultado de prueba -->
-      <div v-if="testResults.email" class="test-result" :class="testResults.email.success ? 'success' : 'error'">
-        <div class="test-result-icon">
-          {{ testResults.email.success ? '✓' : '✗' }}
-        </div>
-        <div class="test-result-message">
-          {{ testResults.email.message }}
-        </div>
-      </div>
-      
-      <div class="form-actions">
-        <button 
-          type="button" 
-          class="btn btn-secondary" 
-          @click="testEmailConnection" 
-          :disabled="saving || !emailSettings.user"
-        >
-          <span v-if="saving">Probando...</span>
-          <span v-else>🧪 Probar Conexión</span>
-        </button>
-        <button type="submit" class="btn btn-primary" :disabled="saving">
-          <span v-if="saving">Guardando...</span>
-          <span v-else>💾 Guardar Configuración</span>
-        </button>
-      </div>
-    </form>
-    
-    <!-- Información adicional -->
-    <div class="info-box mt-4">
-      <h4>📝 Configuraciones Comunes</h4>
-      <div class="config-examples">
-        <div class="config-example">
-          <strong>Gmail:</strong>
-          <p>Host: smtp.gmail.com | Puerto: 587 o 465</p>
-          <p><small>Requiere App Password (no la contraseña normal)</small></p>
-        </div>
-        <div class="config-example">
-          <strong>Outlook/Hotmail:</strong>
-          <p>Host: smtp-mail.outlook.com | Puerto: 587</p>
-        </div>
-        <div class="config-example">
-          <strong>Office 365:</strong>
-          <p>Host: smtp.office365.com | Puerto: 587</p>
-        </div>
-        <div class="config-example">
-          <strong>Ionos:</strong>
-          <p>Host: smtp.ionos.mx | Puerto: 465 o 587</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- Configuración de Telegram -->
-<div v-if="activeTab === 'telegram'" class="tab-pane">
-  <div class="card">
-    <h2>Configuración de Telegram Bot</h2>
-    
-    <div class="telegram-status">
-      <div class="status-badge" :class="telegramSettings.enabled ? 'status-active' : 'status-inactive'">
-        {{ telegramSettings.enabled ? '✓ Activo' : '○ Inactivo' }}
-      </div>
-    </div>
-    
-    <form @submit.prevent="saveTelegramSettings">
-      <div class="form-check mb-4">
-        <input 
-          type="checkbox" 
-          id="telegramEnabled" 
-          v-model="telegramSettings.enabled"
-        />
-        <label for="telegramEnabled">
-          <strong>Habilitar notificaciones por Telegram</strong>
-        </label>
-      </div>
-      
-      <div class="form-group">
-        <label for="telegramToken">Token del Bot</label>
-        <input 
-          type="text" 
-          id="telegramToken" 
-          v-model="telegramSettings.botToken"
-          :placeholder="telegramSettings.hasToken ? '••••••••••••••••••••' : '123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11'"
-          :disabled="!telegramSettings.enabled"
-        />
-        <small class="form-hint">
-          {{ telegramSettings.hasToken ? 'Dejar en blanco para mantener el token actual' : 'Obtenga el token de @BotFather en Telegram' }}
-        </small>
-      </div>
-      
-      <div class="form-group">
-        <label for="telegramChatId">Chat ID / Group ID</label>
-        <input 
-          type="text" 
-          id="telegramChatId" 
-          v-model="telegramSettings.chatId"
-          placeholder="-1001234567890"
-          :disabled="!telegramSettings.enabled"
-        />
-        <small class="form-hint">ID del chat o grupo donde se enviarán las alertas técnicas</small>
-      </div>
-      
-      <!-- Resultado de prueba -->
-      <div v-if="testResults.telegram" class="test-result" :class="testResults.telegram.success ? 'success' : 'error'">
-        <div class="test-result-icon">
-          {{ testResults.telegram.success ? '✓' : '✗' }}
+      <div v-if="activeTab === 'telegram'" class="tab-pane">
+        <div class="card">
+          <h2>Configuración de Telegram Bot</h2>
+          
+          <div class="telegram-status">
+            <div class="status-badge" :class="telegramSettings.enabled ? 'status-active' : 'status-inactive'">
+              {{ telegramSettings.enabled ? '✓ Activo' : '○ Inactivo' }}
+            </div>
+          </div>
+          
+          <form @submit.prevent="saveTelegramSettings">
+            <div class="form-check mb-4">
+              <input 
+                type="checkbox" 
+                id="telegramEnabled" 
+                v-model="telegramSettings.enabled"
+              />
+              <label for="telegramEnabled">
+                <strong>Habilitar notificaciones por Telegram</strong>
+              </label>
+            </div>
+            
+            <div class="form-group">
+              <label for="telegramToken">Token del Bot</label>
+              <input 
+                type="text" 
+                id="telegramToken" 
+                v-model="telegramSettings.botToken"
+                :placeholder="telegramSettings.hasToken ? '••••••••••••••••••••' : '123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11'"
+                :disabled="!telegramSettings.enabled"
+              />
+              <small class="form-hint">
+                {{ telegramSettings.hasToken ? 'Dejar en blanco para mantener el token actual' : 'Obtenga el token de @BotFather en Telegram' }}
+              </small>
+            </div>
+            
+            <div class="form-group">
+              <label for="telegramChatId">Chat ID / Group ID</label>
+              <input 
+                type="text" 
+                id="telegramChatId" 
+                v-model="telegramSettings.chatId"
+                placeholder="-1001234567890"
+                :disabled="!telegramSettings.enabled"
+              />
+              <small class="form-hint">ID del chat o grupo donde se enviarán las alertas técnicas</small>
+            </div>
+            
+            <div v-if="testResults.telegram" class="test-result" :class="testResults.telegram.success ? 'success' : 'error'">
+              <div class="test-result-icon">
+                {{ testResults.telegram.success ? '✓' : '✗' }}
+              </div>
+              <div class="test-result-message">
+                {{ testResults.telegram.message }}
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button 
+                type="button" 
+                class="btn btn-secondary" 
+                @click="testTelegramConnection" 
+                :disabled="saving || !telegramSettings.enabled"
+              >
+                <span v-if="saving">Probando...</span>
+                <span v-else>🧪 Enviar Mensaje de Prueba</span>
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="saving">
+                <span v-if="saving">Guardando...</span>
+                <span v-else>💾 Guardar Configuración</span>
+              </button>
+            </div>
+          </form>
+          
+          <div class="info-box mt-4">
+            <h4>📖 Cómo configurar tu Bot de Telegram</h4>
+            <ol class="setup-steps">
+              <li>
+                <strong>Crear el Bot:</strong>
+                <p>Busca <code>@BotFather</code> en Telegram y envía <code>/newbot</code></p>
+              </li>
+              <li>
+                <strong>Obtener el Token:</strong>
+                <p>Sigue las instrucciones de BotFather. Te dará un token como: <code>123456789:ABC-DEF...</code></p>
+              </li>
+              <li>
+                <strong>Obtener el Chat ID:</strong>
+                <p>Opción 1: Agrega el bot a tu grupo y obtén el ID con <code>@userinfobot</code></p>
+                <p>Opción 2: Envía un mensaje al bot y visita: <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code></p>
+              </li>
+              <li>
+                <strong>Activar y Probar:</strong>
+                <p>Guarda la configuración y usa el botón "Enviar Mensaje de Prueba"</p>
+              </li>
+            </ol>
+          </div>
         </div>
-        <div class="test-result-message">
-          {{ testResults.telegram.message }}
-        </div>
       </div>
-      
-      <div class="form-actions">
-        <button 
-          type="button" 
-          class="btn btn-secondary" 
-          @click="testTelegramConnection" 
-          :disabled="saving || !telegramSettings.enabled"
-        >
-          <span v-if="saving">Probando...</span>
-          <span v-else>🧪 Enviar Mensaje de Prueba</span>
-        </button>
-        <button type="submit" class="btn btn-primary" :disabled="saving">
-          <span v-if="saving">Guardando...</span>
-          <span v-else>💾 Guardar Configuración</span>
-        </button>
-      </div>
-    </form>
-    
-    <!-- Guía de configuración -->
-    <div class="info-box mt-4">
-      <h4>📖 Cómo configurar tu Bot de Telegram</h4>
-      <ol class="setup-steps">
-        <li>
-          <strong>Crear el Bot:</strong>
-          <p>Busca <code>@BotFather</code> en Telegram y envía <code>/newbot</code></p>
-        </li>
-        <li>
-          <strong>Obtener el Token:</strong>
-          <p>Sigue las instrucciones de BotFather. Te dará un token como: <code>123456789:ABC-DEF...</code></p>
-        </li>
-        <li>
-          <strong>Obtener el Chat ID:</strong>
-          <p>Opción 1: Agrega el bot a tu grupo y obtén el ID con <code>@userinfobot</code></p>
-          <p>Opción 2: Envía un mensaje al bot y visita: <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code></p>
-        </li>
-        <li>
-          <strong>Activar y Probar:</strong>
-          <p>Guarda la configuración y usa el botón "Enviar Mensaje de Prueba"</p>
-        </li>
-      </ol>
-    </div>
-  </div>
-</div>
 
-      <!-- Configuración de WhatsApp -->
       <div v-if="activeTab === 'whatsapp'" class="tab-pane">
         <div class="card">
           <h2>Configuracion de WhatsApp</h2>
@@ -599,7 +590,6 @@
               </select>
             </div>
 
-            <!-- API Oficial de WhatsApp Business -->
             <div v-if="whatsappSettings.method === 'api'">
               <h4 class="mt-4">API Oficial de WhatsApp Business</h4>
 
@@ -642,7 +632,6 @@
               </div>
             </div>
 
-            <!-- Twilio -->
             <div v-if="whatsappSettings.method === 'twilio'">
               <h4 class="mt-4">Twilio WhatsApp</h4>
 
@@ -684,7 +673,6 @@
               </div>
             </div>
 
-            <!-- WhatsApp Web (QR) -->
             <div v-if="whatsappSettings.method === 'web'">
               <h4 class="mt-4">WhatsApp Web (Escanear QR)</h4>
 
@@ -707,7 +695,6 @@
               </button>
             </div>
 
-            <!-- Resultado de prueba -->
             <div v-if="testResults.whatsapp" class="test-result" :class="testResults.whatsapp.success ? 'success' : 'error'">
               <div class="test-result-icon">
                 {{ testResults.whatsapp.success ? 'Si' : 'No' }}
@@ -734,7 +721,6 @@
             </div>
           </form>
 
-          <!-- Guia de configuracion -->
           <div class="info-box mt-4">
             <h4>Como configurar WhatsApp</h4>
 
@@ -801,7 +787,6 @@
         </div>
       </div>
 
-      <!-- Configuración de Dominio -->
       <div v-if="activeTab === 'domain'" class="tab-pane">
         <div class="card">
           <h2>Configuración de Dominio y CORS</h2>
@@ -888,7 +873,6 @@
         </div>
       </div>
 
-      <!-- Configuración de Notificaciones -->
       <div v-if="activeTab === 'notifications'" class="tab-pane">
         <div class="card">
           <h2>Preferencias de Notificaciones</h2>
@@ -983,7 +967,6 @@
         </div>
       </div>
       
-      <!-- Configuración de Red -->
       <div v-if="activeTab === 'network'" class="tab-pane">
         <div class="card">
           <h2>Configuración de APIs de Red</h2>
@@ -1099,19 +1082,30 @@
         </div>
       </div>
       
-      <!-- Configuración de Integraciones -->
       <div v-if="activeTab === 'integrations'" class="tab-pane">
         <div class="card">
           <h2>Integración con Jellyfin</h2>
           
           <form @submit.prevent="saveJellyfinSettings">
+            <div class="form-check mb-4">
+              <input 
+                type="checkbox" 
+                id="jellyfinEnabled" 
+                v-model="jellyfinSettings.enabled"
+              />
+              <label for="jellyfinEnabled">
+                <strong>Habilitar Integración Jellyfin</strong>
+              </label>
+            </div>
+
             <div class="form-group">
               <label for="jellyfinUrl">URL del Servidor Jellyfin</label>
               <input 
                 type="text" 
                 id="jellyfinUrl" 
-                v-model="integrationSettings.jellyfin.url"
+                v-model="jellyfinSettings.url"
                 placeholder="http://servidor:8096"
+                :disabled="!jellyfinSettings.enabled"
               />
             </div>
             
@@ -1120,29 +1114,27 @@
               <input 
                 type="text" 
                 id="jellyfinApiKey" 
-                v-model="integrationSettings.jellyfin.apiKey"
-                placeholder="Tu API Key de Jellyfin"
+                v-model="jellyfinSettings.apiKey"
+                :placeholder="jellyfinSettings.hasApiKey ? '••••••••••••••••••••' : 'Tu API Key de Jellyfin'"
+                :disabled="!jellyfinSettings.enabled"
               />
             </div>
-            
+
             <div class="form-group">
-              <label for="jellyfinDefaultProfile">Perfil por Defecto</label>
-              <input 
-                type="text" 
-                id="jellyfinDefaultProfile" 
-                v-model="integrationSettings.jellyfin.defaultProfile"
-                placeholder="ID del perfil por defecto"
-              />
+               <label>Jellyfin Accounts (jfa-go)</label>
+               <div class="form-check">
+                 <input type="checkbox" id="jfaGoEnabled" v-model="jellyfinSettings.jfaGoEnabled" :disabled="!jellyfinSettings.enabled">
+                 <label for="jfaGoEnabled">Habilitar gestión de cuentas (jfa-go)</label>
+               </div>
             </div>
-            
-            <div class="test-connection-result" v-if="jellyfinConnection">
-              <div class="connection-status" :class="jellyfinConnection.success ? 'success' : 'error'">
-                {{ jellyfinConnection.message }}
-              </div>
+
+            <div class="form-group" v-if="jellyfinSettings.jfaGoEnabled">
+               <label for="jfaGoUrl">URL de jfa-go</label>
+               <input type="text" id="jfaGoUrl" v-model="jellyfinSettings.jfaGoUrl" placeholder="http://servidor:8056">
             </div>
             
             <div class="form-actions">
-              <button type="button" class="btn" @click="testJellyfinConnection" :disabled="saving">
+              <button type="button" class="btn" @click="testJellyfinConnection" :disabled="saving || !jellyfinSettings.enabled">
                 Probar Conexión
               </button>
               <button type="submit" class="btn btn-primary" :disabled="saving">
@@ -1152,114 +1144,11 @@
           </form>
         </div>
         
-        <div class="card mt-4">
-          <h2>Configuración de Comunicaciones</h2>
-          
-          <form @submit.prevent="saveCommunicationSettings">
-            <div class="setting-group">
-              <h3>Servidor SMTP</h3>
-              
-              <div class="form-group">
-                <label for="smtpHost">Servidor SMTP</label>
-                <input 
-                  type="text" 
-                  id="smtpHost" 
-                  v-model="integrationSettings.smtp.host"
-                  placeholder="smtp.example.com"
-                />
-              </div>
-              
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="smtpPort">Puerto</label>
-                  <input 
-                    type="number" 
-                    id="smtpPort" 
-                    v-model="integrationSettings.smtp.port"
-                    placeholder="587"
-                  />
-                </div>
-                
-                <div class="form-group">
-                  <label for="smtpSecurity">Seguridad</label>
-                  <select id="smtpSecurity" v-model="integrationSettings.smtp.security">
-                    <option value="none">Ninguna</option>
-                    <option value="tls">TLS</option>
-                    <option value="ssl">SSL</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div class="form-group">
-                <label for="smtpUser">Usuario</label>
-                <input 
-                  type="text" 
-                  id="smtpUser" 
-                  v-model="integrationSettings.smtp.user"
-                  placeholder="usuario@example.com"
-                />
-              </div>
-              
-              <div class="form-group">
-                <label for="smtpPassword">Contraseña</label>
-                <input 
-                  type="password" 
-                  id="smtpPassword" 
-                  v-model="integrationSettings.smtp.password"
-                  placeholder="••••••••"
-                />
-              </div>
-              
-              <div class="form-group">
-                <label for="smtpFrom">Desde (From)</label>
-                <input 
-                  type="text" 
-                  id="smtpFrom" 
-                  v-model="integrationSettings.smtp.from"
-                  placeholder="Soporte ISP <soporte@tuisp.com>"
-                />
-              </div>
-            </div>
-            
-            <div class="setting-group">
-              <h3>Telegram Bot</h3>
-              
-              <div class="form-group">
-                <label for="telegramToken">Token del Bot</label>
-                <input 
-                  type="text" 
-                  id="telegramToken" 
-                  v-model="integrationSettings.telegram.token"
-                  placeholder="123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
-                />
-              </div>
-              
-              <div class="form-check">
-                <input 
-                  type="checkbox" 
-                  id="telegramEnabled" 
-                  v-model="integrationSettings.telegram.enabled"
-                />
-                <label for="telegramEnabled">Habilitar Bot de Telegram</label>
-              </div>
-            </div>
-            
-            <div class="form-actions">
-              <button type="button" class="btn" @click="testSmtpConnection" :disabled="saving">
-                Probar SMTP
-              </button>
-              <button type="submit" class="btn btn-primary" :disabled="saving">
-                {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
-              </button>
-            </div>
-          </form>
         </div>
-      </div>
     </div>
   </div>
 </template>
 
-// frontend/src/views/SettingsView.vue - SCRIPT SECTION
 
 <script>
 import SettingsService from '../services/settings.service';
