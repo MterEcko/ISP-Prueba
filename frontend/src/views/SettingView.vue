@@ -651,7 +651,7 @@
                 <input
                   type="text"
                   id="twilioAccountSid"
-                  v-model="whatsappSettings.twilioAccountSid"
+                  v-model="whatsappSettings.twilio.accountSid"
                   placeholder="AC..."
                   :disabled="!whatsappSettings.enabled"
                 />
@@ -662,7 +662,7 @@
                 <input
                   type="password"
                   id="twilioAuthToken"
-                  v-model="whatsappSettings.twilioAuthToken"
+                  v-model="whatsappSettings.twilio.authToken"
                   :placeholder="whatsappSettings.hasTwilioToken ? '••••••••••••••••••••' : ''"
                   :disabled="!whatsappSettings.enabled"
                 />
@@ -676,7 +676,7 @@
                 <input
                   type="text"
                   id="twilioWhatsAppNumber"
-                  v-model="whatsappSettings.twilioWhatsAppNumber"
+                  v-model="whatsappSettings.twilio.phoneNumber"
                   placeholder="whatsapp:+14155238886"
                   :disabled="!whatsappSettings.enabled"
                 />
@@ -1549,10 +1549,40 @@ export default {
     
     async loadWhatsAppSettings() {
       try {
-        const response = await SettingsService.getWhatsAppSettings();
-        this.whatsappSettings = { ...this.whatsappSettings, ...response.data };
+      const response = await SettingsService.getWhatsAppSettings();
+      const data = response.data;
+
+      console.log('📥 Datos recibidos del backend:', data); // Para depurar si es necesario
+
+
+      // CORRECCIÓN PRINCIPAL: Convertir a booleano estricto
+      // Esto maneja si viene como true, "true", 1, o "1"
+      const isEnabled = data.enabled === true || data.enabled === 'true' || data.enabled === 1 || data.enabled === '1';
+	
+	
+      // Aseguramos la estructura correcta
+      this.whatsappSettings = {
+        enabled: isEnabled,
+        method: data.method || 'twilio',
+        api: {
+          apiUrl: data.api?.apiUrl || data.whatsappApiUrl || '',
+          phoneNumberId: data.api?.phoneNumberId || '',
+          apiToken: data.api?.apiToken || '',
+          hasToken: data.api?.hasToken || false
+        },
+        // Mantener la estructura de Twilio (La que arreglamos antes)
+        twilio: {
+          phoneNumber: data.twilio?.phoneNumber || data.whatsappTwilioNumber || '',
+          accountSid: data.twilio?.accountSid || data.whatsappTwilioAccountSid || '',
+          authToken: '', // Siempre vacío por seguridad
+          hasAuthToken: data.twilio?.hasAuthToken || data.hasTwilioToken || false
+        },
+          // Limpiamos las propiedades raíz basura para evitar confusión
+          hasTwilioToken: data.hasTwilioToken || false
+      };
       } catch (error) {
-        console.error('Error cargando configuración de WhatsApp:', error);
+      console.error('Error cargando configuración de WhatsApp:', error);
+      this.$toast?.error('Error al cargar configuración de WhatsApp');
       }
     },
 

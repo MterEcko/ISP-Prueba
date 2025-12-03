@@ -299,21 +299,24 @@ exports.testTelegramSettings = async (req, res) => {
 exports.getWhatsAppSettings = async (req, res) => {
   try {
     const method = await configHelper.get('whatsappMethod', 'twilio');
-    const enabled = await configHelper.get('whatsappEnabled', false);
+    const rawEnabled = await configHelper.get('whatsappEnabled', false);
+
+    // CORRECCIÓN: Detectar todas las formas de "Verdadero" (true, "true", 1, "1")
+    const isEnabled = rawEnabled === true || rawEnabled === 'true' || rawEnabled === 1 || rawEnabled === '1';
 
     const settings = {
-      enabled: enabled === 'true' || enabled === true,
+      enabled: isEnabled,
       method: method
     };
 
-    // Configuracion de Meta API
+    // Configuración de Meta API (Se mantiene igual)
     settings.api = {
       apiUrl: await configHelper.get('whatsappApiUrl', 'https://graph.facebook.com/v17.0/'),
       phoneNumberId: await configHelper.get('whatsappPhoneNumberId', ''),
       hasToken: !!(await configHelper.get('whatsappApiToken'))
     };
 
-    // Configuracion de Twilio
+    // Configuración de Twilio (Se mantiene igual)
     settings.twilio = {
       phoneNumber: await configHelper.get('whatsappTwilioNumber', ''),
       accountSid: await configHelper.get('whatsappTwilioAccountSid', ''),
