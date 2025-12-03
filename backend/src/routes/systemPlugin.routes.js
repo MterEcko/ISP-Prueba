@@ -1,6 +1,30 @@
 // backend/src/routes/systemPlugin.routes.js
 const { authJwt } = require("../middleware");
 const systemPluginController = require("../controllers/systemPlugin.controller");
+const multer = require('multer');
+const path = require('path');
+
+// Configure multer for plugin installation
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../uploads/plugins/'));
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/zip' || file.originalname.endsWith('.zip')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .zip files are allowed'));
+    }
+  }
+});
 
 module.exports = function(app) {
   app.use(function(req, res, next) {
@@ -79,6 +103,13 @@ module.exports = function(app) {
     "/api/system-plugins",
     [authJwt.verifyToken, authJwt.isAdminOrManager],
     systemPluginController.createPlugin
+  );
+
+  // Instalar plugin desde archivo ZIP (descargado del marketplace)
+  app.post(
+    "/api/system-plugins/install",
+    [authJwt.verifyToken, authJwt.isAdminOrManager, upload.single('plugin')],
+    systemPluginController.installPlugin
   );
 
   // Obtener plugin por ID

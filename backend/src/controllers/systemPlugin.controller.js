@@ -3,7 +3,9 @@ const db = require('../models');
 const SystemPlugin = db.SystemPlugin;
 const logger = require('../utils/logger');
 const fs = require('fs');
+const fsPromises = require('fs').promises;
 const path = require('path');
+const AdmZip = require('adm-zip');
 const pluginConfigEncryption = require('../services/pluginConfigEncryption.service');
 const pluginAudit = require('../services/pluginAudit.service');
 
@@ -300,6 +302,173 @@ class SystemPluginController {
       return res.status(500).json({
         success: false,
         message: 'Error interno del servidor'
+      });
+    }
+  };
+
+  /**
+   * Instalar plugin desde archivo ZIP (descargado del marketplace)
+   * POST /api/system-plugins/install
+   */
+  installPlugin = async (req, res) => {
+    let tempPath = null;
+    let pluginDir = null;
+
+    try {
+      // Validar que se proporcionó un archivo
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No se proporcionó ningún archivo ZIP'
+        });
+      }
+
+      tempPath = req.file.path;
+      logger.info(`📦 Instalando plugin desde: ${tempPath}`);
+
+      // Leer y validar ZIP
+      let zip;
+      try {
+        zip = new AdmZip(tempPath);
+      } catch (error) {
+        await fsPromises.unlink(tempPath);
+        return res.status(400).json({
+          success: false,
+          message: 'El archivo no es un ZIP válido'
+        });
+      }
+
+      const zipEntries = zip.getEntries();
+
+      // Buscar manifest.json (puede estar en raíz o en subcarpeta)
+      let manifestEntry = zipEntries.find(entry =>
+        entry.entryName === 'manifest.json' ||
+        entry.entryName === 'src/manifest.json' ||
+        entry.entryName.endsWith('/manifest.json')
+      );
+
+      if (!manifestEntry) {
+        await fsPromises.unlink(tempPath);
+        return res.status(400).json({
+          success: false,
+          message: 'El ZIP debe contener un archivo manifest.json'
+        });
+      }
+
+      // Leer y parsear manifest
+      const manifestContent = manifestEntry.getData().toString('utf8');
+      let manifest;
+
+      try {
+        manifest = JSON.parse(manifestContent);
+      } catch (error) {
+        await fsPromises.unlink(tempPath);
+        return res.status(400).json({
+          success: false,
+          message: 'El manifest.json tiene un formato JSON inválido'
+        });
+      }
+
+      // Validar campos requeridos
+      const requiredFields = ['name', 'version', 'category'];
+      const missingFields = requiredFields.filter(field => !manifest[field]);
+
+      if (missingFields.length > 0) {
+        await fsPromises.unlink(tempPath);
+        return res.status(400).json({
+          success: false,
+          message: `Campos faltantes en manifest.json: ${missingFields.join(', ')}`
+        });
+      }
+
+      // Verificar si ya existe el plugin
+      const existingPlugin = await SystemPlugin.findOne({
+        where: { name: manifest.name }
+      });
+
+      if (existingPlugin) {
+        await fsPromises.unlink(tempPath);
+        return res.status(409).json({
+          success: false,
+          message: `El plugin "${manifest.name}" ya está instalado. Desinstálalo primero.`
+        });
+      }
+
+      // Crear directorio del plugin en backend/src/plugins/
+      pluginDir = path.join(this.pluginsPath, manifest.name);
+
+      // Verificar que no exista el directorio
+      if (fs.existsSync(pluginDir)) {
+        await fsPromises.unlink(tempPath);
+        return res.status(409).json({
+          success: false,
+          message: `Ya existe un directorio para el plugin "${manifest.name}". Elimínalo manualmente primero.`
+        });
+      }
+
+      logger.info(`📁 Creando directorio del plugin: ${pluginDir}`);
+      await fsPromises.mkdir(pluginDir, { recursive: true });
+
+      // Extraer contenido del ZIP
+      logger.info(`📂 Extrayendo archivos del plugin...`);
+      zip.extractAllTo(pluginDir, true);
+
+      // Registrar plugin en la base de datos
+      logger.info(`💾 Registrando plugin en base de datos...`);
+      const newPlugin = await SystemPlugin.create({
+        name: manifest.name,
+        version: manifest.version,
+        category: manifest.category,
+        description: manifest.description || '',
+        active: true,  // Activar automáticamente
+        configuration: manifest.config || {},
+        pluginTables: manifest.tables || [],
+        pluginRoutes: manifest.routes || []
+      });
+
+      // Intentar activar el plugin
+      logger.info(`🚀 Activando plugin ${manifest.name}...`);
+      try {
+        await this._activatePlugin(newPlugin);
+      } catch (activationError) {
+        logger.error(`Error activando plugin ${manifest.name}: ${activationError.message}`);
+        // No fallar la instalación, solo marcar como inactivo
+        await newPlugin.update({ active: false });
+      }
+
+      // Auditoría
+      await pluginAudit.logPluginCreated(newPlugin, req);
+
+      // Limpiar archivo temporal
+      await fsPromises.unlink(tempPath);
+
+      logger.info(`✅ Plugin ${manifest.name} instalado exitosamente`);
+
+      return res.status(201).json({
+        success: true,
+        data: newPlugin,
+        message: `Plugin "${manifest.name}" instalado exitosamente`
+      });
+
+    } catch (error) {
+      logger.error(`Error instalando plugin: ${error.message}`);
+
+      // Limpieza en caso de error
+      try {
+        if (tempPath && fs.existsSync(tempPath)) {
+          await fsPromises.unlink(tempPath);
+        }
+        if (pluginDir && fs.existsSync(pluginDir)) {
+          await fsPromises.rm(pluginDir, { recursive: true, force: true });
+        }
+      } catch (cleanupError) {
+        logger.error(`Error en limpieza: ${cleanupError.message}`);
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: 'Error instalando el plugin',
+        error: error.message
       });
     }
   };
@@ -1200,19 +1369,20 @@ module.exports = {
   getActivePlugins: systemPluginController.getActivePlugins,
   getAvailablePlugins: systemPluginController.getAvailablePlugins,
   createPlugin: systemPluginController.createPlugin,
+  installPlugin: systemPluginController.installPlugin,  // NUEVO: Instalar plugin desde ZIP
   updatePlugin: systemPluginController.updatePlugin,
   activatePlugin: systemPluginController.activatePlugin,
   deactivatePlugin: systemPluginController.deactivatePlugin,
   deletePlugin: systemPluginController.deletePlugin,
   reloadPlugin: systemPluginController.reloadPlugin,
-  
+
   // Métodos de configuración
   getPluginConfig: systemPluginController.getPluginConfig,
   updatePluginConfig: systemPluginController.updatePluginConfig,
-  
+
   // Métodos de gestión
   initializeAllPlugins: systemPluginController.initializeAllPlugins,
-  
+
   // Instancia para acceso directo si se necesita
   instance: systemPluginController
 };

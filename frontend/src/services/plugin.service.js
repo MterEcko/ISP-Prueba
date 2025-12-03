@@ -293,7 +293,7 @@ class PluginService {
     const formData = new FormData();
     formData.append('plugin', pluginFile);
 
-    return axios.post(`${API_URL}plugin-upload/upload`, formData, {
+    return axios.post(`${API_URL}system-plugins/install`, formData, {
       headers: {
         ...authHeader(),
         'Content-Type': 'multipart/form-data'
