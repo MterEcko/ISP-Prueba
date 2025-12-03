@@ -168,7 +168,7 @@ class PluginService {
    * TODO: Implementar servidor de marketplace
    */
   getMarketplacePlugins(filters = {}) {
-    // Por ahora, esto debería apuntar a tu servidor de marketplace
+    // Apunta al servidor de marketplace con validación de licencia
     const marketplaceUrl = process.env.VUE_APP_MARKETPLACE_URL || 'http://localhost:3001/api/marketplace';
 
     const queryParams = new URLSearchParams();
@@ -178,8 +178,43 @@ class PluginService {
     if (filters.page) queryParams.append('page', filters.page);
     if (filters.limit) queryParams.append('limit', filters.limit);
 
+    // Agregar licenseKey si existe en localStorage
+    const licenseKey = localStorage.getItem('licenseKey');
+    if (licenseKey) {
+      queryParams.append('licenseKey', licenseKey);
+    }
+
     return axios.get(`${marketplaceUrl}/plugins?${queryParams.toString()}`, {
       headers: authHeader()
+    });
+  }
+
+  /**
+   * Activar plugin desde marketplace (Store API)
+   */
+  activateMarketplacePlugin(pluginId, pluginData) {
+    const marketplaceUrl = process.env.VUE_APP_MARKETPLACE_URL || 'http://localhost:3001/api/marketplace';
+    const licenseKey = localStorage.getItem('licenseKey');
+    const installationKey = localStorage.getItem('installationKey');
+
+    return axios.post(
+      `${marketplaceUrl}/plugins/${pluginId}/activate`,
+      {
+        installationKey,
+        licenseKey
+      },
+      {
+        headers: authHeader()
+      }
+    ).then(response => {
+      // Después de activar en la Store, activar localmente
+      return this.createPlugin({
+        name: pluginData.name,
+        version: pluginData.version,
+        description: pluginData.description,
+        category: pluginData.category,
+        active: true
+      });
     });
   }
 
