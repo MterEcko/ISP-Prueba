@@ -9,7 +9,8 @@
     "init-db": "node scripts/init-db.js",
     "seed": "node scripts/seed-plugins.js",
     "seed:force": "node scripts/seed-plugins.js --force",
-    "setup": "npm run init-db && npm run seed"
+    "create-licenses": "node scripts/create-test-licenses.js",
+    "setup": "npm run seed:force && npm run create-licenses"
   },
   "keywords": [
     "license-server",
