@@ -1,173 +1,169 @@
 <template>
   <div class="store-dashboard-container">
     <div class="page-header">
-      <h1>📊 Dashboard del Plugin Store</h1>
-      <div class="refresh-btn">
-        <button @click="loadAllStats" :disabled="loading" class="btn-refresh">
-          <span v-if="!loading">🔄 Actualizar</span>
-          <span v-else>⏳ Cargando...</span>
-        </button>
+      <h1>🛒 Plugin Marketplace</h1>
+      <div class="license-badge" v-if="licenseInfo">
+        <span class="badge-icon">🔑</span>
+        <span class="badge-text">Licencia: {{ licenseInfo.planType }}</span>
       </div>
     </div>
 
     <!-- Loading -->
     <div v-if="loading" class="loading">
       <div class="spinner"></div>
-      <p>Cargando estadísticas del Store...</p>
+      <p>Cargando información...</p>
     </div>
 
     <div v-else class="dashboard-content">
-      <!-- Tarjetas de estadísticas principales -->
+      <!-- Información de Licencia -->
+      <div class="license-section" v-if="licenseInfo">
+        <h2>📋 Mi Licencia</h2>
+        <div class="license-card">
+          <div class="license-header">
+            <div class="license-plan">
+              <span class="plan-icon">{{ getPlanIcon(licenseInfo.planType) }}</span>
+              <div class="plan-info">
+                <h3>Plan {{ licenseInfo.planType }}</h3>
+                <p>{{ licenseInfo.companyName }}</p>
+              </div>
+            </div>
+            <div class="license-status" :class="'status-' + licenseInfo.status">
+              {{ licenseInfo.status }}
+            </div>
+          </div>
+          <div class="license-details">
+            <div class="detail-item">
+              <span class="detail-label">Clave de Licencia:</span>
+              <code class="detail-value">{{ licenseInfo.licenseKey }}</code>
+            </div>
+            <div class="detail-item" v-if="licenseInfo.expiresAt">
+              <span class="detail-label">Válida hasta:</span>
+              <span class="detail-value">{{ formatDate(licenseInfo.expiresAt) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estadísticas Rápidas -->
       <div class="stats-grid">
         <div class="stat-card primary">
           <div class="stat-icon">🧩</div>
           <div class="stat-info">
-            <div class="stat-label">Plugins Disponibles</div>
-            <div class="stat-value">{{ storeStats.totalPlugins || 0 }}</div>
-            <div class="stat-sublabel">{{ storeStats.publishedPlugins || 0 }} publicados</div>
+            <div class="stat-label">Mis Plugins</div>
+            <div class="stat-value">{{ myPlugins.length }}</div>
+            <div class="stat-sublabel">{{ activePluginsCount }} activos</div>
           </div>
         </div>
 
         <div class="stat-card success">
-          <div class="stat-icon">🔑</div>
+          <div class="stat-icon">🌟</div>
           <div class="stat-info">
-            <div class="stat-label">Licencias Activas</div>
-            <div class="stat-value">{{ storeStats.activeLicenses || 0 }}</div>
-            <div class="stat-sublabel">{{ storeStats.totalLicenses || 0 }} totales</div>
+            <div class="stat-label">Disponibles</div>
+            <div class="stat-value">{{ availablePlugins.length }}</div>
+            <div class="stat-sublabel">Para mi licencia</div>
           </div>
         </div>
 
         <div class="stat-card info">
-          <div class="stat-icon">⚡</div>
+          <div class="stat-icon">📦</div>
           <div class="stat-info">
-            <div class="stat-label">Plugin Activations</div>
-            <div class="stat-value">{{ storeStats.totalActivations || 0 }}</div>
-            <div class="stat-sublabel">Este mes: {{ storeStats.activationsThisMonth || 0 }}</div>
-          </div>
-        </div>
-
-        <div class="stat-card warning">
-          <div class="stat-icon">💻</div>
-          <div class="stat-info">
-            <div class="stat-label">Instalaciones ISP</div>
-            <div class="stat-value">{{ storeStats.totalInstallations || 0 }}</div>
-            <div class="stat-sublabel">{{ storeStats.activeInstallations || 0 }} activas</div>
+            <div class="stat-label">Por Categoría</div>
+            <div class="stat-value">{{ categoriesCount }}</div>
+            <div class="stat-sublabel">Categorías disponibles</div>
           </div>
         </div>
       </div>
 
-      <!-- Distribución de Licencias -->
-      <div class="chart-section">
+      <!-- Mis Plugins Instalados -->
+      <div class="section">
         <div class="section-header">
-          <h2>📈 Distribución de Licencias</h2>
+          <h2>🔌 Mis Plugins Instalados</h2>
+          <button @click="goToPluginManagement" class="btn-secondary">
+            Administrar →
+          </button>
         </div>
-        <div class="license-distribution">
+        <div v-if="myPlugins.length > 0" class="plugins-grid">
           <div
-            v-for="license in licenseDistribution"
-            :key="license.type"
-            class="license-bar"
-          >
-            <div class="license-header">
-              <span class="license-name">{{ license.name }}</span>
-              <span class="license-count">{{ license.count }}</span>
-            </div>
-            <div class="license-progress">
-              <div
-                class="license-progress-bar"
-                :style="{
-                  width: calculatePercentage(license.count) + '%',
-                  backgroundColor: license.color
-                }"
-              ></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Plugins más populares -->
-      <div class="products-section">
-        <div class="section-header">
-          <h2>🔥 Plugins Más Descargados</h2>
-        </div>
-        <div v-if="topPlugins.length > 0" class="products-grid">
-          <div
-            v-for="(plugin, index) in topPlugins"
+            v-for="plugin in myPlugins"
             :key="plugin.id"
-            class="product-card"
+            class="plugin-card installed"
           >
-            <div class="product-rank">#{{ index + 1 }}</div>
-            <div class="product-info">
-              <div class="product-name">{{ plugin.name }}</div>
-              <div class="product-type">
-                {{ getCategoryIcon(plugin.category) }} {{ getCategoryText(plugin.category) }}
-              </div>
+            <div class="plugin-icon">{{ getCategoryIcon(plugin.category) }}</div>
+            <div class="plugin-info">
+              <h3>{{ plugin.name }}</h3>
+              <p class="plugin-category">{{ getCategoryText(plugin.category) }}</p>
+              <p class="plugin-version">v{{ plugin.version }}</p>
             </div>
-            <div class="product-stats">
-              <div class="product-stat">
-                <span class="stat-label">Descargas:</span>
-                <span class="stat-value">{{ plugin.downloadCount || 0 }}</span>
-              </div>
-              <div class="product-stat">
-                <span class="stat-label">Activaciones:</span>
-                <span class="stat-value">{{ plugin.activationCount || 0 }}</span>
-              </div>
+            <div class="plugin-status">
+              <span class="status-badge" :class="plugin.active ? 'active' : 'inactive'">
+                {{ plugin.active ? '✓ Activo' : '○ Inactivo' }}
+              </span>
             </div>
           </div>
         </div>
         <div v-else class="no-data">
-          No hay datos de plugins disponibles
+          <p>No tienes plugins instalados</p>
+          <button @click="goToMarketplace" class="btn-primary">
+            Explorar Marketplace
+          </button>
         </div>
       </div>
 
-      <!-- Últimas activaciones -->
-      <div class="customers-section">
+      <!-- Plugins Disponibles en Marketplace -->
+      <div class="section">
         <div class="section-header">
-          <h2>⚡ Últimas Activaciones</h2>
+          <h2>🛍️ Explorar Marketplace</h2>
+          <button @click="goToMarketplace" class="btn-primary">
+            Ver Todos →
+          </button>
         </div>
-        <div v-if="recentActivations.length > 0" class="activations-list">
+        <div v-if="availablePlugins.length > 0" class="plugins-grid">
           <div
-            v-for="activation in recentActivations.slice(0, 10)"
-            :key="activation.id"
-            class="activation-item"
+            v-for="plugin in availablePlugins.slice(0, 6)"
+            :key="plugin.id"
+            class="plugin-card marketplace"
           >
-            <div class="activation-icon">🔌</div>
-            <div class="activation-info">
-              <div class="activation-plugin">
-                <strong>{{ activation.Plugin?.name || 'N/A' }}</strong>
-              </div>
-              <div class="activation-installation">
-                {{ activation.Installation?.companyName || 'Unknown ISP' }}
-              </div>
+            <div class="plugin-badge" v-if="plugin.isFree">
+              🆓 Gratis
             </div>
-            <div class="activation-stats">
-              <div class="activation-date">
-                {{ formatDate(activation.activatedAt) }}
-              </div>
-              <div class="activation-status" :class="getStatusClass(activation.status)">
-                {{ activation.status }}
-              </div>
+            <div class="plugin-badge premium" v-else>
+              💎 ${{ plugin.price }}
             </div>
+            <div class="plugin-icon">{{ getCategoryIcon(plugin.category) }}</div>
+            <div class="plugin-info">
+              <h3>{{ plugin.name }}</h3>
+              <p class="plugin-description">{{ plugin.description }}</p>
+              <p class="plugin-category">{{ getCategoryText(plugin.category) }}</p>
+            </div>
+            <button
+              @click="installPlugin(plugin)"
+              class="btn-install"
+              :disabled="isPluginInstalled(plugin.id)"
+            >
+              {{ isPluginInstalled(plugin.id) ? '✓ Instalado' : '+ Obtener' }}
+            </button>
           </div>
         </div>
         <div v-else class="no-data">
-          No hay activaciones registradas
+          <p>No hay plugins disponibles para tu licencia</p>
         </div>
       </div>
 
-      <!-- Plugins por categoría -->
-      <div class="categories-section">
+      <!-- Categorías -->
+      <div class="section">
         <div class="section-header">
-          <h2>📦 Plugins por Categoría</h2>
+          <h2>📁 Por Categoría</h2>
         </div>
         <div class="categories-grid">
           <div
-            v-for="category in pluginsByCategory"
-            :key="category.category"
+            v-for="category in pluginCategories"
+            :key="category.value"
+            @click="filterByCategory(category.value)"
             class="category-card"
           >
-            <div class="category-icon">{{ getCategoryIcon(category.category) }}</div>
-            <div class="category-name">{{ getCategoryText(category.category) }}</div>
-            <div class="category-count">{{ category.count }} plugins</div>
+            <div class="category-icon">{{ category.icon }}</div>
+            <div class="category-name">{{ category.label }}</div>
+            <div class="category-count">{{ getCategoryCount(category.value) }} plugins</div>
           </div>
         </div>
       </div>
@@ -176,171 +172,88 @@
 </template>
 
 <script>
-import axios from 'axios';
-
 export default {
   name: 'StoreDashboard',
 
   data() {
     return {
       loading: false,
-      storeStats: {},
-      topPlugins: [],
-      recentActivations: [],
-      pluginsByCategory: [],
-      licenseDistribution: []
+      licenseInfo: null,
+      myPlugins: [],
+      availablePlugins: [],
+      pluginCategories: [
+        { value: 'communication', label: 'Comunicación', icon: '💬' },
+        { value: 'payment', label: 'Pagos', icon: '💳' },
+        { value: 'automation', label: 'Automatización', icon: '🤖' },
+        { value: 'analytics', label: 'Analytics', icon: '📊' },
+        { value: 'security', label: 'Seguridad', icon: '🔒' },
+        { value: 'other', label: 'Otros', icon: '🧩' }
+      ]
     };
   },
 
   computed: {
-    storeApiUrl() {
-      return process.env.VUE_APP_MARKETPLACE_URL || 'http://localhost:3001/api/marketplace';
+    activePluginsCount() {
+      return this.myPlugins.filter(p => p.active).length;
+    },
+
+    categoriesCount() {
+      const categories = new Set(this.availablePlugins.map(p => p.category));
+      return categories.size;
     }
   },
 
   mounted() {
-    this.loadAllStats();
+    this.loadDashboard();
   },
 
   methods: {
-    async loadAllStats() {
+    async loadDashboard() {
       this.loading = true;
 
       try {
-        await Promise.all([
-          this.loadStoreStats(),
-          this.loadTopPlugins(),
-          this.loadRecentActivations(),
-          this.loadPluginsByCategory(),
-          this.loadLicenseDistribution()
-        ]);
+        // Cargar licencia del localStorage
+        const licenseKey = localStorage.getItem('licenseKey');
+        if (licenseKey) {
+          this.licenseInfo = {
+            licenseKey,
+            planType: this.getLicenseTier(licenseKey),
+            companyName: 'Mi Empresa ISP',
+            status: 'active'
+          };
+        }
+
+        // Cargar plugins instalados desde Vuex
+        await this.$store.dispatch('plugins/fetchInstalledPlugins');
+        this.myPlugins = this.$store.getters['plugins/getInstalledPlugins'] || [];
+
+        // Cargar plugins disponibles en marketplace
+        await this.$store.dispatch('plugins/fetchMarketplacePlugins');
+        this.availablePlugins = this.$store.getters['plugins/getMarketplacePlugins'] || [];
+
       } catch (error) {
-        console.error('Error loading Store stats:', error);
-        this.$notify?.({ type: 'error', message: 'Error al cargar estadísticas del Store' });
+        console.error('Error loading dashboard:', error);
       } finally {
         this.loading = false;
       }
     },
 
-    async loadStoreStats() {
-      try {
-        const baseUrl = this.storeApiUrl.replace('/marketplace', '');
-
-        // Cargar plugins
-        const pluginsRes = await axios.get(`${baseUrl}/marketplace/plugins`);
-        const plugins = pluginsRes.data.data || [];
-
-        // Cargar licencias
-        const licensesRes = await axios.get(`${baseUrl}/licenses`);
-        const licenses = licensesRes.data.data || [];
-
-        // Cargar instalaciones
-        const installationsRes = await axios.get(`${baseUrl}/installations`);
-        const installations = installationsRes.data.data || [];
-
-        // Calcular estadísticas
-        this.storeStats = {
-          totalPlugins: plugins.length,
-          publishedPlugins: plugins.filter(p => p.status === 'published').length,
-          totalLicenses: licenses.length,
-          activeLicenses: licenses.filter(l => l.status === 'active').length,
-          totalInstallations: installations.length,
-          activeInstallations: installations.filter(i => i.status === 'active').length,
-          totalActivations: 0, // Se actualizará con activaciones
-          activationsThisMonth: 0 // Se actualizará con activaciones
-        };
-      } catch (error) {
-        console.error('Error loading store stats:', error);
-      }
+    getLicenseTier(licenseKey) {
+      if (licenseKey.includes('BASIC')) return 'Basic';
+      if (licenseKey.includes('MEDIUM')) return 'Medium';
+      if (licenseKey.includes('ADVANCED')) return 'Advanced';
+      if (licenseKey.includes('ENTERPRISE')) return 'Enterprise';
+      return 'Basic';
     },
 
-    async loadTopPlugins() {
-      try {
-        const response = await axios.get(`${this.storeApiUrl}/plugins`);
-        const plugins = response.data.data || [];
-
-        // Ordenar por downloadCount descendente
-        this.topPlugins = plugins
-          .sort((a, b) => (b.downloadCount || 0) - (a.downloadCount || 0))
-          .slice(0, 6);
-      } catch (error) {
-        console.error('Error loading top plugins:', error);
-      }
-    },
-
-    async loadRecentActivations() {
-      try {
-        const baseUrl = this.storeApiUrl.replace('/marketplace', '');
-        const response = await axios.get(`${baseUrl}/plugin-activations?limit=10&sort=createdAt:desc`);
-        this.recentActivations = response.data.data || [];
-
-        // Actualizar estadísticas de activaciones
-        const totalActivationsRes = await axios.get(`${baseUrl}/plugin-activations/count`);
-        this.storeStats.totalActivations = totalActivationsRes.data.data?.count || this.recentActivations.length;
-      } catch (error) {
-        console.error('Error loading recent activations:', error);
-        this.recentActivations = [];
-      }
-    },
-
-    async loadPluginsByCategory() {
-      try {
-        const response = await axios.get(`${this.storeApiUrl}/plugins`);
-        const plugins = response.data.data || [];
-
-        // Agrupar por categoría
-        const categoryMap = {};
-        plugins.forEach(plugin => {
-          const category = plugin.category || 'other';
-          if (!categoryMap[category]) {
-            categoryMap[category] = 0;
-          }
-          categoryMap[category]++;
-        });
-
-        this.pluginsByCategory = Object.entries(categoryMap).map(([category, count]) => ({
-          category,
-          count
-        }));
-      } catch (error) {
-        console.error('Error loading plugins by category:', error);
-      }
-    },
-
-    async loadLicenseDistribution() {
-      try {
-        const baseUrl = this.storeApiUrl.replace('/marketplace', '');
-        const response = await axios.get(`${baseUrl}/licenses`);
-        const licenses = response.data.data || [];
-
-        // Agrupar por tipo de plan
-        const typeMap = {
-          basic: { name: '📦 Basic', count: 0, color: '#3498db' },
-          medium: { name: '📈 Medium', count: 0, color: '#9b59b6' },
-          advanced: { name: '🚀 Advanced', count: 0, color: '#e67e22' },
-          enterprise: { name: '👑 Enterprise', count: 0, color: '#f39c12' }
-        };
-
-        licenses.forEach(license => {
-          const type = license.planType || 'basic';
-          if (typeMap[type]) {
-            typeMap[type].count++;
-          }
-        });
-
-        this.licenseDistribution = Object.entries(typeMap).map(([type, data]) => ({
-          type,
-          ...data
-        }));
-      } catch (error) {
-        console.error('Error loading license distribution:', error);
-      }
-    },
-
-    calculatePercentage(count) {
-      const total = this.licenseDistribution.reduce((sum, l) => sum + l.count, 0);
-      if (total === 0) return 0;
-      return (count / total) * 100;
+    getPlanIcon(planType) {
+      const icons = {
+        basic: '📦',
+        medium: '📈',
+        advanced: '🚀',
+        enterprise: '👑'
+      };
+      return icons[planType?.toLowerCase()] || '📦';
     },
 
     getCategoryIcon(category) {
@@ -349,8 +262,6 @@ export default {
         communication: '💬',
         analytics: '📊',
         security: '🔒',
-        utility: '🛠️',
-        integration: '🔗',
         automation: '🤖',
         other: '🧩'
       };
@@ -363,12 +274,19 @@ export default {
         communication: 'Comunicación',
         analytics: 'Analytics',
         security: 'Seguridad',
-        utility: 'Utilidad',
-        integration: 'Integración',
         automation: 'Automatización',
         other: 'Otros'
       };
       return texts[category] || category;
+    },
+
+    getCategoryCount(category) {
+      if (category === 'all') return this.availablePlugins.length;
+      return this.availablePlugins.filter(p => p.category === category).length;
+    },
+
+    isPluginInstalled(pluginId) {
+      return this.myPlugins.some(p => p.slug === pluginId || p.id === pluginId);
     },
 
     formatDate(dateString) {
@@ -376,18 +294,52 @@ export default {
       const date = new Date(dateString);
       return date.toLocaleDateString('es-ES', {
         year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        month: 'long',
+        day: 'numeric'
       });
     },
 
-    getStatusClass(status) {
-      return {
-        'status-active': status === 'active',
-        'status-inactive': status === 'inactive' ||status === 'suspended'
-      };
+    goToPluginManagement() {
+      this.$router.push('/plugins/management');
+    },
+
+    goToMarketplace() {
+      this.$router.push('/plugins/marketplace');
+    },
+
+    filterByCategory(category) {
+      this.$router.push({
+        path: '/plugins/marketplace',
+        query: { category }
+      });
+    },
+
+    async installPlugin(plugin) {
+      try {
+        await this.$store.dispatch('plugins/activatePlugin', {
+          pluginId: plugin.id,
+          pluginData: {
+            name: plugin.name,
+            version: plugin.version,
+            description: plugin.description,
+            category: plugin.category
+          }
+        });
+
+        this.$notify?.({
+          type: 'success',
+          message: `Plugin "${plugin.name}" instalado exitosamente`
+        });
+
+        // Recargar lista de plugins
+        await this.loadDashboard();
+      } catch (error) {
+        console.error('Error installing plugin:', error);
+        this.$notify?.({
+          type: 'error',
+          message: 'Error al instalar el plugin'
+        });
+      }
     }
   }
 };
@@ -415,26 +367,116 @@ export default {
   color: #2c3e50;
 }
 
-.btn-refresh {
+.license-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 20px;
-  background-color: #3498db;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border: none;
-  border-radius: 6px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.badge-icon {
+  font-size: 20px;
+}
+
+/* License Section */
+.license-section {
+  margin-bottom: 30px;
+}
+
+.license-section h2 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+.license-card {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.license-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #ecf0f1;
+}
+
+.license-plan {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.plan-icon {
+  font-size: 48px;
+}
+
+.plan-info h3 {
+  margin: 0 0 5px 0;
+  font-size: 22px;
+  color: #2c3e50;
+  text-transform: capitalize;
+}
+
+.plan-info p {
+  margin: 0;
+  color: #7f8c8d;
+}
+
+.license-status {
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.status-active {
+  background: #d5f4e6;
+  color: #27ae60;
+}
+
+.license-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.detail-value {
   font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.3s;
+  color: #2c3e50;
+  font-weight: 500;
 }
 
-.btn-refresh:hover:not(:disabled) {
-  background-color: #2980b9;
+.detail-value code {
+  background: #ecf0f1;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
 }
 
-.btn-refresh:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
+/* Stats Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -451,12 +493,11 @@ export default {
   align-items: center;
   gap: 20px;
   border-left: 4px solid;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s;
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .stat-card.primary {
@@ -469,10 +510,6 @@ export default {
 
 .stat-card.info {
   border-left-color: #9b59b6;
-}
-
-.stat-card.warning {
-  border-left-color: #f39c12;
 }
 
 .stat-icon {
@@ -489,7 +526,6 @@ export default {
   text-transform: uppercase;
   margin-bottom: 8px;
   font-weight: 600;
-  letter-spacing: 0.5px;
 }
 
 .stat-value {
@@ -497,7 +533,6 @@ export default {
   font-weight: 700;
   color: #2c3e50;
   line-height: 1;
-  margin-bottom: 4px;
 }
 
 .stat-sublabel {
@@ -506,10 +541,8 @@ export default {
   margin-top: 4px;
 }
 
-.chart-section,
-.products-section,
-.customers-section,
-.categories-section {
+/* Sections */
+.section {
   background: white;
   padding: 30px;
   border-radius: 12px;
@@ -518,6 +551,9 @@ export default {
 }
 
 .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 25px;
   padding-bottom: 15px;
   border-bottom: 2px solid #ecf0f1;
@@ -529,198 +565,171 @@ export default {
   color: #2c3e50;
 }
 
-.license-distribution {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.license-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.license-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.license-name {
-  font-weight: 600;
+/* Buttons */
+.btn-primary,
+.btn-secondary {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
   font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background: #3498db;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2980b9;
+}
+
+.btn-secondary {
+  background: #ecf0f1;
   color: #2c3e50;
 }
 
-.license-count {
-  font-weight: 700;
-  font-size: 16px;
-  color: #3498db;
+.btn-secondary:hover {
+  background: #bdc3c7;
 }
 
-.license-progress {
-  height: 20px;
-  background-color: #ecf0f1;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.license-progress-bar {
-  height: 100%;
-  transition: width 0.5s ease;
-  border-radius: 10px;
-}
-
-.products-grid {
+/* Plugins Grid */
+.plugins-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
-.product-card {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+.plugin-card {
+  position: relative;
+  background: #f8f9fa;
   padding: 20px;
-  background: #f8f9fa;
   border-radius: 10px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.plugin-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.plugin-card.installed {
+  border-left: 4px solid #2ecc71;
+}
+
+.plugin-card.marketplace {
   border-left: 4px solid #3498db;
-  transition: transform 0.2s;
 }
 
-.product-card:hover {
-  transform: translateX(5px);
-}
-
-.product-rank {
-  font-size: 28px;
-  font-weight: 700;
-  color: #3498db;
-  min-width: 45px;
-  text-align: center;
-}
-
-.product-info {
-  flex: 1;
-}
-
-.product-name {
-  font-weight: 600;
-  font-size: 15px;
-  margin-bottom: 6px;
-  color: #2c3e50;
-}
-
-.product-type {
-  font-size: 13px;
-  color: #7f8c8d;
-}
-
-.product-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
-}
-
-.product-stat {
-  display: flex;
-  gap: 8px;
-  font-size: 13px;
-}
-
-.product-stat .stat-label {
-  color: #95a5a6;
-}
-
-.product-stat .stat-value {
-  font-weight: 700;
-  color: #2c3e50;
-}
-
-.activations-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.activation-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  transition: background-color 0.2s;
-}
-
-.activation-item:hover {
-  background: #e8f4f8;
-}
-
-.activation-icon {
-  font-size: 24px;
-  width: 40px;
-  text-align: center;
-}
-
-.activation-info {
-  flex: 1;
-}
-
-.activation-plugin {
-  font-size: 14px;
-  margin-bottom: 4px;
-}
-
-.activation-installation {
-  font-size: 12px;
-  color: #7f8c8d;
-}
-
-.activation-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-end;
-}
-
-.activation-date {
-  font-size: 12px;
-  color: #95a5a6;
-}
-
-.activation-status {
-  padding: 4px 12px;
+.plugin-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 12px;
   border-radius: 12px;
   font-size: 11px;
+  font-weight: 600;
+  background: #2ecc71;
+  color: white;
+}
+
+.plugin-badge.premium {
+  background: #f39c12;
+}
+
+.plugin-icon {
+  font-size: 40px;
+  margin-bottom: 15px;
+}
+
+.plugin-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+.plugin-description {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  color: #7f8c8d;
+  line-height: 1.5;
+}
+
+.plugin-category {
+  margin: 0 0 5px 0;
+  font-size: 12px;
+  color: #95a5a6;
   font-weight: 600;
   text-transform: uppercase;
 }
 
-.status-active {
-  background-color: #d5f4e6;
+.plugin-version {
+  margin: 0;
+  font-size: 11px;
+  color: #bdc3c7;
+  font-family: monospace;
+}
+
+.plugin-status {
+  margin-top: 15px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background: #d5f4e6;
   color: #27ae60;
 }
 
-.status-inactive {
-  background-color: #fadbd8;
+.status-badge.inactive {
+  background: #fadbd8;
   color: #e74c3c;
 }
 
+.btn-install {
+  width: 100%;
+  margin-top: 15px;
+  padding: 10px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-install:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.btn-install:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+}
+
+/* Categories Grid */
 .categories-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 15px;
 }
 
 .category-card {
-  padding: 20px;
+  padding: 25px 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 10px;
   text-align: center;
+  cursor: pointer;
   transition: transform 0.2s;
 }
 
@@ -729,13 +738,13 @@ export default {
 }
 
 .category-icon {
-  font-size: 36px;
-  margin-bottom: 10px;
+  font-size: 40px;
+  margin-bottom: 12px;
 }
 
 .category-name {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   margin-bottom: 6px;
 }
 
@@ -744,6 +753,7 @@ export default {
   opacity: 0.9;
 }
 
+/* Loading & No Data */
 .loading {
   text-align: center;
   padding: 80px 20px;
@@ -772,6 +782,10 @@ export default {
   text-align: center;
   padding: 50px 20px;
   color: #95a5a6;
+}
+
+.no-data p {
+  margin: 0 0 20px 0;
   font-size: 15px;
 }
 </style>
