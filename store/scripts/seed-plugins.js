@@ -46,7 +46,10 @@ async function seedPlugins(force = false) {
             requirements: pluginData.requirements || {},
             changelog: pluginData.changelog || [],
             tags: pluginData.tags || [],
-            status: 'published'
+            status: 'published',
+            filePath: `/store/plugins/${pluginData.id}.zip`,
+            fileSize: null, // Se actualizará cuando se suba el ZIP real
+            fileHash: null  // Se calculará cuando se suba el archivo
           }
         });
 
@@ -54,8 +57,8 @@ async function seedPlugins(force = false) {
           created++;
           logger.info(`  ✓ Creado: ${pluginData.name} (v${pluginData.version})`);
         } else {
-          // Actualizar si la versión es diferente
-          if (plugin.version !== pluginData.version) {
+          // Actualizar si la versión es diferente o si falta filePath
+          if (plugin.version !== pluginData.version || !plugin.filePath) {
             await plugin.update({
               version: pluginData.version,
               description: pluginData.description,
@@ -65,7 +68,8 @@ async function seedPlugins(force = false) {
               features: pluginData.features || [],
               requirements: pluginData.requirements || {},
               changelog: pluginData.changelog || [],
-              tags: pluginData.tags || []
+              tags: pluginData.tags || [],
+              filePath: `/store/plugins/${pluginData.id}.zip`
             });
             updated++;
             logger.info(`  ↻ Actualizado: ${pluginData.name} (${plugin.version} → ${pluginData.version})`);
