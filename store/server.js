@@ -73,15 +73,26 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Trust proxy - Importante cuando hay nginx u otro proxy reverso delante
-// Esto permite que express-rate-limit funcione correctamente con X-Forwarded-For
-app.set('trust proxy', true);
+// Trust proxy - Solo confiar en proxies conocidos (nginx, cloudflare, etc)
+// Configuración segura para express-rate-limit
+if (process.env.TRUST_PROXY === 'true') {
+  // En producción, especifica IPs o cantidad de proxies confiables
+  app.set('trust proxy', 1); // Solo confía en el primer proxy
+} else {
+  // En desarrollo sin proxy, deshabilitar
+  app.set('trust proxy', false);
+}
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000,
   max: process.env.RATE_LIMIT_MAX_REQUESTS || 100,
-  message: 'Demasiadas peticiones desde esta IP, por favor intenta de nuevo más tarde.'
+  message: 'Demasiadas peticiones desde esta IP, por favor intenta de nuevo más tarde.',
+  // Deshabilitar validaciones estrictas en desarrollo
+  validate: {
+    trustProxy: false, // No validar trust proxy en desarrollo
+    xForwardedForHeader: false
+  }
 });
 app.use('/api/', limiter);
 
@@ -173,10 +184,10 @@ db.sequelize.authenticate()
   .then(() => {
     logger.info('✅ Conexión a base de datos establecida');
 
-    // Sincronizar modelos (crear tablas si no existen)
-    // force: true SOLO PARA PRIMERA VEZ con PostgreSQL - crea tablas limpias
-    // Después cambiar a { force: false } o { alter: true }
-    return db.sequelize.sync({ force: true });
+    // Sincronizar modelos SIN borrar datos existentes
+    // force: false = No borra tablas existentes
+    // alter: false = No modifica estructura (usar migrations en producción)
+    return db.sequelize.sync({ force: false, alter: false });
   })
   .then(() => {
     logger.info('✅ Modelos de base de datos sincronizados');
