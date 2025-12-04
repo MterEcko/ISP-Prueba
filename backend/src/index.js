@@ -61,7 +61,28 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(helmet()); // Ayuda a securizar la app estableciendo varios headers HTTP
+
+// Configuración de Helmet con CSP personalizado para permitir Store API
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      connectSrc: [
+        "'self'",
+        "http://localhost:3001",  // Store API local
+        "https://store.serviciosqbit.net",  // Store API producción
+        "http://store.serviciosqbit.net",
+        "ws://localhost:3000",  // WebSocket local
+        "wss://isp.serviciosqbit.net"  // WebSocket producción
+      ],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      fontSrc: ["'self'", "data:"]
+    }
+  }
+}));
+
 app.use(morgan("dev")); // Logger de peticiones HTTP para desarrollo
 app.use(express.urlencoded({ extended: true })); // Para parsear application/x-www-form-urlencoded
 

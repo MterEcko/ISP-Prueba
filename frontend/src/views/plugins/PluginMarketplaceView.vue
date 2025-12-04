@@ -281,7 +281,7 @@ export default {
 
         // Activate plugin via Store API (which also creates it locally)
         await this.$store.dispatch('plugins/activatePlugin', {
-          pluginId: plugin.id,
+          pluginId: plugin.id || plugin.slug,
           pluginData: {
             name: plugin.name,
             version: plugin.version,
