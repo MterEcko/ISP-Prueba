@@ -27,11 +27,12 @@ app.use(helmet({
     // Configuración detallada de CSP:
     contentSecurityPolicy: {
         directives: {
-            // Fuentes permitidas para SCRIPTS: 'self', scripts en línea, y unpkg.com
+            // Fuentes permitidas para SCRIPTS: 'self', scripts en línea, unpkg.com y Cloudflare
             scriptSrc: [
-                "'self'", 
+                "'self'",
                 "'unsafe-inline'", // Permite <script>...</script> en el HTML
-                "https://unpkg.com" // *** SOLUCIÓN 1: Permite cargar leaflet.js ***
+                "https://unpkg.com", // Permite cargar leaflet.js
+                "https://static.cloudflareinsights.com" // Permite Cloudflare Analytics
             ], 
             
             // Fuentes permitidas para ESTILOS: 'self', estilos en línea, y unpkg.com
@@ -43,7 +44,17 @@ app.use(helmet({
             
             // Si usas imágenes de Leaflet o de otros lados:
             imgSrc: ["'self'", "data:", "https://unpkg.com", "https://tile.openstreetmap.org"],
-            
+
+            // Permitir peticiones AJAX/fetch a estos destinos
+            connectSrc: [
+                "'self'",
+                "https://store.serviciosqbit.net",
+                "http://store.serviciosqbit.net",
+                "https://isp.serviciosqbit.net",
+                "http://isp.serviciosqbit.net",
+                "https://static.cloudflareinsights.com"
+            ],
+
             // Deshabilitar la directiva script-src-attr
             // Esto es necesario porque algunas versiones de Helmet la configuran como 'none'
             // y bloquean los onclick, onchange, etc.
@@ -55,18 +66,42 @@ app.use(helmet({
 // Compression
 app.use(compression());
 
-// CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8080', 'http://localhost:3001'];
-// AHORA PERMITE EL ORIGEN 3001
+// CORS - Configuración permisiva para desarrollo
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+  'http://localhost:8080',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://store.serviciosqbit.net',
+  'http://store.serviciosqbit.net',
+  'https://isp.serviciosqbit.net',
+  'http://isp.serviciosqbit.net'
+];
+
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    // Permitir peticiones sin origin (ej: Postman, curl, mismo servidor)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Verificar si el origin está en la lista permitida
+    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      // En desarrollo, permitir cualquier origin de localhost o IP local
+      if (process.env.NODE_ENV !== 'production') {
+        if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.match(/https?:\/\/10\.\d+\.\d+\.\d+/)) {
+          return callback(null, true);
+        }
+      }
+
+      console.warn(`⚠️ CORS bloqueó petición desde: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Body parsers
