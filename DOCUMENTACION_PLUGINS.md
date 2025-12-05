@@ -15,12 +15,14 @@ Este repositorio contiene documentación completa sobre el sistema de plugins y 
 - Cómo activar plugins desde el frontend
 
 ### 2. **¿Quieres CREAR un Plugin?**
-→ Lee: **[PLUGIN_DEVELOPMENT_GUIDE.md](PLUGIN_DEVELOPMENT_GUIDE.md)**
-- Guía completa paso a paso
-- Estructura de archivos
-- Código de ejemplo funcional
-- manifest.json explicado
-- Testing y debugging
+→ Lee: **[CREAR_PLUGIN_SIMPLE.md](CREAR_PLUGIN_SIMPLE.md)** ⭐ RECOMENDADO
+- Guía práctica directa
+- Estructura real de archivos (sin Vue)
+- Código mínimo funcional
+- Cómo instalar paso a paso
+- Ejemplos reales del sistema
+
+→ O si quieres más detalles: **[PLUGIN_DEVELOPMENT_GUIDE.md](PLUGIN_DEVELOPMENT_GUIDE.md)**
 
 ### 3. **¿Quieres ENTENDER cómo funciona internamente?**
 → Lee: **[COMO_FUNCIONAN_LOS_PLUGINS.md](COMO_FUNCIONAN_LOS_PLUGINS.md)**
@@ -44,6 +46,7 @@ Este repositorio contiene documentación completa sobre el sistema de plugins y 
 | Documento | Descripción | Audiencia |
 |-----------|-------------|-----------|
 | **[QUICKSTART_MARKETPLACE.md](QUICKSTART_MARKETPLACE.md)** | Inicio rápido del marketplace | Usuarios, Testers |
+| **[CREAR_PLUGIN_SIMPLE.md](CREAR_PLUGIN_SIMPLE.md)** ⭐ | Guía simple para crear plugins | Desarrolladores |
 | **[PLUGIN_DEVELOPMENT_GUIDE.md](PLUGIN_DEVELOPMENT_GUIDE.md)** | Guía completa de desarrollo | Desarrolladores |
 | **[COMO_FUNCIONAN_LOS_PLUGINS.md](COMO_FUNCIONAN_LOS_PLUGINS.md)** | Arquitectura interna | Desarrolladores avanzados |
 | **[MARKETPLACE_SETUP.md](MARKETPLACE_SETUP.md)** | Configuración del Store | DevOps, Admins |
