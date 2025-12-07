@@ -699,6 +699,14 @@ try {
   console.error('❌ Error en setup.routes:', error.message);
 }
 
+try {
+  console.log('Registrando rutas dinamicas de plugins...');
+  require('./routes/plugins.dynamic.routes')(app);
+  console.log('✅ Rutas dinamicas de plugins registradas');
+} catch (error) {
+  console.error('❌ Error registrando rutas de plugins:', error.message);
+}
+
 // Rutas de correo de empleados
 try {
   console.log('Registrando employeeEmail.routes...');
