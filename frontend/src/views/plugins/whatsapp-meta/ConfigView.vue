@@ -5,7 +5,7 @@
         <h1 class="text-h4 mb-2">
           <v-icon large class="mr-2">mdi-whatsapp</v-icon>
           Configuración WhatsApp Meta
-        </h-1>
+        </h1>
         <p class="text-body-1 text-medium-emphasis">
           Configura tu integración con WhatsApp Business API oficial de Meta
         </p>
