@@ -54,7 +54,7 @@ db.Sector = require('./sector.model.js')(sequelize, Sequelize);
 db.Client = require('./client.model.js')(sequelize, Sequelize);
 db.ClientDocument = require('./clientDocument.model.js')(sequelize, Sequelize);
 db.ClientNetwork = require('./client.network.model.js')(sequelize, Sequelize);
-db.ClientService = require("./clientService.model.js")(sequelize, Sequelize);
+
 // Servicios
 db.Subscription = require('./subscription.model.js')(sequelize, Sequelize);
 
@@ -857,9 +857,6 @@ db.Client.hasMany(db.ClientSupport, {
 db.ClientSupport.belongsTo(db.Client, {
   foreignKey: 'clientId',
 });
-
-db.Client.hasMany(db.ClientService, { as: "externalServices", foreignKey: "clientId" });
-db.ClientService.belongsTo(db.Client, { foreignKey: "clientId", as: "client" });
 
 db.Ticket.hasMany(db.ClientSupport, {
   foreignKey: 'ticketId',

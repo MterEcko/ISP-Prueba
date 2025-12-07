@@ -1,0 +1,21 @@
+{
+  "name": "@isp-prueba/openpay-plugin",
+  "version": "1.0.0",
+  "description": "Plugin de Openpay para ISP-Prueba",
+  "main": "src/index.js",
+  "keywords": [
+    "openpay",
+    "payment",
+    "gateway",
+    "mexico",
+    "isp-prueba"
+  ],
+  "author": "ISP-Prueba Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "peerDependencies": {
+    "express": "^4.18.0"
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "id": "jellyfin-media",
+  "name": "Jellyfin Media Server",
+  "slug": "jellyfin-media",
+  "version": "1.0.0",
+  "description": "Integracion con Jellyfin para provision automatica de usuarios y acceso a contenido multimedia",
+  "longDescription": "Conecta tu ISP con Jellyfin Media Server para ofrecer streaming de contenido a tus clientes. Provision automatica de cuentas, asignacion de bibliotecas por plan y gestion centralizada.",
+  "author": "ISP-Prueba Team",
+  "category": "integration",
+  "price": 19.99,
+  "isFree": false,
+  "tags": ["jellyfin", "streaming", "media", "video", "tv"],
+  "features": [
+    "Creacion automatica de usuarios",
+    "Asignacion de bibliotecas por plan",
+    "Suspension y activacion de acceso",
+    "Sincronizacion de usuarios",
+    "Estadisticas de uso",
+    "Single Sign-On (SSO)",
+    "Gestion de permisos",
+    "Monitoreo de actividad"
+  ],
+  "requirements": {
+    "minVersion": "1.0.0",
+    "requiredLicense": "premium"
+  },
+  "configuration": {
+    "serverUrl": {
+      "type": "string",
+      "label": "URL del servidor Jellyfin",
+      "required": true,
+      "description": "URL completa del servidor (ej: https://jellyfin.midominio.com)"
+    },
+    "apiKey": {
+      "type": "string",
+      "label": "API Key",
+      "required": true,
+      "secret": true,
+      "description": "API Key de administrador de Jellyfin"
+    },
+    "adminUserId": {
+      "type": "string",
+      "label": "Admin User ID",
+      "required": false,
+      "description": "ID del usuario administrador"
+    },
+    "autoProvision": {
+      "type": "boolean",
+      "label": "Auto-provision de usuarios",
+      "default": true,
+      "description": "Crear automaticamente usuarios al activar clientes"
+    },
+    "defaultLibraries": {
+      "type": "array",
+      "label": "Bibliotecas por defecto",
+      "default": [],
+      "description": "Bibliotecas asignadas a nuevos usuarios"
+    },
+    "sendCredentials": {
+      "type": "boolean",
+      "label": "Enviar credenciales por email",
+      "default": true
+    },
+    "passwordLength": {
+      "type": "number",
+      "label": "Longitud de contrasena",
+      "default": 12,
+      "min": 8,
+      "max": 32
+    }
+  },
+  "permissions": [
+    "create_users",
+    "manage_access",
+    "view_statistics",
+    "send_emails"
+  ]
+}
