@@ -1,3 +1,4 @@
+// backend/src/controllers/client.controller.js
 const db = require('../models');
 const Client = db.Client;
 const ClientDocument = db.ClientDocument;
@@ -8,6 +9,7 @@ const ServicePackage = db.ServicePackage;
 const Subscription = db.Subscription;
 const ClientBilling = db.ClientBilling;
 const Op = db.Sequelize.Op;
+const ClientSuspensionService = require('../services/client.suspension.service');
 
 // Crear un nuevo cliente
 exports.create = async (req, res) => {
@@ -200,7 +202,7 @@ exports.findAll = async (req, res) => {
           'lastPaymentDate'
         ]
       }
-	  
+      
     ];
 
     // Configurar ordenamiento
@@ -489,6 +491,7 @@ exports.bulkUpdateStatus = async (req, res) => {
   }
 };
 
+// ✅ MODIFICADO: Usar el servicio de suspensión para aplicar cambios reales en Mikrotik
 exports.bulkSuspendServices = async (req, res) => {
   try {
     const { clientIds, reason } = req.body;
@@ -500,25 +503,30 @@ exports.bulkSuspendServices = async (req, res) => {
       });
     }
 
-    // Suspender todas las suscripciones activas de los clientes seleccionados
-    const [updated] = await Subscription.update(
-      { 
-        status: 'suspended',
-        lastStatusChange: new Date(),
-        notes: reason || 'Suspensión masiva'
-      },
-      {
-        where: { 
-          clientId: { [Op.in]: clientIds },
-          status: 'active'
-        }
+    const results = {
+      total: clientIds.length,
+      processed: 0,
+      failed: 0,
+      details: []
+    };
+
+    // Procesar uno por uno para asegurar ejecución correcta en Mikrotik
+    for (const clientId of clientIds) {
+      try {
+        await ClientSuspensionService.suspendClient(clientId, reason || 'Suspensión Masiva Manual');
+        results.processed++;
+        results.details.push({ clientId, status: 'success' });
+      } catch (error) {
+        console.error(`Error suspendiendo cliente ${clientId}:`, error.message);
+        results.failed++;
+        results.details.push({ clientId, status: 'error', message: error.message });
       }
-    );
+    }
 
     return res.status(200).json({
       success: true,
-      message: `${updated} servicio(s) suspendido(s) exitosamente`,
-      data: { updated, clientIds, reason }
+      message: `${results.processed} servicio(s) suspendido(s) exitosamente. ${results.failed} fallos.`,
+      data: results
     });
 
   } catch (error) {
@@ -529,6 +537,7 @@ exports.bulkSuspendServices = async (req, res) => {
   }
 };
 
+// ✅ MODIFICADO: Usar el servicio de reactivación para aplicar cambios reales en Mikrotik
 exports.bulkReactivateServices = async (req, res) => {
   try {
     const { clientIds } = req.body;
@@ -540,24 +549,29 @@ exports.bulkReactivateServices = async (req, res) => {
       });
     }
 
-    // Reactivar todas las suscripciones suspendidas de los clientes seleccionados
-    const [updated] = await Subscription.update(
-      { 
-        status: 'active',
-        lastStatusChange: new Date()
-      },
-      {
-        where: { 
-          clientId: { [Op.in]: clientIds },
-          status: 'suspended'
-        }
+    const results = {
+      total: clientIds.length,
+      processed: 0,
+      failed: 0,
+      details: []
+    };
+
+    for (const clientId of clientIds) {
+      try {
+        await ClientSuspensionService.reactivateClient(clientId);
+        results.processed++;
+        results.details.push({ clientId, status: 'success' });
+      } catch (error) {
+        console.error(`Error reactivando cliente ${clientId}:`, error.message);
+        results.failed++;
+        results.details.push({ clientId, status: 'error', message: error.message });
       }
-    );
+    }
 
     return res.status(200).json({
       success: true,
-      message: `${updated} servicio(s) reactivado(s) exitosamente`,
-      data: { updated, clientIds }
+      message: `${results.processed} servicio(s) reactivado(s) exitosamente`,
+      data: results
     });
 
   } catch (error) {
@@ -567,6 +581,7 @@ exports.bulkReactivateServices = async (req, res) => {
     });
   }
 };
+
 
 // Estadísticas de clientes
 exports.getStatistics = async (req, res) => {

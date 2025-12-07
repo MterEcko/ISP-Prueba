@@ -21,10 +21,10 @@ const config = {
   // ==================== URLs DE SERVIDOR EXTERNO ====================
 
   // URL del servidor de licencias (cuando esté disponible)
-  LICENSE_SERVER_URL: process.env.VUE_APP_LICENSE_SERVER_URL || 'http://localhost:3002/api',
+  LICENSE_SERVER_URL: process.env.VUE_APP_LICENSE_SERVER_URL || 'https://store.serviciosqbit.net/api',
 
   // URL del servidor de marketplace de plugins (cuando esté disponible)
-  MARKETPLACE_SERVER_URL: process.env.VUE_APP_MARKETPLACE_URL || 'http://localhost:3001/api/marketplace',
+  MARKETPLACE_SERVER_URL: process.env.VUE_APP_MARKETPLACE_URL || 'https://store.serviciosqbit.net/api/marketplace',
 
   // ==================== CONFIGURACIÓN DE LICENCIAS ====================
 

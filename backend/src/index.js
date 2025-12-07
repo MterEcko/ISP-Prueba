@@ -9,6 +9,11 @@ const configHelper = require('./helpers/configHelper');
 const path = require('path');
 const websocketService = require('./services/websocket.service');
 
+
+const pluginManager = require('./services/pluginManager.service'); 
+const { securityMiddlewareChain } = require('./middleware/pluginHooks');
+
+
 const { setupTPLinkPermissions } = require("./config/permissions-setup");
 
 dotenv.config();
@@ -61,6 +66,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+
+app.use(securityMiddlewareChain);
+console.log('🛡️  Middleware de seguridad de plugins inyectado');
 
 // Configuración de Helmet con CSP personalizado para permitir Store API
 app.use(helmet({
@@ -750,6 +758,16 @@ try {
 } catch (error) {
   console.error('❌ Error en clientPortal.routes:', error.message);
 }
+
+try {
+  console.log('Registrando clientService.routes...');
+  app.use('/api/client-services', require('./routes/clientService.routes'));
+  console.log('✅ clientService.routes registradas');
+} catch (error) {
+  console.error('❌ Error en clientService.routes:', error.message);
+}
+
+
 
 console.log('\n=== FIN REGISTRO DE RUTAS ===');
 console.log("Todas las rutas han sido procesadas");

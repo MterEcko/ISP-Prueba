@@ -1,10 +1,11 @@
+// backend/src/controllers/client.billing.controller.js
 const db = require('../models');
 const ClientBilling = db.ClientBilling;
 const Client = db.Client;
 const ServicePackage = db.ServicePackage;
 const IpPool = db.IpPool;
-const Invoice = db.Invoice;              // Agregar
-const Payment = db.Payment;              // Agregar
+const Invoice = db.Invoice;
+const Payment = db.Payment;
 const logger = require('../utils/logger');
 
 // Get all client billings
@@ -14,7 +15,7 @@ exports.getAllClientBillings = async (req, res) => {
       include: [
         { model: Client, as: 'client' },
         { model: ServicePackage, as: 'ServicePackage' },
-        { model: IpPool, as: 'currentIpPool' }
+        { model: IpPool, as: 'currentIpPool' } // Este estaba bien
       ],
       order: [['nextDueDate', 'ASC']]
     });
@@ -49,7 +50,7 @@ exports.getClientBillingById = async (req, res) => {
       include: [
         { model: Client, as: 'client' },
         { model: ServicePackage, as: 'ServicePackage' },
-        { model: IpPool, as: 'IpPool' }
+        { model: IpPool, as: 'currentIpPool' } // ✅ CORREGIDO: Alias 'currentIpPool'
       ]
     });
     
@@ -91,7 +92,7 @@ exports.getClientBillingByClientId = async (req, res) => {
       include: [
         { model: Client, as: 'client' },
         { model: ServicePackage, as: 'ServicePackage' },
-        { model: IpPool, as: 'IpPool' }
+        { model: IpPool, as: 'currentIpPool' } // ✅ CORREGIDO: Alias 'currentIpPool'
       ]
     });
     
@@ -242,7 +243,7 @@ exports.updateClientBilling = async (req, res) => {
     
     // If service package is being changed, check if it exists
     if (servicePackageId && servicePackageId !== clientBilling.servicePackageId) {
-      const servicePackage = await servicePackage.findByPk(servicePackageId);
+      const servicePackage = await ServicePackage.findByPk(servicePackageId);
       if (!servicePackage) {
         return res.status(404).json({
           success: false,

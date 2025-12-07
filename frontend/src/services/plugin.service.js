@@ -169,7 +169,7 @@ class PluginService {
    */
   getMarketplacePlugins(filters = {}) {
     // Apunta al servidor de marketplace con validación de licencia
-    const marketplaceUrl = process.env.VUE_APP_MARKETPLACE_URL || 'http://localhost:3001/api/marketplace';
+    const marketplaceUrl = process.env.VUE_APP_MARKETPLACE_URL || 'https://store.serviciosqbit.net/api/marketplace';
 
     const queryParams = new URLSearchParams();
     if (filters.category) queryParams.append('category', filters.category);
@@ -194,7 +194,7 @@ class PluginService {
    * Verifica si el plugin existe en código, si no, lo descarga e instala
    */
   async activateMarketplacePlugin(pluginId, pluginData) {
-    const marketplaceUrl = process.env.VUE_APP_MARKETPLACE_URL || 'http://localhost:3001/api/marketplace';
+    const marketplaceUrl = process.env.VUE_APP_MARKETPLACE_URL || 'https://store.serviciosqbit.net/marketplace';
     const licenseKey = localStorage.getItem('licenseKey');
     const installationKey = localStorage.getItem('installationKey');
 
@@ -275,7 +275,7 @@ class PluginService {
    * Descargar plugin desde el marketplace
    */
   downloadPlugin(pluginId) {
-    const marketplaceUrl = process.env.VUE_APP_MARKETPLACE_URL || 'http://localhost:3001/api/marketplace';
+    const marketplaceUrl = process.env.VUE_APP_MARKETPLACE_URL || 'https://store.serviciosqbit.net/api/marketplace';
     return axios.post(
       `${marketplaceUrl}/plugins/${pluginId}/download`,
       {},
@@ -305,7 +305,7 @@ class PluginService {
    * Subir plugin al marketplace (para desarrolladores)
    */
   uploadToMarketplace(pluginData, pluginFile) {
-    const marketplaceUrl = process.env.VUE_APP_MARKETPLACE_URL || 'http://localhost:3001/api/marketplace';
+    const marketplaceUrl = process.env.VUE_APP_MARKETPLACE_URL || 'https://store.serviciosqbit.net/marketplace';
     const formData = new FormData();
     formData.append('plugin', pluginFile);
     formData.append('metadata', JSON.stringify(pluginData));
