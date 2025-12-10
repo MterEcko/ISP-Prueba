@@ -52,17 +52,30 @@
       >
         Email (SMTP)
       </button>
-      <button 
-        class="tab-button" 
+      <button
+        class="tab-button"
         :class="{ active: activeTab === 'telegram' }"
         @click="activeTab = 'telegram'"
       >
         Telegram
       </button>
+      <button
+        class="tab-button"
+        :class="{ active: activeTab === 'whatsapp' }"
+        @click="activeTab = 'whatsapp'"
+      >
+        WhatsApp
+      </button>
+      <button
+        class="tab-button"
+        :class="{ active: activeTab === 'domain' }"
+        @click="activeTab = 'domain'"
+      >
+        Dominio
+      </button>
     </div>
     
     <div class="tab-content">
-      <!-- Configuración General -->
       <div v-if="activeTab === 'general'" class="tab-pane">
         <div class="card">
           <h2>Configuración General</h2>
@@ -156,7 +169,6 @@
         </div>
       </div>
       
-      <!-- Configuración de Usuario -->
       <div v-if="activeTab === 'user'" class="tab-pane">
         <div class="card">
           <h2>Perfil de Usuario</h2>
@@ -217,7 +229,6 @@
         </div>
       </div>
       
-      <!-- Configuración de Seguridad -->
       <div v-if="activeTab === 'security'" class="tab-pane">
         <div class="card">
           <h2>Cambiar Contraseña</h2>
@@ -308,252 +319,560 @@
           </div>
         </div>
       </div>
-      <!-- Configuración de Email SMTP -->
-<div v-if="activeTab === 'email'" class="tab-pane">
-  <div class="card">
-    <h2>Configuración de Email (SMTP)</h2>
-    
-    <form @submit.prevent="saveEmailSettings">
-      <div class="form-group">
-        <label for="smtpHost">Servidor SMTP</label>
-        <input 
-          type="text" 
-          id="smtpHost" 
-          v-model="emailSettings.host"
-          placeholder="smtp.gmail.com"
-          required
-        />
-        <small class="form-hint">Ejemplo: smtp.gmail.com, smtp.ionos.mx, smtp.office365.com</small>
-      </div>
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label for="smtpPort">Puerto</label>
-          <input 
-            type="number" 
-            id="smtpPort" 
-            v-model="emailSettings.port"
-            placeholder="587"
-            required
-          />
-          <small class="form-hint">587 (TLS) o 465 (SSL)</small>
-        </div>
-        
-        <div class="form-group">
-          <label>Tipo de Conexión</label>
-          <div class="connection-type-display">
-            <span class="badge" :class="emailSettings.port == 465 ? 'badge-success' : 'badge-info'">
-              {{ emailSettings.port == 465 ? 'SSL (Puerto 465)' : 'TLS (Puerto 587)' }}
-            </span>
-          </div>
-          <small class="form-hint">Se detecta automáticamente según el puerto</small>
-        </div>
-      </div>
-      
-      <div class="form-group">
-        <label for="smtpUser">Usuario / Email</label>
-        <input 
-          type="email" 
-          id="smtpUser" 
-          v-model="emailSettings.user"
-          placeholder="usuario@ejemplo.com"
-          required
-        />
-      </div>
-      
-      <div class="form-group">
-        <label for="smtpPassword">Contraseña SMTP</label>
-        <input 
-          type="password" 
-          id="smtpPassword" 
-          v-model="emailSettings.password"
-          :placeholder="emailSettings.hasPassword ? '••••••••' : 'Ingrese su contraseña'"
-        />
-        <small class="form-hint">
-          {{ emailSettings.hasPassword ? 'Dejar en blanco para mantener la contraseña actual' : 'Para Gmail, use una App Password' }}
-        </small>
-      </div>
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label for="emailFromName">Nombre del Remitente</label>
-          <input 
-            type="text" 
-            id="emailFromName" 
-            v-model="emailSettings.fromName"
-            placeholder="Mi ISP"
-            required
-          />
-        </div>
-        
-        <div class="form-group">
-          <label for="emailFromAddress">Email del Remitente</label>
-          <input 
-            type="email" 
-            id="emailFromAddress" 
-            v-model="emailSettings.fromAddress"
-            placeholder="noreply@miisp.com"
-            required
-          />
-        </div>
-      </div>
-      
-      <!-- Resultado de prueba -->
-      <div v-if="testResults.email" class="test-result" :class="testResults.email.success ? 'success' : 'error'">
-        <div class="test-result-icon">
-          {{ testResults.email.success ? '✓' : '✗' }}
-        </div>
-        <div class="test-result-message">
-          {{ testResults.email.message }}
-        </div>
-      </div>
-      
-      <div class="form-actions">
-        <button 
-          type="button" 
-          class="btn btn-secondary" 
-          @click="testEmailConnection" 
-          :disabled="saving || !emailSettings.user"
-        >
-          <span v-if="saving">Probando...</span>
-          <span v-else>🧪 Probar Conexión</span>
-        </button>
-        <button type="submit" class="btn btn-primary" :disabled="saving">
-          <span v-if="saving">Guardando...</span>
-          <span v-else>💾 Guardar Configuración</span>
-        </button>
-      </div>
-    </form>
-    
-    <!-- Información adicional -->
-    <div class="info-box mt-4">
-      <h4>📝 Configuraciones Comunes</h4>
-      <div class="config-examples">
-        <div class="config-example">
-          <strong>Gmail:</strong>
-          <p>Host: smtp.gmail.com | Puerto: 587 o 465</p>
-          <p><small>Requiere App Password (no la contraseña normal)</small></p>
-        </div>
-        <div class="config-example">
-          <strong>Outlook/Hotmail:</strong>
-          <p>Host: smtp-mail.outlook.com | Puerto: 587</p>
-        </div>
-        <div class="config-example">
-          <strong>Office 365:</strong>
-          <p>Host: smtp.office365.com | Puerto: 587</p>
-        </div>
-        <div class="config-example">
-          <strong>Ionos:</strong>
-          <p>Host: smtp.ionos.mx | Puerto: 465 o 587</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- Configuración de Telegram -->
-<div v-if="activeTab === 'telegram'" class="tab-pane">
-  <div class="card">
-    <h2>Configuración de Telegram Bot</h2>
-    
-    <div class="telegram-status">
-      <div class="status-badge" :class="telegramSettings.enabled ? 'status-active' : 'status-inactive'">
-        {{ telegramSettings.enabled ? '✓ Activo' : '○ Inactivo' }}
-      </div>
-    </div>
-    
-    <form @submit.prevent="saveTelegramSettings">
-      <div class="form-check mb-4">
-        <input 
-          type="checkbox" 
-          id="telegramEnabled" 
-          v-model="telegramSettings.enabled"
-        />
-        <label for="telegramEnabled">
-          <strong>Habilitar notificaciones por Telegram</strong>
-        </label>
-      </div>
-      
-      <div class="form-group">
-        <label for="telegramToken">Token del Bot</label>
-        <input 
-          type="text" 
-          id="telegramToken" 
-          v-model="telegramSettings.botToken"
-          :placeholder="telegramSettings.hasToken ? '••••••••••••••••••••' : '123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11'"
-          :disabled="!telegramSettings.enabled"
-        />
-        <small class="form-hint">
-          {{ telegramSettings.hasToken ? 'Dejar en blanco para mantener el token actual' : 'Obtenga el token de @BotFather en Telegram' }}
-        </small>
-      </div>
-      
-      <div class="form-group">
-        <label for="telegramChatId">Chat ID / Group ID</label>
-        <input 
-          type="text" 
-          id="telegramChatId" 
-          v-model="telegramSettings.chatId"
-          placeholder="-1001234567890"
-          :disabled="!telegramSettings.enabled"
-        />
-        <small class="form-hint">ID del chat o grupo donde se enviarán las alertas técnicas</small>
-      </div>
-      
-      <!-- Resultado de prueba -->
-      <div v-if="testResults.telegram" class="test-result" :class="testResults.telegram.success ? 'success' : 'error'">
-        <div class="test-result-icon">
-          {{ testResults.telegram.success ? '✓' : '✗' }}
+      <div v-if="activeTab === 'email'" class="tab-pane">
+        <div class="card">
+          <h2>Configuración de Email (SMTP)</h2>
+          
+          <form @submit.prevent="saveEmailSettings">
+            <div class="form-group">
+              <label for="smtpHost">Servidor SMTP</label>
+              <input 
+                type="text" 
+                id="smtpHost" 
+                v-model="emailSettings.host"
+                placeholder="smtp.gmail.com"
+                required
+              />
+              <small class="form-hint">Ejemplo: smtp.gmail.com, smtp.ionos.mx, smtp.office365.com</small>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="smtpPort">Puerto</label>
+                <input 
+                  type="number" 
+                  id="smtpPort" 
+                  v-model="emailSettings.port"
+                  placeholder="587"
+                  required
+                />
+                <small class="form-hint">587 (TLS) o 465 (SSL)</small>
+              </div>
+              
+              <div class="form-group">
+                <label>Tipo de Conexión</label>
+                <div class="connection-type-display">
+                  <span class="badge" :class="emailSettings.port == 465 ? 'badge-success' : 'badge-info'">
+                    {{ emailSettings.port == 465 ? 'SSL (Puerto 465)' : 'TLS (Puerto 587)' }}
+                  </span>
+                </div>
+                <small class="form-hint">Se detecta automáticamente según el puerto</small>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="smtpUser">Usuario / Email</label>
+              <input 
+                type="email" 
+                id="smtpUser" 
+                v-model="emailSettings.user"
+                placeholder="usuario@ejemplo.com"
+                required
+              />
+            </div>
+            
+            <div class="form-group">
+              <label for="smtpPassword">Contraseña SMTP</label>
+              <input 
+                type="password" 
+                id="smtpPassword" 
+                v-model="emailSettings.password"
+                :placeholder="emailSettings.hasPassword ? '••••••••' : 'Ingrese su contraseña'"
+              />
+              <small class="form-hint">
+                {{ emailSettings.hasPassword ? 'Dejar en blanco para mantener la contraseña actual' : 'Para Gmail, use una App Password' }}
+              </small>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="emailFromName">Nombre del Remitente</label>
+                <input 
+                  type="text" 
+                  id="emailFromName" 
+                  v-model="emailSettings.fromName"
+                  placeholder="Mi ISP"
+                  required
+                />
+              </div>
+              
+              <div class="form-group">
+                <label for="emailFromAddress">Email del Remitente</label>
+                <input 
+                  type="email" 
+                  id="emailFromAddress" 
+                  v-model="emailSettings.fromAddress"
+                  placeholder="noreply@miisp.com"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div v-if="testResults.email" class="test-result" :class="testResults.email.success ? 'success' : 'error'">
+              <div class="test-result-icon">
+                {{ testResults.email.success ? '✓' : '✗' }}
+              </div>
+              <div class="test-result-message">
+                {{ testResults.email.message }}
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button 
+                type="button" 
+                class="btn btn-secondary" 
+                @click="testEmailConnection" 
+                :disabled="saving || !emailSettings.user"
+              >
+                <span v-if="saving">Probando...</span>
+                <span v-else>🧪 Probar Conexión</span>
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="saving">
+                <span v-if="saving">Guardando...</span>
+                <span v-else>💾 Guardar Configuración</span>
+              </button>
+            </div>
+          </form>
+          
+          <div class="info-box mt-4">
+            <h4>📝 Configuraciones Comunes</h4>
+            <div class="config-examples">
+              <div class="config-example">
+                <strong>Gmail:</strong>
+                <p>Host: smtp.gmail.com | Puerto: 587 o 465</p>
+                <p><small>Requiere App Password (no la contraseña normal)</small></p>
+              </div>
+              <div class="config-example">
+                <strong>Outlook/Hotmail:</strong>
+                <p>Host: smtp-mail.outlook.com | Puerto: 587</p>
+              </div>
+              <div class="config-example">
+                <strong>Office 365:</strong>
+                <p>Host: smtp.office365.com | Puerto: 587</p>
+              </div>
+              <div class="config-example">
+                <strong>Ionos:</strong>
+                <p>Host: smtp.ionos.mx | Puerto: 465 o 587</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="test-result-message">
-          {{ testResults.telegram.message }}
+      </div>
+
+      <div v-if="activeTab === 'telegram'" class="tab-pane">
+        <div class="card">
+          <h2>Configuración de Telegram Bot</h2>
+          
+          <div class="telegram-status">
+            <div class="status-badge" :class="telegramSettings.enabled ? 'status-active' : 'status-inactive'">
+              {{ telegramSettings.enabled ? '✓ Activo' : '○ Inactivo' }}
+            </div>
+          </div>
+          
+          <form @submit.prevent="saveTelegramSettings">
+            <div class="form-check mb-4">
+              <input 
+                type="checkbox" 
+                id="telegramEnabled" 
+                v-model="telegramSettings.enabled"
+              />
+              <label for="telegramEnabled">
+                <strong>Habilitar notificaciones por Telegram</strong>
+              </label>
+            </div>
+            
+            <div class="form-group">
+              <label for="telegramToken">Token del Bot</label>
+              <input 
+                type="text" 
+                id="telegramToken" 
+                v-model="telegramSettings.botToken"
+                :placeholder="telegramSettings.hasToken ? '••••••••••••••••••••' : '123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11'"
+                :disabled="!telegramSettings.enabled"
+              />
+              <small class="form-hint">
+                {{ telegramSettings.hasToken ? 'Dejar en blanco para mantener el token actual' : 'Obtenga el token de @BotFather en Telegram' }}
+              </small>
+            </div>
+            
+            <div class="form-group">
+              <label for="telegramChatId">Chat ID / Group ID</label>
+              <input 
+                type="text" 
+                id="telegramChatId" 
+                v-model="telegramSettings.chatId"
+                placeholder="-1001234567890"
+                :disabled="!telegramSettings.enabled"
+              />
+              <small class="form-hint">ID del chat o grupo donde se enviarán las alertas técnicas</small>
+            </div>
+            
+            <div v-if="testResults.telegram" class="test-result" :class="testResults.telegram.success ? 'success' : 'error'">
+              <div class="test-result-icon">
+                {{ testResults.telegram.success ? '✓' : '✗' }}
+              </div>
+              <div class="test-result-message">
+                {{ testResults.telegram.message }}
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button 
+                type="button" 
+                class="btn btn-secondary" 
+                @click="testTelegramConnection" 
+                :disabled="saving || !telegramSettings.enabled"
+              >
+                <span v-if="saving">Probando...</span>
+                <span v-else>🧪 Enviar Mensaje de Prueba</span>
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="saving">
+                <span v-if="saving">Guardando...</span>
+                <span v-else>💾 Guardar Configuración</span>
+              </button>
+            </div>
+          </form>
+          
+          <div class="info-box mt-4">
+            <h4>📖 Cómo configurar tu Bot de Telegram</h4>
+            <ol class="setup-steps">
+              <li>
+                <strong>Crear el Bot:</strong>
+                <p>Busca <code>@BotFather</code> en Telegram y envía <code>/newbot</code></p>
+              </li>
+              <li>
+                <strong>Obtener el Token:</strong>
+                <p>Sigue las instrucciones de BotFather. Te dará un token como: <code>123456789:ABC-DEF...</code></p>
+              </li>
+              <li>
+                <strong>Obtener el Chat ID:</strong>
+                <p>Opción 1: Agrega el bot a tu grupo y obtén el ID con <code>@userinfobot</code></p>
+                <p>Opción 2: Envía un mensaje al bot y visita: <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code></p>
+              </li>
+              <li>
+                <strong>Activar y Probar:</strong>
+                <p>Guarda la configuración y usa el botón "Enviar Mensaje de Prueba"</p>
+              </li>
+            </ol>
+          </div>
         </div>
       </div>
-      
-      <div class="form-actions">
-        <button 
-          type="button" 
-          class="btn btn-secondary" 
-          @click="testTelegramConnection" 
-          :disabled="saving || !telegramSettings.enabled"
-        >
-          <span v-if="saving">Probando...</span>
-          <span v-else>🧪 Enviar Mensaje de Prueba</span>
-        </button>
-        <button type="submit" class="btn btn-primary" :disabled="saving">
-          <span v-if="saving">Guardando...</span>
-          <span v-else>💾 Guardar Configuración</span>
-        </button>
+
+      <div v-if="activeTab === 'whatsapp'" class="tab-pane">
+        <div class="card">
+          <h2>Configuracion de WhatsApp</h2>
+
+          <div class="telegram-status">
+            <div class="status-badge" :class="whatsappSettings.enabled ? 'status-active' : 'status-inactive'">
+              {{ whatsappSettings.enabled ? 'Activo' : 'Inactivo' }}
+            </div>
+          </div>
+
+          <form @submit.prevent="saveWhatsAppSettings">
+            <div class="form-check mb-4">
+              <input
+                type="checkbox"
+                id="whatsappEnabled"
+                v-model="whatsappSettings.enabled"
+              />
+              <label for="whatsappEnabled">
+                <strong>Habilitar WhatsApp para chat de soporte</strong>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label>Metodo de Conexion</label>
+              <select v-model="whatsappSettings.method" :disabled="!whatsappSettings.enabled" class="form-control">
+                <option value="api">WhatsApp Business API</option>
+                <option value="twilio">Twilio</option>
+                <option value="web">WhatsApp Web (QR)</option>
+              </select>
+            </div>
+
+            <div v-if="whatsappSettings.method === 'api'">
+              <h4 class="mt-4">API Oficial de WhatsApp Business</h4>
+
+              <div class="form-group">
+                <label for="whatsappApiUrl">URL de la API</label>
+                <input
+                  type="text"
+                  id="whatsappApiUrl"
+                  v-model="whatsappSettings.apiUrl"
+                  placeholder="https://graph.facebook.com/v17.0/"
+                  :disabled="!whatsappSettings.enabled"
+                />
+                <small class="form-hint">URL del endpoint de WhatsApp Business API</small>
+              </div>
+
+              <div class="form-group">
+                <label for="whatsappApiToken">Token de Acceso</label>
+                <input
+                  type="password"
+                  id="whatsappApiToken"
+                  v-model="whatsappSettings.apiToken"
+                  :placeholder="whatsappSettings.hasToken ? '••••••••••••••••••••' : 'EAAFZBpX...'"
+                  :disabled="!whatsappSettings.enabled"
+                />
+                <small class="form-hint">
+                  {{ whatsappSettings.hasToken ? 'Dejar en blanco para mantener el token actual' : 'Token de acceso de Meta Business' }}
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="whatsappPhoneNumberId">Phone Number ID</label>
+                <input
+                  type="text"
+                  id="whatsappPhoneNumberId"
+                  v-model="whatsappSettings.phoneNumberId"
+                  placeholder="123456789012345"
+                  :disabled="!whatsappSettings.enabled"
+                />
+                <small class="form-hint">ID del numero de telefono en WhatsApp Business</small>
+              </div>
+            </div>
+
+            <div v-if="whatsappSettings.method === 'twilio'">
+              <h4 class="mt-4">Twilio WhatsApp</h4>
+
+              <div class="form-group">
+                <label for="twilioAccountSid">Account SID</label>
+                <input
+                  type="text"
+                  id="twilioAccountSid"
+                  v-model="whatsappSettings.twilio.accountSid"
+                  placeholder="AC..."
+                  :disabled="!whatsappSettings.enabled"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="twilioAuthToken">Auth Token</label>
+                <input
+                  type="password"
+                  id="twilioAuthToken"
+                  v-model="whatsappSettings.twilio.authToken"
+                  :placeholder="whatsappSettings.hasTwilioToken ? '••••••••••••••••••••' : ''"
+                  :disabled="!whatsappSettings.enabled"
+                />
+                <small class="form-hint">
+                  {{ whatsappSettings.hasTwilioToken ? 'Dejar en blanco para mantener el token actual' : 'Token de autenticacion de Twilio' }}
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="twilioWhatsAppNumber">Numero de WhatsApp</label>
+                <input
+                  type="text"
+                  id="twilioWhatsAppNumber"
+                  v-model="whatsappSettings.twilio.phoneNumber"
+                  placeholder="whatsapp:+14155238886"
+                  :disabled="!whatsappSettings.enabled"
+                />
+                <small class="form-hint">Formato: whatsapp:+14155238886</small>
+              </div>
+            </div>
+
+            <div v-if="whatsappSettings.method === 'web'">
+              <h4 class="mt-4">WhatsApp Web (Escanear QR)</h4>
+
+              <div class="alert alert-info">
+                <p>Este metodo conecta usando WhatsApp Web. Es mas facil de configurar pero:</p>
+                <ul>
+                  <li>El telefono debe estar conectado a internet</li>
+                  <li>No es oficial de WhatsApp Business</li>
+                  <li>Puede ser bloqueado por WhatsApp</li>
+                </ul>
+              </div>
+
+              <div class="qr-container" v-if="whatsappQR">
+                <img :src="whatsappQR" alt="Codigo QR de WhatsApp" />
+                <p>Escanea este codigo con WhatsApp en tu telefono</p>
+              </div>
+
+              <button type="button" @click="generateWhatsAppQR" class="btn btn-secondary" :disabled="!whatsappSettings.enabled">
+                Generar Codigo QR
+              </button>
+            </div>
+
+            <div v-if="testResults.whatsapp" class="test-result" :class="testResults.whatsapp.success ? 'success' : 'error'">
+              <div class="test-result-icon">
+                {{ testResults.whatsapp.success ? 'Si' : 'No' }}
+              </div>
+              <div class="test-result-message">
+                {{ testResults.whatsapp.message }}
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                @click="testWhatsAppConnection"
+                :disabled="saving || !whatsappSettings.enabled"
+              >
+                <span v-if="saving">Probando...</span>
+                <span v-else>Enviar Mensaje de Prueba</span>
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="saving">
+                <span v-if="saving">Guardando...</span>
+                <span v-else>Guardar Configuración</span>
+              </button>
+            </div>
+          </form>
+
+          <div class="info-box mt-4">
+            <h4>Como configurar WhatsApp</h4>
+
+            <div v-if="whatsappSettings.method === 'api'">
+              <h5>Opcion 1: API Oficial de WhatsApp Business</h5>
+              <ol class="setup-steps">
+                <li>
+                  <strong>Crear cuenta de Meta Business:</strong>
+                  <p>Ve a <a href="https://business.facebook.com" target="_blank">business.facebook.com</a></p>
+                </li>
+                <li>
+                  <strong>Configurar WhatsApp Business API:</strong>
+                  <p>En Meta Business Suite, agrega WhatsApp Business</p>
+                </li>
+                <li>
+                  <strong>Obtener credenciales:</strong>
+                  <p>Copia el Phone Number ID y genera un token de acceso</p>
+                </li>
+                <li>
+                  <strong>Configurar webhook:</strong>
+                  <p>URL: <code>https://tu-dominio.com/api/plugins/whatsapp/webhook</code></p>
+                  <p>Verify Token: (el que configures en variables de entorno)</p>
+                </li>
+              </ol>
+            </div>
+
+            <div v-if="whatsappSettings.method === 'twilio'">
+              <h5>Opcion 2: Twilio (Recomendado para empezar)</h5>
+              <ol class="setup-steps">
+                <li>
+                  <strong>Crear cuenta en Twilio:</strong>
+                  <p>Ve a <a href="https://www.twilio.com" target="_blank">twilio.com</a></p>
+                </li>
+                <li>
+                  <strong>Activar WhatsApp Sandbox:</strong>
+                  <p>En Twilio Console, ve a Messaging → Try it out → Try WhatsApp</p>
+                </li>
+                <li>
+                  <strong>Obtener credenciales:</strong>
+                  <p>Copia Account SID y Auth Token del Dashboard</p>
+                </li>
+                <li>
+                  <strong>Numero de WhatsApp:</strong>
+                  <p>Sandbox: <code>whatsapp:+14155238886</code></p>
+                  <p>Produccion: Solicita aprobacion de tu numero</p>
+                </li>
+              </ol>
+            </div>
+
+            <div v-if="whatsappSettings.method === 'web'">
+              <h5>Opcion 3: WhatsApp Web (QR)</h5>
+              <p class="alert alert-warning">
+                <strong>Advertencia:</strong> Este metodo no es oficial y puede ser bloqueado por WhatsApp.
+                Solo para desarrollo o uso personal.
+              </p>
+              <ol class="setup-steps">
+                <li>Click en "Generar Codigo QR"</li>
+                <li>Abre WhatsApp en tu telefono</li>
+                <li>Ve a Configuracion → Dispositivos vinculados</li>
+                <li>Escanea el codigo QR</li>
+              </ol>
+            </div>
+          </div>
+        </div>
       </div>
-    </form>
-    
-    <!-- Guía de configuración -->
-    <div class="info-box mt-4">
-      <h4>📖 Cómo configurar tu Bot de Telegram</h4>
-      <ol class="setup-steps">
-        <li>
-          <strong>Crear el Bot:</strong>
-          <p>Busca <code>@BotFather</code> en Telegram y envía <code>/newbot</code></p>
-        </li>
-        <li>
-          <strong>Obtener el Token:</strong>
-          <p>Sigue las instrucciones de BotFather. Te dará un token como: <code>123456789:ABC-DEF...</code></p>
-        </li>
-        <li>
-          <strong>Obtener el Chat ID:</strong>
-          <p>Opción 1: Agrega el bot a tu grupo y obtén el ID con <code>@userinfobot</code></p>
-          <p>Opción 2: Envía un mensaje al bot y visita: <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code></p>
-        </li>
-        <li>
-          <strong>Activar y Probar:</strong>
-          <p>Guarda la configuración y usa el botón "Enviar Mensaje de Prueba"</p>
-        </li>
-      </ol>
-    </div>
-  </div>
-</div>
-      
-      <!-- Configuración de Notificaciones -->
+
+      <div v-if="activeTab === 'domain'" class="tab-pane">
+        <div class="card">
+          <h2>Configuración de Dominio y CORS</h2>
+          <p class="card-description">
+            Configura el dominio principal de tu sistema y los orígenes permitidos para CORS.
+            Esto permite que tu sistema funcione correctamente con tu dominio personalizado.
+          </p>
+
+          <form @submit.prevent="saveDomainSettings">
+            <div class="form-group">
+              <label for="systemDomain">Dominio Principal</label>
+              <input
+                type="text"
+                id="systemDomain"
+                v-model="domainSettings.systemDomain"
+                placeholder="ejemplo: miempresa-isp.com"
+              />
+              <small>El dominio principal de tu sistema (sin https://)</small>
+            </div>
+
+            <div class="form-group">
+              <label>Orígenes Permitidos (CORS)</label>
+              <div class="origins-list">
+                <div
+                  v-for="(origin, index) in domainSettings.allowedOrigins"
+                  :key="index"
+                  class="origin-item"
+                >
+                  <input
+                    type="text"
+                    v-model="domainSettings.allowedOrigins[index]"
+                    placeholder="https://ejemplo.com"
+                  />
+                  <button
+                    type="button"
+                    class="btn-remove"
+                    @click="removeOrigin(index)"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="btn-add"
+                @click="addOrigin"
+              >
+                + Agregar Origen
+              </button>
+              <small>URLs completas permitidas para acceder al sistema</small>
+            </div>
+
+            <div class="alert alert-info">
+              <strong>Ejemplo de configuración:</strong>
+              <ul>
+                <li>Dominio: miempresa-isp.com</li>
+                <li>Orígenes:
+                  <ul>
+                    <li>https://miempresa-isp.com</li>
+                    <li>https://www.miempresa-isp.com</li>
+                    <li>http://localhost:8080 (desarrollo)</li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">
+                Guardar Configuración
+              </button>
+              <button
+                type="button"
+                class="btn-secondary"
+                @click="reloadCors"
+              >
+                Recargar CORS
+              </button>
+            </div>
+          </form>
+
+          <div v-if="domainMessage" :class="['message', domainMessageType]">
+            {{ domainMessage }}
+          </div>
+        </div>
+      </div>
+
       <div v-if="activeTab === 'notifications'" class="tab-pane">
         <div class="card">
           <h2>Preferencias de Notificaciones</h2>
@@ -648,7 +967,6 @@
         </div>
       </div>
       
-      <!-- Configuración de Red -->
       <div v-if="activeTab === 'network'" class="tab-pane">
         <div class="card">
           <h2>Configuración de APIs de Red</h2>
@@ -764,19 +1082,30 @@
         </div>
       </div>
       
-      <!-- Configuración de Integraciones -->
       <div v-if="activeTab === 'integrations'" class="tab-pane">
         <div class="card">
           <h2>Integración con Jellyfin</h2>
           
           <form @submit.prevent="saveJellyfinSettings">
+            <div class="form-check mb-4">
+              <input 
+                type="checkbox" 
+                id="jellyfinEnabled" 
+                v-model="jellyfinSettings.enabled"
+              />
+              <label for="jellyfinEnabled">
+                <strong>Habilitar Integración Jellyfin</strong>
+              </label>
+            </div>
+
             <div class="form-group">
               <label for="jellyfinUrl">URL del Servidor Jellyfin</label>
               <input 
                 type="text" 
                 id="jellyfinUrl" 
-                v-model="integrationSettings.jellyfin.url"
+                v-model="jellyfinSettings.url"
                 placeholder="http://servidor:8096"
+                :disabled="!jellyfinSettings.enabled"
               />
             </div>
             
@@ -785,29 +1114,27 @@
               <input 
                 type="text" 
                 id="jellyfinApiKey" 
-                v-model="integrationSettings.jellyfin.apiKey"
-                placeholder="Tu API Key de Jellyfin"
+                v-model="jellyfinSettings.apiKey"
+                :placeholder="jellyfinSettings.hasApiKey ? '••••••••••••••••••••' : 'Tu API Key de Jellyfin'"
+                :disabled="!jellyfinSettings.enabled"
               />
             </div>
-            
+
             <div class="form-group">
-              <label for="jellyfinDefaultProfile">Perfil por Defecto</label>
-              <input 
-                type="text" 
-                id="jellyfinDefaultProfile" 
-                v-model="integrationSettings.jellyfin.defaultProfile"
-                placeholder="ID del perfil por defecto"
-              />
+               <label>Jellyfin Accounts (jfa-go)</label>
+               <div class="form-check">
+                 <input type="checkbox" id="jfaGoEnabled" v-model="jellyfinSettings.jfaGoEnabled" :disabled="!jellyfinSettings.enabled">
+                 <label for="jfaGoEnabled">Habilitar gestión de cuentas (jfa-go)</label>
+               </div>
             </div>
-            
-            <div class="test-connection-result" v-if="jellyfinConnection">
-              <div class="connection-status" :class="jellyfinConnection.success ? 'success' : 'error'">
-                {{ jellyfinConnection.message }}
-              </div>
+
+            <div class="form-group" v-if="jellyfinSettings.jfaGoEnabled">
+               <label for="jfaGoUrl">URL de jfa-go</label>
+               <input type="text" id="jfaGoUrl" v-model="jellyfinSettings.jfaGoUrl" placeholder="http://servidor:8056">
             </div>
             
             <div class="form-actions">
-              <button type="button" class="btn" @click="testJellyfinConnection" :disabled="saving">
+              <button type="button" class="btn" @click="testJellyfinConnection" :disabled="saving || !jellyfinSettings.enabled">
                 Probar Conexión
               </button>
               <button type="submit" class="btn btn-primary" :disabled="saving">
@@ -817,114 +1144,11 @@
           </form>
         </div>
         
-        <div class="card mt-4">
-          <h2>Configuración de Comunicaciones</h2>
-          
-          <form @submit.prevent="saveCommunicationSettings">
-            <div class="setting-group">
-              <h3>Servidor SMTP</h3>
-              
-              <div class="form-group">
-                <label for="smtpHost">Servidor SMTP</label>
-                <input 
-                  type="text" 
-                  id="smtpHost" 
-                  v-model="integrationSettings.smtp.host"
-                  placeholder="smtp.example.com"
-                />
-              </div>
-              
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="smtpPort">Puerto</label>
-                  <input 
-                    type="number" 
-                    id="smtpPort" 
-                    v-model="integrationSettings.smtp.port"
-                    placeholder="587"
-                  />
-                </div>
-                
-                <div class="form-group">
-                  <label for="smtpSecurity">Seguridad</label>
-                  <select id="smtpSecurity" v-model="integrationSettings.smtp.security">
-                    <option value="none">Ninguna</option>
-                    <option value="tls">TLS</option>
-                    <option value="ssl">SSL</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div class="form-group">
-                <label for="smtpUser">Usuario</label>
-                <input 
-                  type="text" 
-                  id="smtpUser" 
-                  v-model="integrationSettings.smtp.user"
-                  placeholder="usuario@example.com"
-                />
-              </div>
-              
-              <div class="form-group">
-                <label for="smtpPassword">Contraseña</label>
-                <input 
-                  type="password" 
-                  id="smtpPassword" 
-                  v-model="integrationSettings.smtp.password"
-                  placeholder="••••••••"
-                />
-              </div>
-              
-              <div class="form-group">
-                <label for="smtpFrom">Desde (From)</label>
-                <input 
-                  type="text" 
-                  id="smtpFrom" 
-                  v-model="integrationSettings.smtp.from"
-                  placeholder="Soporte ISP <soporte@tuisp.com>"
-                />
-              </div>
-            </div>
-            
-            <div class="setting-group">
-              <h3>Telegram Bot</h3>
-              
-              <div class="form-group">
-                <label for="telegramToken">Token del Bot</label>
-                <input 
-                  type="text" 
-                  id="telegramToken" 
-                  v-model="integrationSettings.telegram.token"
-                  placeholder="123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
-                />
-              </div>
-              
-              <div class="form-check">
-                <input 
-                  type="checkbox" 
-                  id="telegramEnabled" 
-                  v-model="integrationSettings.telegram.enabled"
-                />
-                <label for="telegramEnabled">Habilitar Bot de Telegram</label>
-              </div>
-            </div>
-            
-            <div class="form-actions">
-              <button type="button" class="btn" @click="testSmtpConnection" :disabled="saving">
-                Probar SMTP
-              </button>
-              <button type="submit" class="btn btn-primary" :disabled="saving">
-                {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
-              </button>
-            </div>
-          </form>
         </div>
-      </div>
     </div>
   </div>
 </template>
 
-// frontend/src/views/SettingsView.vue - SCRIPT SECTION
 
 <script>
 import SettingsService from '../services/settings.service';
@@ -969,11 +1193,29 @@ export default {
       
       whatsappSettings: {
         enabled: false,
-        apiUrl: '',
-        token: '',
-        hasToken: false
+        method: 'twilio',
+        api: {
+          apiUrl: 'https://graph.facebook.com/v17.0/',
+          phoneNumberId: '',
+          apiToken: '',
+          hasToken: false
+        },
+        twilio: {
+          phoneNumber: '',
+          accountSid: '',
+          authToken: '',
+          hasAuthToken: false
+        }
       },
-      
+
+      domainSettings: {
+        systemDomain: '',
+        allowedOrigins: []
+      },
+
+      domainMessage: '',
+      domainMessageType: '',
+
       jellyfinSettings: {
         enabled: false,
         url: '',
@@ -1149,6 +1391,7 @@ export default {
           this.loadEmailSettings(),
           this.loadTelegramSettings(),
           this.loadWhatsAppSettings(),
+          this.loadDomainSettings(),
           this.loadJellyfinSettings(),
           this.loadPaymentSettings(),
           this.loadMapSettings(),
@@ -1195,13 +1438,116 @@ export default {
     
     async loadWhatsAppSettings() {
       try {
-        const response = await SettingsService.getWhatsAppSettings();
-        this.whatsappSettings = { ...this.whatsappSettings, ...response.data };
+      const response = await SettingsService.getWhatsAppSettings();
+      const data = response.data;
+
+      console.log('📥 Datos recibidos del backend:', data); // Para depurar si es necesario
+
+
+      // CORRECCIÓN PRINCIPAL: Convertir a booleano estricto
+      // Esto maneja si viene como true, "true", 1, o "1"
+      const isEnabled = data.enabled === true || data.enabled === 'true' || data.enabled === 1 || data.enabled === '1';
+	
+	
+      // Aseguramos la estructura correcta
+      this.whatsappSettings = {
+        enabled: isEnabled,
+        method: data.method || 'twilio',
+        api: {
+          apiUrl: data.api?.apiUrl || data.whatsappApiUrl || '',
+          phoneNumberId: data.api?.phoneNumberId || '',
+          apiToken: data.api?.apiToken || '',
+          hasToken: data.api?.hasToken || false
+        },
+        // Mantener la estructura de Twilio (La que arreglamos antes)
+        twilio: {
+          phoneNumber: data.twilio?.phoneNumber || data.whatsappTwilioNumber || '',
+          accountSid: data.twilio?.accountSid || data.whatsappTwilioAccountSid || '',
+          authToken: '', // Siempre vacío por seguridad
+          hasAuthToken: data.twilio?.hasAuthToken || data.hasTwilioToken || false
+        },
+          // Limpiamos las propiedades raíz basura para evitar confusión
+          hasTwilioToken: data.hasTwilioToken || false
+      };
       } catch (error) {
-        console.error('Error cargando configuración de WhatsApp:', error);
+      console.error('Error cargando configuración de WhatsApp:', error);
+      this.$toast?.error('Error al cargar configuración de WhatsApp');
       }
     },
-    
+
+    async loadDomainSettings() {
+      try {
+        const response = await SettingsService.getDomainSettings();
+        this.domainSettings.systemDomain = response.data.systemDomain || '';
+        this.domainSettings.allowedOrigins = response.data.allowedOrigins || [];
+
+        // Si no hay orígenes, agregar uno por defecto
+        if (this.domainSettings.allowedOrigins.length === 0) {
+          this.domainSettings.allowedOrigins.push('');
+        }
+      } catch (error) {
+        console.error('Error cargando configuración de dominio:', error);
+      }
+    },
+
+    async saveDomainSettings() {
+      try {
+        this.saving = true;
+        this.domainMessage = '';
+
+        // Filtrar orígenes vacíos
+        const allowedOrigins = this.domainSettings.allowedOrigins.filter(o => o.trim() !== '');
+
+        const response = await SettingsService.updateDomainSettings({
+          systemDomain: this.domainSettings.systemDomain,
+          allowedOrigins
+        });
+
+        if (response.data.success) {
+          this.domainMessage = 'Configuración guardada correctamente';
+          this.domainMessageType = 'success';
+
+          // Recargar CORS automáticamente
+          await this.reloadCors();
+        }
+      } catch (error) {
+        console.error('Error guardando configuración de dominio:', error);
+        this.domainMessage = error.response?.data?.message || 'Error al guardar la configuración';
+        this.domainMessageType = 'error';
+      } finally {
+        this.saving = false;
+
+        // Limpiar mensaje después de 5 segundos
+        setTimeout(() => {
+          this.domainMessage = '';
+        }, 5000);
+      }
+    },
+
+    async reloadCors() {
+      try {
+        const response = await SettingsService.reloadCors();
+        if (response.data.success) {
+          this.domainMessage = 'CORS recargado correctamente. Los cambios están activos.';
+          this.domainMessageType = 'success';
+        }
+      } catch (error) {
+        console.error('Error recargando CORS:', error);
+        this.domainMessage = 'Error al recargar CORS';
+        this.domainMessageType = 'error';
+      }
+    },
+
+    addOrigin() {
+      this.domainSettings.allowedOrigins.push('');
+    },
+
+    removeOrigin(index) {
+      if (this.domainSettings.allowedOrigins.length > 1) {
+        this.domainSettings.allowedOrigins.splice(index, 1);
+      }
+    },
+
     async loadJellyfinSettings() {
       try {
         const response = await SettingsService.getJellyfinSettings();
@@ -1317,7 +1663,7 @@ export default {
           botToken: this.telegramSettings.botToken || undefined,
           chatId: this.telegramSettings.chatId
         });
-        
+
         this.$toast?.success('Configuración de Telegram guardada correctamente');
         await this.loadTelegramSettings();
       } catch (error) {
@@ -1327,7 +1673,45 @@ export default {
         this.saving = false;
       }
     },
-    
+
+    async saveWhatsAppSettings() {
+      this.saving = true;
+      try {
+        const data = {
+          enabled: this.whatsappSettings.enabled,
+          method: this.whatsappSettings.method
+        };
+
+        // Agregar configuración según el método seleccionado
+        if (this.whatsappSettings.method === 'api') {
+          data.api = {
+            apiUrl: this.whatsappSettings.api.apiUrl,
+            phoneNumberId: this.whatsappSettings.api.phoneNumberId,
+            apiToken: this.whatsappSettings.api.apiToken || undefined
+          };
+        } else if (this.whatsappSettings.method === 'twilio') {
+          data.twilio = {
+            phoneNumber: this.whatsappSettings.twilio.phoneNumber,
+            accountSid: this.whatsappSettings.twilio.accountSid || undefined,
+            authToken: this.whatsappSettings.twilio.authToken || undefined
+          };
+        }
+
+        console.log('📤 Frontend enviando WhatsApp settings:', data);
+        console.log('📋 Estado actual de whatsappSettings:', this.whatsappSettings);
+
+        await SettingsService.updateWhatsAppSettings(data);
+
+        this.$toast?.success('Configuración de WhatsApp guardada correctamente');
+        await this.loadWhatsAppSettings();
+      } catch (error) {
+        console.error('Error guardando configuración de WhatsApp:', error);
+        this.$toast?.error('Error al guardar la configuración de WhatsApp');
+      } finally {
+        this.saving = false;
+      }
+    },
+
     async saveJellyfinSettings() {
       this.saving = true;
       try {
@@ -1416,15 +1800,15 @@ export default {
     async testTelegramConnection() {
       this.saving = true;
       this.testResults.telegram = null;
-      
+
       try {
         const response = await SettingsService.testTelegramSettings();
-        
+
         this.testResults.telegram = {
           success: response.data.success,
           message: response.data.message
         };
-        
+
         this.$toast?.success('Mensaje de prueba enviado a Telegram');
       } catch (error) {
         console.error('Error probando conexión de Telegram:', error);
@@ -1437,7 +1821,39 @@ export default {
         this.saving = false;
       }
     },
-    
+
+    async testWhatsAppConnection() {
+      // Pedir número de teléfono al usuario
+      const testPhoneNumber = prompt('Ingresa el número de teléfono para enviar el mensaje de prueba (formato internacional, ej: +526141234567):');
+
+      if (!testPhoneNumber) {
+        return; // Usuario canceló
+      }
+
+      this.saving = true;
+      this.testResults.whatsapp = null;
+
+      try {
+        const response = await SettingsService.testWhatsAppSettings(testPhoneNumber);
+
+        this.testResults.whatsapp = {
+          success: response.data.success,
+          message: response.data.message
+        };
+
+        this.$toast?.success('Mensaje de prueba enviado a WhatsApp');
+      } catch (error) {
+        console.error('Error probando conexión de WhatsApp:', error);
+        this.testResults.whatsapp = {
+          success: false,
+          message: error.response?.data?.message || 'Error enviando mensaje de prueba'
+        };
+        this.$toast?.error('Error en la prueba de WhatsApp');
+      } finally {
+        this.saving = false;
+      }
+    },
+
     // ===============================
     // OTROS MÉTODOS
     // ===============================

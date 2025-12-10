@@ -329,13 +329,23 @@ const actions = {
         limit: filters.limit || state.pagination.marketplace.perPage
       });
 
-      const data = response.data.data || {};
-      const plugins = data.plugins || [];
-      const pagination = data.pagination || null;
+      // Store API returns: { success: true, data: [...plugins] }
+      const plugins = response.data.data || [];
+
+      console.log(`✅ Vuex: Loaded ${plugins.length} plugins from marketplace`);
+
+      // Calculate pagination based on returned data
+      const pagination = {
+        currentPage: filters.page || state.pagination.marketplace.currentPage,
+        totalItems: plugins.length,
+        totalPages: Math.ceil(plugins.length / state.pagination.marketplace.perPage),
+        perPage: state.pagination.marketplace.perPage
+      };
 
       commit('SET_MARKETPLACE_PLUGINS', { plugins, pagination });
       return { plugins, pagination };
     } catch (error) {
+      console.error('❌ Vuex: Error loading marketplace plugins:', error);
       commit('SET_ERROR', error.response?.data?.message || error.message);
       throw error;
     } finally {
@@ -425,13 +435,43 @@ const actions = {
   },
 
   /**
-   * Activar plugin
+   * Activar plugin desde marketplace
    */
-  async activatePlugin({ commit, dispatch }, pluginId) {
+  async activatePlugin({ commit, dispatch }, { pluginId, pluginData }) {
     commit('SET_LOADING', { operation: 'operation', value: true });
     commit('CLEAR_ERROR');
 
     try {
+      console.log('📡 Vuex: Calling Store API to activate plugin:', pluginId);
+
+      // Calls Store API and creates plugin locally
+      const response = await pluginService.activateMarketplacePlugin(pluginId, pluginData);
+      const plugin = response.data.data;
+
+      console.log('✅ Vuex: Plugin activated and created locally:', plugin);
+
+      commit('ADD_INSTALLED_PLUGIN', plugin);
+      await dispatch('fetchActivePlugins');
+      await dispatch('updateStats');
+      return plugin;
+    } catch (error) {
+      console.error('❌ Vuex: Error activating plugin:', error);
+      commit('SET_ERROR', error.response?.data?.message || error.message);
+      throw error;
+    } finally {
+      commit('SET_LOADING', { operation: 'operation', value: false });
+    }
+  },
+
+  /**
+   * Activar plugin local (toggle active status)
+   */
+  async activateLocalPlugin({ commit, dispatch }, pluginId) {
+    commit('SET_LOADING', { operation: 'operation', value: true });
+    commit('CLEAR_ERROR');
+
+    try {
+      // For local ISP plugins, use the direct activate endpoint (local API)
       const response = await pluginService.activatePlugin(pluginId);
       const plugin = response.data.data;
       commit('UPDATE_PLUGIN', plugin);

@@ -473,7 +473,7 @@ export default {
       this.loading = true;
       try {
         const response = await InvoiceService.getInvoiceById(invoiceId);
-        const invoiceData = response.data;
+        const invoiceData = response.data.data || response.data;
         
         this.invoice = {
           ...invoiceData,

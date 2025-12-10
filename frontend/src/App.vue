@@ -9,7 +9,7 @@
           </button>
           <h1>Sistema Integral ISP</h1>
         </div>
-        
+
         <div class="header-actions">
           <div class="search-bar">
             <input type="text" placeholder="Buscar..." />
@@ -25,7 +25,7 @@
           </div>
         </div>
       </header>
-      
+
       <div class="app-container">
         <Sidebar @toggle="handleSidebarToggle" />
 
@@ -33,8 +33,11 @@
           <router-view />
         </main>
       </div>
+
+      <!-- Chat flotante global -->
+      <FloatingChat />
     </template>
-    
+
     <!-- Solo mostrar el router-view sin layout para páginas públicas -->
     <template v-else>
       <router-view />
@@ -45,12 +48,14 @@
 <script>
 import Sidebar from '@/components/Sidebar.vue';
 import LicenseStatusIndicator from '@/components/license/LicenseStatusIndicator.vue';
+import FloatingChat from '@/components/FloatingChat.vue';
 import telemetryService from '@/services/telemetry.service';
 
 export default {
   components: {
     Sidebar,
-    LicenseStatusIndicator
+    LicenseStatusIndicator,
+    FloatingChat
   },
   data() {
     return {

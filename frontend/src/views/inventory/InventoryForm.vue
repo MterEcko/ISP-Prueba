@@ -17,23 +17,34 @@
         <div class="form-row">
           <div class="form-group">
             <label for="productId">Producto (del Catálogo) *</label>
-            <select id="productId" v-model="item.productId" @change="onProductSelect" required class="form-control">
-              <option :value="null" disabled>Seleccione un producto del catálogo</option>
-              <option v-for="product in products" :key="product.id" :value="product.id">
-                {{ product.brand }} {{ product.model }} ({{ product.InventoryType.name }})
-              </option>
-            </select>
+            <div class="select-with-action">
+              <select id="productId" v-model="item.productId" @change="onProductSelect" required class="form-control">
+                <option :value="null" disabled>Seleccione un producto del catálogo</option>
+                <option v-for="product in products" :key="product.id" :value="product.id">
+                  {{ product.brand }} {{ product.model }} ({{ product.InventoryType.name }})
+                </option>
+              </select>
+              <button type="button" @click="createNewProduct" class="btn-quick-add" title="Crear nuevo producto">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
             <small class="help-text">Define qué es este item. Esto cargará valores por defecto.</small>
           </div>
-          
+
           <div class="form-group">
-            <label for="batchId">Lote de Compra</label>
-            <select id="batchId" v-model="item.batchId" @change="onBatchSelect" class="form-control">
-              <option :value="null">Ninguno / Desconocido</option>
-              <option v-for="batch in batches" :key="batch.id" :value="batch.id">
-                {{ batch.batchNumber }} ({{ batch.supplier || 'Sin proveedor' }})
-              </option>
-            </select>
+            <label for="batchId">Lote de Compra (Opcional)</label>
+            <div class="select-with-action">
+              <select id="batchId" v-model="item.batchId" @change="onBatchSelect" class="form-control">
+                <option :value="null">Ninguno / Desconocido</option>
+                <option v-for="batch in batches" :key="batch.id" :value="batch.id">
+                  {{ batch.batchNumber }} ({{ batch.supplier || 'Sin proveedor' }})
+                </option>
+              </select>
+              <button type="button" @click="createNewBatch" class="btn-quick-add" title="Crear nuevo lote">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+            <small class="help-text">Asocia este item a un lote de compra si lo compraste en un lote.</small>
           </div>
         </div>
       </div>
@@ -399,20 +410,22 @@ export default {
     },
     async loadProducts() {
       try {
-        // ¡NECESITAS CREAR ESTE MÉTODO EN InventoryService!
-        const response = await InventoryService.getAllProducts(); 
-        this.products = response.data;
+        const response = await InventoryService.getAllProducts();
+        // El backend devuelve {success: true, data: [...]}
+        this.products = response.data.data || response.data || [];
       } catch (error) {
         console.error('Error cargando productos:', error);
+        this.products = [];
       }
     },
     async loadBatches() {
       try {
-        // ¡NECESITAS CREAR ESTE MÉTODO EN InventoryService!
         const response = await InventoryService.getAllBatches({ status: 'completed' });
-        this.batches = response.data;
+        // El backend devuelve {success: true, data: [...]}
+        this.batches = response.data.data || response.data || [];
       } catch (error) {
         console.error('Error cargando lotes:', error);
+        this.batches = [];
       }
     },
     async loadTechnicians() {
@@ -576,6 +589,14 @@ export default {
 
     cancel() {
       this.$router.push('/inventory');
+    },
+
+    createNewProduct() {
+      this.$router.push('/inventory/newproduct');
+    },
+
+    createNewBatch() {
+      this.$router.push('/inventory/batch/add');
     },
 
     // --- Helpers ---
@@ -814,6 +835,40 @@ textarea {
   background: #fef5e7;
   color: #744210;
   border: 1px solid #f6e05e;
+}
+
+.select-with-action {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.select-with-action select {
+  flex: 1;
+}
+
+.btn-quick-add {
+  padding: 0 15px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.btn-quick-add:hover {
+  background: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(76, 175, 80, 0.3);
+}
+
+.btn-quick-add:active {
+  transform: translateY(0);
 }
 
 @media (max-width: 600px) {

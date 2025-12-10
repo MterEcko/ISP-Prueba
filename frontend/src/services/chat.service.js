@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_URL } from './frontend_apiConfig';
+import authHeader from './auth-header';
 
 class ChatService {
   /**
@@ -7,7 +8,9 @@ class ChatService {
    */
   async getConversations() {
     try {
-      const response = await axios.get(API_URL + 'chat/conversations');
+      const response = await axios.get(API_URL + 'chat/conversations', {
+        headers: authHeader()
+      });
       return response.data;
     } catch (error) {
       console.error('Error getting conversations:', error);
@@ -24,6 +27,8 @@ class ChatService {
         participantIds,
         name,
         type
+      }, {
+        headers: authHeader()
       });
       return response.data;
     } catch (error) {
@@ -38,7 +43,8 @@ class ChatService {
   async getMessages(conversationId, limit = 50, offset = 0) {
     try {
       const response = await axios.get(API_URL + `chat/conversations/${conversationId}/messages`, {
-        params: { limit, offset }
+        params: { limit, offset },
+        headers: authHeader()
       });
       return response.data;
     } catch (error) {
@@ -57,6 +63,8 @@ class ChatService {
         content,
         messageType,
         attachments
+      }, {
+        headers: authHeader()
       });
       return response.data;
     } catch (error) {
@@ -70,7 +78,9 @@ class ChatService {
    */
   async markAsRead(conversationId) {
     try {
-      const response = await axios.put(API_URL + `chat/conversations/${conversationId}/read`);
+      const response = await axios.put(API_URL + `chat/conversations/${conversationId}/read`, {}, {
+        headers: authHeader()
+      });
       return response.data;
     } catch (error) {
       console.error('Error marking as read:', error);
@@ -83,7 +93,9 @@ class ChatService {
    */
   async getTelegramStatus() {
     try {
-      const response = await axios.get(API_URL + 'chat/telegram/status');
+      const response = await axios.get(API_URL + 'chat/telegram/status', {
+        headers: authHeader()
+      });
       return response.data;
     } catch (error) {
       console.error('Error getting telegram status:', error);
@@ -128,9 +140,18 @@ class ChatService {
    */
   getUserInitials(user) {
     if (!user) return '?';
-    const first = user.firstName?.[0] || '';
-    const last = user.lastName?.[0] || '';
-    return (first + last).toUpperCase() || user.email?.[0]?.toUpperCase() || '?';
+    // Usar username y fullName en lugar de firstName y lastName
+    const username = user.username || '';
+    const fullName = user.fullName || '';
+
+    if (fullName) {
+      const parts = fullName.split(' ');
+      const first = parts[0]?.[0] || '';
+      const last = parts[1]?.[0] || '';
+      return (first + last).toUpperCase();
+    }
+
+    return username[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?';
   }
 
   /**
@@ -151,7 +172,8 @@ class ChatService {
     ];
 
     // Usar hash simple del ID para elegir color consistente
-    const hash = user.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const idString = user.id.toString();
+    const hash = idString.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[hash % colors.length];
   }
 }

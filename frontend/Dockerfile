@@ -5,15 +5,14 @@ WORKDIR /app
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias (saltando descarga de Chrome para Puppeteer)
-ENV PUPPETEER_SKIP_DOWNLOAD=true
+# Instalar dependencias
 RUN npm install
 
-# Copiar código fuente
+# Copiar cÃ³digo fuente
 COPY . .
 
 # Exponer puerto
-EXPOSE 3000
+EXPOSE 8080
 
 # Comando de inicio
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "serve"]

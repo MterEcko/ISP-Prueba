@@ -106,13 +106,24 @@ export default {
   methods: {
     ...mapActions('calendar', ['connectGoogle', 'connectMicrosoft', 'disconnectIntegration', 'syncFromExternal']),
 
+    showNotification(type, message) {
+      // Verifica si la función $notify existe antes de llamarla
+      if (typeof this.$notify === 'function') {
+        this.$notify({ type: type, message: message });
+      } else {
+        // Fallback: Si no existe, al menos muestra en consola.
+        console.warn(`[NOTIFICACIÓN UI FALLIDA - ${type.toUpperCase()}]: ${message}`);
+      }
+    },
+
+
     async disconnectGoogle() {
       if (confirm('¿Estás seguro de desconectar Google Calendar?')) {
         try {
           await this.disconnectIntegration(this.googleIntegration.id);
-          this.$notify({ type: 'success', message: 'Google Calendar desconectado' });
+          this.showNotification({ type: 'success', message: 'Google Calendar desconectado' });
         } catch (error) {
-          this.$notify({ type: 'error', message: 'Error al desconectar' });
+          this.showNotification({ type: 'error', message: 'Error al desconectar' });
         }
       }
     },
@@ -121,9 +132,9 @@ export default {
       if (confirm('¿Estás seguro de desconectar Microsoft Outlook?')) {
         try {
           await this.disconnectIntegration(this.microsoftIntegration.id);
-          this.$notify({ type: 'success', message: 'Microsoft Outlook desconectado' });
+          this.showNotification({ type: 'success', message: 'Microsoft Outlook desconectado' });
         } catch (error) {
-          this.$notify({ type: 'error', message: 'Error al desconectar' });
+          this.showNotification({ type: 'error', message: 'Error al desconectar' });
         }
       }
     },
@@ -148,9 +159,9 @@ export default {
           endDate: endDate.toISOString()
         });
 
-        this.$notify({ type: 'success', message: '✅ Sincronización completada' });
+        this.showNotification({ type: 'success', message: '✅ Sincronización completada' });
       } catch (error) {
-        this.$notify({ type: 'error', message: '❌ Error al sincronizar' });
+        this.showNotification({ type: 'error', message: '❌ Error al sincronizar' });
       }
     },
 

@@ -1,0 +1,172 @@
+import { io } from 'socket.io-client';
+import AuthService from './auth.service';
+import { API_URL } from './frontend_apiConfig';
+
+class SocketService {
+  constructor() {
+    this.socket = null;
+    this.connected = false;
+    this.userId = null;
+    this.eventHandlers = {};
+  }
+
+  connect(userId) {
+    if (this.socket && this.connected) {
+      console.log('Socket already connected');
+      return;
+    }
+
+    // 1. Obtener el token ANTES de conectar (¡La lógica clave!)
+    const user = AuthService.getCurrentUser();
+    const token = user ? user.accessToken : null;
+
+    if (!token) {
+        console.error('Socket connection aborted: Authentication token not found. El usuario debe iniciar sesión.');
+        return;
+    }
+
+    // 2. Convertir URL de API a URL base del socket (remover /api/)
+    const SOCKET_URL = API_URL.replace(/\/api\/$/, '');
+
+    console.log('🔌 Conectando socket a:', SOCKET_URL);
+    console.log('🔑 Token presente:', !!token);
+
+    this.socket = io(SOCKET_URL, {
+      auth: {
+        token: token
+      },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    });
+
+    this.socket.on('connect', () => {
+      console.log('Socket connected:', this.socket.id);
+      this.connected = true;
+
+      if (userId) {
+        this.userId = userId;
+        this.socket.emit('register-user', userId);
+      }
+    });
+
+    this.socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+      this.connected = false;
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+    });
+
+    // Eventos de llamadas
+    this.socket.on('incoming-call', (data) => {
+      this.emit('incoming-call', data);
+    });
+
+    this.socket.on('call-answered', (data) => {
+      this.emit('call-answered', data);
+    });
+
+    this.socket.on('call-rejected', () => {
+      this.emit('call-rejected');
+    });
+
+    this.socket.on('call-ended', () => {
+      this.emit('call-ended');
+    });
+
+    this.socket.on('ice-candidate', (data) => {
+      this.emit('ice-candidate', data);
+    });
+
+    this.socket.on('call-error', (data) => {
+      this.emit('call-error', data);
+    });
+  }
+
+  disconnect() {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+      this.connected = false;
+      this.userId = null;
+    }
+  }
+
+  // Emitir evento de llamada
+  initiateCall(targetUserId, offer) {
+    if (this.socket) {
+      this.socket.emit('call-user', {
+        to: targetUserId,
+        from: this.userId,
+        offer: offer
+      });
+    }
+  }
+
+  // Responder llamada
+  answerCall(targetUserId, answer) {
+    if (this.socket) {
+      this.socket.emit('answer-call', {
+        to: targetUserId,
+        from: this.userId,
+        answer: answer
+      });
+    }
+  }
+
+  // Rechazar llamada
+  rejectCall(targetUserId) {
+    if (this.socket) {
+      this.socket.emit('reject-call', {
+        to: targetUserId,
+        from: this.userId
+      });
+    }
+  }
+
+  // Finalizar llamada
+  endCall(targetUserId) {
+    if (this.socket) {
+      this.socket.emit('end-call', {
+        to: targetUserId,
+        from: this.userId
+      });
+    }
+  }
+
+  // Enviar ICE candidate
+  sendIceCandidate(targetUserId, candidate) {
+    if (this.socket) {
+      this.socket.emit('ice-candidate', {
+        to: targetUserId,
+        from: this.userId,
+        candidate: candidate
+      });
+    }
+  }
+
+  // Sistema de eventos personalizado
+  on(event, handler) {
+    if (!this.eventHandlers[event]) {
+      this.eventHandlers[event] = [];
+    }
+    this.eventHandlers[event].push(handler);
+  }
+
+  off(event, handler) {
+    if (this.eventHandlers[event]) {
+      this.eventHandlers[event] = this.eventHandlers[event].filter(h => h !== handler);
+    }
+  }
+
+  emit(event, data) {
+    if (this.eventHandlers[event]) {
+      this.eventHandlers[event].forEach(handler => handler(data));
+    }
+  }
+}
+
+export default new SocketService();

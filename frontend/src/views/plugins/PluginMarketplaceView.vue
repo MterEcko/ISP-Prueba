@@ -230,6 +230,14 @@ export default {
   methods: {
     async loadMarketplacePlugins() {
       try {
+        // Ensure licenseKey is in localStorage for license-based filtering
+        const licenseKey = localStorage.getItem('licenseKey');
+        if (!licenseKey) {
+          console.warn('⚠️ No license key found. Some plugins may be restricted.');
+        } else {
+          console.log('✅ Loading marketplace with license:', licenseKey.substring(0, 10) + '...');
+        }
+
         await this.$store.dispatch('plugins/fetchMarketplacePlugins', {
           page: this.currentPage,
           category: this.selectedCategory !== 'all' ? this.selectedCategory : null,
@@ -237,35 +245,64 @@ export default {
           sort: this.sortBy
         });
       } catch (error) {
-        console.error('Error loading marketplace:', error);
-        // No mostrar error si usamos plugins demo
+        console.error('❌ Error loading marketplace:', error);
+        this.showSnackbar('Error cargando plugins del marketplace', 'error');
       }
     },
     async handleInstall(plugin) {
+      console.log('🔌 Attempting to activate plugin:', plugin.name);
+
+      // Check if plugin requires license upgrade
+      if (plugin.requiresUpgrade) {
+        const requiredLicense = plugin.requirements?.requiredLicense || 'superior';
+        const userLicense = plugin.userLicenseType || 'básica';
+        this.showSnackbar(
+          `Este plugin requiere licencia ${requiredLicense}. Tu licencia actual es ${userLicense}.`,
+          'warning'
+        );
+        console.warn('⚠️ Plugin requires upgrade:', { required: requiredLicense, current: userLicense });
+        return;
+      }
+
+      // Check if plugin is paid and not free
+      if (plugin.price > 0 && !plugin.isFree) {
+        this.showSnackbar(
+          `Este plugin tiene un costo de $${plugin.price}. Funcionalidad de pago próximamente.`,
+          'info'
+        );
+        console.info('💰 Paid plugin, payment flow not implemented yet');
+        return;
+      }
+
       this.installingPlugins.push(plugin.id);
 
       try {
-        // Simular instalación (en producción descargaría e instalaría)
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log('📥 Activating plugin in Store API...');
 
-        // Crear el plugin en el sistema
-        await this.$store.dispatch('plugins/createPlugin', {
-          name: plugin.name,
-          version: plugin.version,
-          description: plugin.description,
-          category: plugin.category,
-          active: false
+        // Activate plugin via Store API (which also creates it locally)
+        await this.$store.dispatch('plugins/activatePlugin', {
+          pluginId: plugin.id || plugin.slug,
+          pluginData: {
+            name: plugin.name,
+            version: plugin.version,
+            description: plugin.description,
+            category: plugin.category
+          }
         });
 
-        this.showSnackbar(`Plugin "${plugin.name}" instalado exitosamente`, 'success');
+        this.showSnackbar(`✅ Plugin "${plugin.name}" activado exitosamente`, 'success');
+        console.log('✅ Plugin activated successfully:', plugin.name);
 
-        // Redirigir a gestión de plugins
+        // Redirect to plugin management
         setTimeout(() => {
           this.$router.push('/plugins/management');
         }, 1500);
       } catch (error) {
-        console.error('Error installing plugin:', error);
-        this.showSnackbar('Error al instalar plugin', 'error');
+        console.error('❌ Error activating plugin:', error);
+
+        // Show specific error message if available
+        const errorMessage = error.response?.data?.message || error.message || 'Error al activar plugin';
+        this.showSnackbar(errorMessage, 'error');
       } finally {
         this.installingPlugins = this.installingPlugins.filter(id => id !== plugin.id);
       }

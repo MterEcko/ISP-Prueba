@@ -168,7 +168,7 @@ class PluginService {
    * TODO: Implementar servidor de marketplace
    */
   getMarketplacePlugins(filters = {}) {
-    // Por ahora, esto debería apuntar a tu servidor de marketplace
+    // Apunta al servidor de marketplace con validación de licencia
     const marketplaceUrl = process.env.VUE_APP_MARKETPLACE_URL || 'http://localhost:3001/api/marketplace';
 
     const queryParams = new URLSearchParams();
@@ -178,9 +178,87 @@ class PluginService {
     if (filters.page) queryParams.append('page', filters.page);
     if (filters.limit) queryParams.append('limit', filters.limit);
 
+    // Agregar licenseKey si existe en localStorage
+    const licenseKey = localStorage.getItem('licenseKey');
+    if (licenseKey) {
+      queryParams.append('licenseKey', licenseKey);
+    }
+
     return axios.get(`${marketplaceUrl}/plugins?${queryParams.toString()}`, {
       headers: authHeader()
     });
+  }
+
+  /**
+   * Activar plugin desde marketplace (Store API)
+   * Verifica si el plugin existe en código, si no, lo descarga e instala
+   */
+  async activateMarketplacePlugin(pluginId, pluginData) {
+    const marketplaceUrl = process.env.VUE_APP_MARKETPLACE_URL || 'http://localhost:3001/api/marketplace';
+    const licenseKey = localStorage.getItem('licenseKey');
+    const installationKey = localStorage.getItem('installationKey');
+
+    console.log('🔍 Verificando si plugin existe en filesystem...');
+
+    try {
+      // 1. Verificar si el plugin ya existe en el filesystem
+      const availablePluginsResponse = await this.getAvailablePlugins();
+      const availablePlugins = availablePluginsResponse.data.data || [];
+      const pluginExistsInCode = availablePlugins.some(
+        p => p.name === pluginData.name || p.slug === pluginId
+      );
+
+      if (!pluginExistsInCode) {
+        console.log('⬇️ Plugin no existe en código, descargando desde Store...');
+
+        // 2. Descargar plugin desde Store
+        const downloadResponse = await axios.post(
+          `${marketplaceUrl}/plugins/${pluginId}/download`,
+          { installationKey },
+          {
+            headers: authHeader(),
+            responseType: 'blob'
+          }
+        );
+
+        // 3. Instalar plugin descargado
+        console.log('📦 Instalando plugin descargado...');
+        const pluginFile = new File([downloadResponse.data], `${pluginId}.zip`, {
+          type: 'application/zip'
+        });
+
+        await this.installPlugin(pluginFile);
+        console.log('✅ Plugin instalado exitosamente');
+      } else {
+        console.log('✅ Plugin ya existe en el código');
+      }
+
+      // 4. Activar plugin en la Store (registrar activación)
+      console.log('📝 Registrando activación en Store...');
+      await axios.post(
+        `${marketplaceUrl}/plugins/${pluginId}/activate`,
+        {
+          installationKey,
+          licenseKey
+        },
+        {
+          headers: authHeader()
+        }
+      );
+
+      // 5. Crear/Activar plugin localmente en la DB
+      console.log('💾 Activando plugin en base de datos local...');
+      return this.createPlugin({
+        name: pluginData.name,
+        version: pluginData.version,
+        description: pluginData.description,
+        category: pluginData.category,
+        active: true
+      });
+    } catch (error) {
+      console.error('❌ Error en activación de plugin:', error);
+      throw error;
+    }
   }
 
   /**

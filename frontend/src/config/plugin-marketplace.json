@@ -1,24 +1,24 @@
 {
   "plugins": [
     {
-      "id": "mercadopago-payment",
-      "name": "MercadoPago Payments",
-      "version": "2.1.5",
+      "id": "whatsapp-twilio",
+      "name": "WhatsApp Twilio",
+      "version": "1.0.0",
       "author": "ISP-Prueba Official",
-      "category": "payment",
-      "description": "Integración completa con MercadoPago para procesar pagos de clientes en Argentina, Brasil, Chile, Colombia, México, Perú y Uruguay",
-      "longDescription": "Plugin oficial de MercadoPago que permite procesar pagos, suscripciones recurrentes, webhooks automáticos y gestión de reembolsos.",
+      "category": "communication",
+      "description": "Envía notificaciones WhatsApp vía Twilio API",
+      "longDescription": "Plugin oficial de WhatsApp usando Twilio Business API. Envía notificaciones automáticas de pagos, cortes de servicio, instalaciones y más.",
       "price": 0,
       "isFree": true,
-      "downloads": 15420,
-      "rating": 4.8,
-      "image": "/assets/plugins/mercadopago.png",
+      "downloads": 8520,
+      "rating": 4.7,
+      "image": "/assets/plugins/whatsapp.png",
       "features": [
-        "Procesamiento de pagos",
-        "Suscripciones recurrentes",
-        "Webhooks automáticos",
-        "Gestión de reembolsos",
-        "Soporte multi-país"
+        "Envío de mensajes WhatsApp",
+        "Plantillas personalizables",
+        "Notificaciones automáticas",
+        "Integración con sistema de pagos",
+        "Logs de mensajes enviados"
       ],
       "requirements": {
         "minVersion": "1.0.0",
@@ -26,256 +26,254 @@
       },
       "changelog": [
         {
-          "version": "2.1.5",
-          "date": "2025-01-15",
-          "changes": ["Corrección de bugs en webhooks", "Mejora de rendimiento"]
+          "version": "1.0.0",
+          "date": "2025-01-10",
+          "changes": ["Versión inicial con soporte Twilio"]
         }
       ],
-      "tags": ["pagos", "mercadopago", "latam", "official"]
+      "tags": ["whatsapp", "twilio", "notificaciones", "free"]
     },
     {
-      "id": "whatsapp-messenger",
-      "name": "WhatsApp Business",
-      "version": "3.2.0",
+      "id": "whatsapp-meta",
+      "name": "WhatsApp Meta API",
+      "version": "1.0.0",
       "author": "ISP-Prueba Official",
       "category": "communication",
-      "description": "Envía notificaciones y mensajes a tus clientes vía WhatsApp Business API",
-      "longDescription": "Conecta tu sistema con WhatsApp Business para enviar notificaciones automáticas, recordatorios de pago, confirmaciones de servicio y más.",
-      "price": 29.99,
-      "isFree": false,
-      "downloads": 8730,
-      "rating": 4.6,
-      "image": "/assets/plugins/whatsapp.png",
-      "features": [
-        "Envío masivo de mensajes",
-        "Plantillas personalizables",
-        "Respuestas automáticas",
-        "Integración con CRM",
-        "Analytics de mensajes"
-      ],
-      "requirements": {
-        "minVersion": "1.0.0",
-        "requiredLicense": "medium"
-      },
-      "tags": ["whatsapp", "mensajería", "notificaciones", "premium"]
-    },
-    {
-      "id": "email-marketing",
-      "name": "Email Marketing Pro",
-      "version": "1.8.2",
-      "author": "ISP-Prueba Official",
-      "category": "marketing",
-      "description": "Suite completa de email marketing con campañas automatizadas y segmentación avanzada",
-      "longDescription": "Crea campañas de email profesionales, automatiza el envío basado en eventos, segmenta tu audiencia y mide resultados con analytics detallados.",
+      "description": "Envía notificaciones WhatsApp vía Meta Business API",
+      "longDescription": "Plugin oficial de WhatsApp usando Meta (Facebook) Business API. Mayor alcance y funcionalidades avanzadas.",
       "price": 19.99,
       "isFree": false,
       "downloads": 5240,
-      "rating": 4.4,
-      "image": "/assets/plugins/email.png",
+      "rating": 4.8,
+      "image": "/assets/plugins/whatsapp-meta.png",
       "features": [
-        "Editor drag & drop",
-        "Automatizaciones avanzadas",
-        "Segmentación de audiencia",
-        "A/B Testing",
-        "Analytics en tiempo real"
+        "API oficial de Meta",
+        "Mayor alcance de mensajes",
+        "Plantillas aprobadas por Meta",
+        "Mensajes interactivos",
+        "Analytics integrados"
       ],
       "requirements": {
         "minVersion": "1.0.0",
         "requiredLicense": "medium"
       },
-      "tags": ["email", "marketing", "automatización", "premium"]
+      "tags": ["whatsapp", "meta", "facebook", "notificaciones", "premium"]
     },
     {
-      "id": "sms-notifications",
-      "name": "SMS Notifications",
-      "version": "2.0.1",
-      "author": "Community Dev",
+      "id": "telegram",
+      "name": "Telegram Notifications",
+      "version": "1.0.0",
+      "author": "ISP-Prueba Official",
       "category": "communication",
-      "description": "Envía notificaciones SMS a tus clientes por cortes programados, pagos vencidos y más",
-      "longDescription": "Plugin para envío de SMS masivos o individuales a clientes. Soporta múltiples proveedores de SMS.",
-      "price": 0,
-      "isFree": true,
-      "downloads": 12150,
-      "rating": 4.2,
-      "image": "/assets/plugins/sms.png",
-      "features": [
-        "Envío masivo de SMS",
-        "Programación de envíos",
-        "Múltiples proveedores",
-        "Historial de mensajes",
-        "Reportes de entrega"
-      ],
-      "requirements": {
-        "minVersion": "1.0.0",
-        "requiredLicense": "basic"
-      },
-      "tags": ["sms", "notificaciones", "free"]
-    },
-    {
-      "id": "mikrotik-sync",
-      "name": "MikroTik Sync Advanced",
-      "version": "4.5.0",
-      "author": "ISP-Prueba Official",
-      "category": "integration",
-      "description": "Sincronización avanzada con routers MikroTik RouterOS",
-      "longDescription": "Gestiona tus routers MikroTik directamente desde el sistema. Cortes automáticos, creación de PPPoE, monitoreo en tiempo real.",
-      "price": 0,
-      "isFree": true,
-      "downloads": 18920,
-      "rating": 4.9,
-      "image": "/assets/plugins/mikrotik.png",
-      "features": [
-        "Cortes/Reconexiones automáticas",
-        "Creación de usuarios PPPoE",
-        "Monitoreo de ancho de banda",
-        "Gestión de IPs",
-        "Backup de configuraciones"
-      ],
-      "requirements": {
-        "minVersion": "1.0.0",
-        "requiredLicense": "basic"
-      },
-      "tags": ["mikrotik", "router", "isp", "official", "free"]
-    },
-    {
-      "id": "paypal-gateway",
-      "name": "PayPal Payment Gateway",
-      "version": "1.6.3",
-      "author": "ISP-Prueba Official",
-      "category": "payment",
-      "description": "Acepta pagos con PayPal de forma segura",
-      "longDescription": "Integración oficial con PayPal para procesar pagos únicos y suscripciones recurrentes.",
+      "description": "Envía notificaciones vía Telegram Bot",
+      "longDescription": "Plugin para enviar notificaciones a tus clientes vía Telegram. Gratis, rápido y sin límites de mensajes.",
       "price": 0,
       "isFree": true,
       "downloads": 6840,
+      "rating": 4.5,
+      "image": "/assets/plugins/telegram.png",
+      "features": [
+        "Bot de Telegram",
+        "Notificaciones instantáneas",
+        "Sin límites de mensajes",
+        "Comandos personalizados",
+        "Gratuito"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "basic"
+      },
+      "tags": ["telegram", "notificaciones", "bot", "free"]
+    },
+    {
+      "id": "email",
+      "name": "Email Notifications",
+      "version": "1.0.0",
+      "author": "ISP-Prueba Official",
+      "category": "communication",
+      "description": "Envío de correos electrónicos con SMTP, SendGrid o Mailgun",
+      "longDescription": "Plugin completo para envío de emails. Soporta SMTP, SendGrid y Mailgun. Plantillas personalizables y estadísticas de entrega.",
+      "price": 0,
+      "isFree": true,
+      "downloads": 12450,
+      "rating": 4.6,
+      "image": "/assets/plugins/email.png",
+      "features": [
+        "Múltiples proveedores (SMTP, SendGrid, Mailgun)",
+        "Plantillas HTML personalizables",
+        "Estadísticas de entrega",
+        "Webhooks de eventos",
+        "Adjuntos de archivos"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "basic"
+      },
+      "tags": ["email", "smtp", "sendgrid", "mailgun", "free"]
+    },
+    {
+      "id": "sms-twilio",
+      "name": "SMS Twilio",
+      "version": "1.0.0",
+      "author": "ISP-Prueba Official",
+      "category": "communication",
+      "description": "Envío de SMS vía Twilio",
+      "longDescription": "Plugin para envío de mensajes SMS usando Twilio. Notificaciones de pagos, cortes de servicio y más.",
+      "price": 0,
+      "isFree": true,
+      "downloads": 4120,
       "rating": 4.3,
+      "image": "/assets/plugins/sms.png",
+      "features": [
+        "Envío de SMS",
+        "Cobertura internacional",
+        "Logs de mensajes",
+        "Notificaciones automáticas",
+        "API de Twilio"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "basic"
+      },
+      "tags": ["sms", "twilio", "notificaciones", "free"]
+    },
+    {
+      "id": "mercadopago",
+      "name": "MercadoPago",
+      "version": "1.0.0",
+      "author": "ISP-Prueba Official",
+      "category": "payment",
+      "description": "Pasarela de pagos MercadoPago para Latinoamérica",
+      "longDescription": "Plugin oficial de MercadoPago. Procesa pagos en Argentina, Brasil, Chile, Colombia, México, Perú y Uruguay. Soporta tarjetas, efectivo y transferencias.",
+      "price": 0,
+      "isFree": true,
+      "downloads": 15820,
+      "rating": 4.9,
+      "image": "/assets/plugins/mercadopago.png",
+      "features": [
+        "Pagos con tarjeta",
+        "Pagos en efectivo (OXXO, Rapipago, etc)",
+        "Transferencias bancarias",
+        "Webhooks automáticos",
+        "Soporte multi-país LATAM"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "basic"
+      },
+      "tags": ["mercadopago", "pagos", "latam", "free", "official"]
+    },
+    {
+      "id": "paypal",
+      "name": "PayPal",
+      "version": "1.0.0",
+      "author": "ISP-Prueba Official",
+      "category": "payment",
+      "description": "Pasarela de pagos PayPal internacional",
+      "longDescription": "Plugin oficial de PayPal. Acepta pagos con PayPal, tarjetas de crédito/débito y pagos recurrentes.",
+      "price": 0,
+      "isFree": true,
+      "downloads": 9340,
+      "rating": 4.5,
       "image": "/assets/plugins/paypal.png",
       "features": [
-        "Pagos únicos",
+        "Pagos PayPal",
+        "Tarjetas de crédito/débito",
         "Suscripciones recurrentes",
-        "Webhooks de PayPal",
+        "Webhooks IPN",
         "Múltiples monedas"
       ],
       "requirements": {
         "minVersion": "1.0.0",
         "requiredLicense": "basic"
       },
-      "tags": ["paypal", "pagos", "free"]
+      "tags": ["paypal", "pagos", "internacional", "free"]
     },
     {
-      "id": "advanced-reports",
-      "name": "Advanced Reports & Analytics",
-      "version": "2.3.0",
-      "author": "Analytics Team",
-      "category": "reporting",
-      "description": "Reportes y análisis avanzados con gráficos interactivos y exportación a múltiples formatos",
-      "longDescription": "Suite completa de reportes con dashboards personalizables, métricas en tiempo real, predicciones con IA y exportación a PDF/Excel.",
-      "price": 49.99,
-      "isFree": false,
-      "downloads": 3210,
-      "rating": 4.7,
-      "image": "/assets/plugins/reports.png",
-      "features": [
-        "Dashboards personalizables",
-        "Gráficos interactivos",
-        "Predicciones con IA",
-        "Exportación PDF/Excel",
-        "Reportes programados"
-      ],
-      "requirements": {
-        "minVersion": "1.2.0",
-        "requiredLicense": "advanced"
-      },
-      "tags": ["reportes", "analytics", "premium", "ai"]
-    },
-    {
-      "id": "inventory-scanner",
-      "name": "Inventory Barcode Scanner",
-      "version": "1.4.0",
-      "author": "Community Dev",
-      "category": "productivity",
-      "description": "Escanea códigos de barras y QR para gestionar inventario rápidamente",
-      "longDescription": "Agiliza la gestión de inventario con escaneo de códigos de barras y QR desde dispositivos móviles o lectores USB.",
-      "price": 14.99,
-      "isFree": false,
-      "downloads": 2180,
-      "rating": 4.1,
-      "image": "/assets/plugins/scanner.png",
-      "features": [
-        "Escaneo de códigos de barras",
-        "Escaneo de códigos QR",
-        "Soporte para móviles",
-        "Lectores USB compatibles",
-        "Importación masiva"
-      ],
-      "requirements": {
-        "minVersion": "1.0.0",
-        "requiredLicense": "medium"
-      },
-      "tags": ["inventario", "scanner", "barcode", "premium"]
-    },
-    {
-      "id": "backup-cloud",
-      "name": "Cloud Backup & Restore",
-      "version": "3.1.0",
-      "author": "Security Team",
-      "category": "security",
-      "description": "Respaldos automáticos en la nube con cifrado de extremo a extremo",
-      "longDescription": "Protege tus datos con backups automáticos a la nube (AWS, Google Cloud, Dropbox). Cifrado AES-256 y restauración con un clic.",
-      "price": 39.99,
-      "isFree": false,
-      "downloads": 4560,
-      "rating": 4.8,
-      "image": "/assets/plugins/backup.png",
-      "features": [
-        "Backups automáticos",
-        "Cifrado AES-256",
-        "Múltiples proveedores cloud",
-        "Restauración rápida",
-        "Versionado de backups"
-      ],
-      "requirements": {
-        "minVersion": "1.0.0",
-        "requiredLicense": "medium"
-      },
-      "tags": ["backup", "seguridad", "cloud", "premium"]
-    },
-    {
-      "id": "customer-portal",
-      "name": "Customer Self-Service Portal",
-      "version": "2.7.1",
+      "id": "stripe",
+      "name": "Stripe",
+      "version": "1.0.0",
       "author": "ISP-Prueba Official",
-      "category": "productivity",
-      "description": "Portal web para que los clientes gestionen su cuenta, paguen facturas y abran tickets",
-      "longDescription": "Permite que tus clientes accedan a un portal web para ver su consumo, pagar facturas, cambiar planes y abrir tickets de soporte.",
+      "category": "payment",
+      "description": "Pasarela de pagos Stripe para México, USA y más",
+      "longDescription": "Plugin oficial de Stripe. Acepta pagos con tarjeta, OXXO, SPEI, ACH y más. Soporta México, USA, Brasil y otros países.",
       "price": 0,
       "isFree": true,
-      "downloads": 11230,
-      "rating": 4.5,
-      "image": "/assets/plugins/portal.png",
+      "downloads": 7620,
+      "rating": 4.7,
+      "image": "/assets/plugins/stripe.png",
       "features": [
-        "Portal web responsive",
-        "Pago de facturas online",
-        "Apertura de tickets",
-        "Historial de consumo",
-        "Cambio de contraseña"
+        "Tarjetas de crédito/débito",
+        "OXXO (México)",
+        "SPEI (México)",
+        "ACH (USA)",
+        "Boleto (Brasil)",
+        "Webhooks avanzados"
       ],
       "requirements": {
         "minVersion": "1.0.0",
         "requiredLicense": "basic"
       },
-      "tags": ["portal", "clientes", "self-service", "free"]
+      "tags": ["stripe", "pagos", "internacional", "free"]
+    },
+    {
+      "id": "openpay",
+      "name": "OpenPay",
+      "version": "1.0.0",
+      "author": "ISP-Prueba Official",
+      "category": "payment",
+      "description": "Pasarela de pagos OpenPay para México",
+      "longDescription": "Plugin oficial de OpenPay. Especializado en México con soporte para tarjetas, SPEI, tiendas de conveniencia y más.",
+      "price": 0,
+      "isFree": true,
+      "downloads": 4230,
+      "rating": 4.4,
+      "image": "/assets/plugins/openpay.png",
+      "features": [
+        "Tarjetas Visa/Mastercard",
+        "Transferencias SPEI",
+        "Pagos en tiendas (OXXO, 7-Eleven, etc)",
+        "Cargos recurrentes",
+        "Dashboard de Openpay"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "basic"
+      },
+      "tags": ["openpay", "pagos", "mexico", "free"]
+    },
+    {
+      "id": "n8n-automation",
+      "name": "n8n Workflow Automation",
+      "version": "1.0.0",
+      "author": "ISP-Prueba Official",
+      "category": "automation",
+      "description": "Automatizaciones avanzadas con n8n",
+      "longDescription": "Integra n8n para crear workflows avanzados, chatbots, automatizaciones de soporte y más. Conecta con cientos de servicios.",
+      "price": 29.99,
+      "isFree": false,
+      "downloads": 2840,
+      "rating": 4.8,
+      "image": "/assets/plugins/n8n.png",
+      "features": [
+        "Editor visual de workflows",
+        "Cientos de integraciones",
+        "Chatbots personalizados",
+        "Automatización de tickets",
+        "Webhooks y APIs"
+      ],
+      "requirements": {
+        "minVersion": "1.0.0",
+        "requiredLicense": "medium"
+      },
+      "tags": ["n8n", "automation", "workflows", "chatbot", "premium"]
     }
   ],
   "categories": [
-    { "id": "payment", "name": "Pagos", "icon": "mdi-credit-card", "count": 3 },
-    { "id": "communication", "name": "Comunicación", "icon": "mdi-message", "count": 2 },
-    { "id": "marketing", "name": "Marketing", "icon": "mdi-bullhorn", "count": 1 },
-    { "id": "integration", "name": "Integraciones", "icon": "mdi-link-variant", "count": 1 },
-    { "id": "reporting", "name": "Reportes", "icon": "mdi-chart-bar", "count": 1 },
-    { "id": "productivity", "name": "Productividad", "icon": "mdi-lightning-bolt", "count": 2 },
-    { "id": "security", "name": "Seguridad", "icon": "mdi-shield", "count": 1 }
+    { "id": "communication", "name": "Comunicación", "icon": "mdi-message", "count": 5 },
+    { "id": "payment", "name": "Pagos", "icon": "mdi-credit-card", "count": 4 },
+    { "id": "automation", "name": "Automatización", "icon": "mdi-robot", "count": 1 }
   ],
-  "featured": ["mikrotik-sync", "mercadopago-payment", "customer-portal"],
-  "trending": ["whatsapp-messenger", "advanced-reports", "backup-cloud"]
+  "featured": ["mercadopago", "whatsapp-twilio", "telegram"],
+  "trending": ["n8n-automation", "stripe", "whatsapp-meta"]
 }

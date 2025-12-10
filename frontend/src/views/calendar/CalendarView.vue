@@ -315,10 +315,10 @@ export default {
     // Verificar si viene de callback de OAuth
     const params = new URLSearchParams(window.location.search);
     if (params.get('google') === 'connected') {
-      this.$notify({ type: 'success', message: '✅ Google Calendar conectado exitosamente' });
+      this.showNotification({ type: 'success', message: '✅ Google Calendar conectado exitosamente' });
       this.fetchIntegrations();
     } else if (params.get('microsoft') === 'connected') {
-      this.$notify({ type: 'success', message: '✅ Microsoft Calendar conectado exitosamente' });
+      this.showNotification({ type: 'success', message: '✅ Microsoft Calendar conectado exitosamente' });
       this.fetchIntegrations();
     }
   },
@@ -332,6 +332,16 @@ export default {
       'setSelectedDate',
       'syncFromExternal'
     ]),
+
+    showNotification(type, message) {
+      // Verifica si la función $notify existe antes de llamarla
+      if (typeof this.$notify === 'function') {
+        this.$notify({ type: type, message: message });
+      } else {
+        // Fallback: Si no existe, al menos muestra en consola.
+        console.warn(`[NOTIFICACIÓN UI FALLIDA - ${type.toUpperCase()}]: ${message}`);
+      }
+    },
 
     changeViewMode(mode) {
       this.setViewMode(mode);
@@ -415,14 +425,14 @@ export default {
             id: this.selectedEvent.id,
             eventData
           });
-          this.$notify({ type: 'success', message: '✅ Evento actualizado' });
+          this.showNotification({ type: 'success', message: '✅ Evento actualizado' });
         } else {
           await this.$store.dispatch('calendar/createEvent', eventData);
-          this.$notify({ type: 'success', message: '✅ Evento creado' });
+          this.showNotification({ type: 'success', message: '✅ Evento creado' });
         }
         this.closeEventDialog();
       } catch (error) {
-        this.$notify({ type: 'error', message: '❌ Error al guardar evento' });
+        this.showNotification({ type: 'error', message: '❌ Error al guardar evento' });
       }
     },
 
@@ -430,10 +440,10 @@ export default {
       if (confirm('¿Estás seguro de eliminar este evento?')) {
         try {
           await this.$store.dispatch('calendar/deleteEvent', eventId);
-          this.$notify({ type: 'success', message: '✅ Evento eliminado' });
+          this.showNotification({ type: 'success', message: '✅ Evento eliminado' });
           this.closeEventDialog();
         } catch (error) {
-          this.$notify({ type: 'error', message: '❌ Error al eliminar evento' });
+          this.showNotification({ type: 'error', message: '❌ Error al eliminar evento' });
         }
       }
     },
@@ -450,9 +460,9 @@ export default {
           endDate: endDate.toISOString()
         });
 
-        this.$notify({ type: 'success', message: '✅ Calendarios sincronizados' });
+        this.showNotification({ type: 'success', message: '✅ Calendarios sincronizados' });
       } catch (error) {
-        this.$notify({ type: 'error', message: '❌ Error al sincronizar calendarios' });
+        this.showNotification({ type: 'error', message: '❌ Error al sincronizar calendarios' });
       }
     },
 

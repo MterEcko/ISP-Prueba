@@ -1,7 +1,11 @@
 // Rutas para licencias y plugins
 import LicenseManagementView from '../views/license/LicenseManagementView.vue';
+import LicenseActivationView from '../views/license/LicenseActivationView.vue';
 import PluginManagementView from '../views/plugins/PluginManagementView.vue';
 import PluginMarketplaceView from '../views/plugins/PluginMarketplaceView.vue';
+
+// Sistema de carga dinamica de plugins
+import { loadPluginRoutes } from './plugin-loader';
 
 export const licenseRoutes = [
   {
@@ -12,10 +16,20 @@ export const licenseRoutes = [
       requiresAuth: true,
       title: 'Gestión de Licencias'
     }
+  },
+  {
+    path: '/license/activate',
+    name: 'LicenseActivation',
+    component: LicenseActivationView,
+    meta: {
+      requiresAuth: true,
+      title: 'Activar Licencia'
+    }
   }
 ];
 
-export const pluginRoutes = [
+// Rutas base de plugins (management y marketplace)
+const basePluginRoutes = [
   {
     path: '/plugins/management',
     name: 'PluginManagement',
@@ -34,4 +48,13 @@ export const pluginRoutes = [
       title: 'Plugin Marketplace'
     }
   }
+];
+
+// Cargar rutas de configuracion de plugins dinamicamente
+const dynamicPluginRoutes = loadPluginRoutes();
+
+// Exportar todas las rutas de plugins (base + dinamicas)
+export const pluginRoutes = [
+  ...basePluginRoutes,
+  ...dynamicPluginRoutes
 ];
