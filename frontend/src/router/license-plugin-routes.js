@@ -50,11 +50,8 @@ const basePluginRoutes = [
   }
 ];
 
-// Cargar rutas de configuracion de plugins dinamicamente
-const dynamicPluginRoutes = loadPluginRoutes();
+// Exportar solo las rutas base inicialmente
+export const pluginRoutes = [...basePluginRoutes];
 
-// Exportar todas las rutas de plugins (base + dinamicas)
-export const pluginRoutes = [
-  ...basePluginRoutes,
-  ...dynamicPluginRoutes
-];
+// Exportar funcion para cargar rutas dinamicas
+export { loadPluginRoutes };

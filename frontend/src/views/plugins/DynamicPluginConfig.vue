@@ -32,11 +32,11 @@ export default {
     };
   },
   created() {
-    this.pluginName = this.$route.params.name;
+    this.pluginName = this.$route.meta.pluginName;
     this.loadPlugin();
   },
   watch: {
-    '$route.params.name'(newName) {
+    '$route.meta.pluginName'(newName) {
       if (newName !== this.pluginName) {
         this.pluginName = newName;
         this.loadPlugin();

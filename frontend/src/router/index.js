@@ -112,7 +112,7 @@ import InventorySearch from '../views/InventorySearch.vue';
 import DepartamentoList from '../views/DepartamentoList.vue';
 
 // ===== IMPORTAR RUTAS DE LICENCIAS Y PLUGINS =====
-import { licenseRoutes, pluginRoutes } from './license-plugin-routes';
+import { licenseRoutes, pluginRoutes, loadPluginRoutes } from './license-plugin-routes';
 
 
 const routes = [
@@ -1600,6 +1600,24 @@ const router = createRouter({
     }
   }
 });
+
+// ===============================
+// CARGA DINAMICA DE RUTAS DE PLUGINS
+// ===============================
+
+// Cargar rutas de plugins dinamicamente al inicializar la app
+loadPluginRoutes()
+  .then(dynamicRoutes => {
+    if (dynamicRoutes && dynamicRoutes.length > 0) {
+      dynamicRoutes.forEach(route => {
+        router.addRoute(route);
+      });
+      console.log(`✅ ${dynamicRoutes.length} rutas de plugins cargadas dinamicamente`);
+    }
+  })
+  .catch(error => {
+    console.error('Error cargando rutas de plugins:', error);
+  });
 
 // ===============================
 // e??????GUARDS DE NAVEGACI?��N B??SICOS
