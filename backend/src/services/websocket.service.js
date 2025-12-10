@@ -107,6 +107,76 @@ class WebSocketService {
       }
     });
 
+    // ==================== EVENTOS DE LLAMADAS ====================
+
+    // Evento: Iniciar llamada
+    socket.on('initiate-call', (data) => {
+      const { targetUserId, offer } = data;
+      console.log(`📞 Llamada iniciada de ${socket.username} (${socket.userId}) a usuario ${targetUserId}`);
+
+      // Enviar notificación de llamada entrante al usuario objetivo
+      this.emitToUser(targetUserId, 'incoming-call', {
+        callerId: socket.userId,
+        callerName: socket.username,
+        offer: offer
+      });
+    });
+
+    // Evento: Responder llamada
+    socket.on('answer-call', (data) => {
+      const { callerId, answer } = data;
+      console.log(`📞 Llamada respondida por ${socket.username} (${socket.userId}) a usuario ${callerId}`);
+
+      // Notificar al llamador que la llamada fue respondida
+      this.emitToUser(callerId, 'call-answered', {
+        answerer: socket.userId,
+        answererName: socket.username,
+        answer: answer
+      });
+    });
+
+    // Evento: Rechazar llamada
+    socket.on('reject-call', (data) => {
+      const { callerId } = data;
+      console.log(`📞 Llamada rechazada por ${socket.username} (${socket.userId})`);
+
+      // Notificar al llamador que la llamada fue rechazada
+      this.emitToUser(callerId, 'call-rejected', {
+        rejectedBy: socket.userId,
+        rejectedByName: socket.username
+      });
+    });
+
+    // Evento: Finalizar llamada
+    socket.on('end-call', (data) => {
+      const { targetUserId } = data;
+      console.log(`📞 Llamada finalizada por ${socket.username} (${socket.userId})`);
+
+      // Notificar a la otra parte que la llamada terminó
+      this.emitToUser(targetUserId, 'call-ended', {
+        endedBy: socket.userId,
+        endedByName: socket.username
+      });
+    });
+
+    // Evento: ICE candidate para WebRTC
+    socket.on('ice-candidate', (data) => {
+      const { targetUserId, candidate } = data;
+
+      // Reenviar ICE candidate al usuario objetivo
+      this.emitToUser(targetUserId, 'ice-candidate', {
+        from: socket.userId,
+        candidate: candidate
+      });
+    });
+
+    // Evento: Registrar usuario (para mapeo de socket a usuario)
+    socket.on('register-user', (userId) => {
+      console.log(`👤 Usuario registrado: ${userId} -> Socket ${socket.id}`);
+      // El userId ya está en socket.userId desde la autenticación
+      // Este evento es opcional y solo para confirmación
+    });
+
     // Desconexión
     socket.on('disconnect', () => {
       console.log(`📡 Cliente desconectado: ${socket.username} (ID: ${socket.id})`);
