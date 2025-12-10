@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('./controller');
-const { verifyToken } = require('../../../middleware/auth');
+const { authJwt } = require('../../../middleware');
+const verifyToken = authJwt.verifyToken;
 
 router.post('/send', verifyToken, controller.sendMessage);
 router.post('/send-photo', verifyToken, controller.sendPhoto);

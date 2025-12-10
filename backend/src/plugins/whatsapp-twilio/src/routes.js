@@ -2,7 +2,8 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('./controller');
-const { verifyToken } = require('../../../middleware/auth');
+const { authJwt } = require('../../../middleware');
+const verifyToken = authJwt.verifyToken;
 
 // Webhook público (sin autenticación)
 router.post('/webhook', controller.handleWebhook);

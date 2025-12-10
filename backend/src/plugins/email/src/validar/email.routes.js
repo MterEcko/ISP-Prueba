@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const emailController = require('./email.controller');
 const { authJwt } = require('../../../middleware');
+const verifyToken = authJwt.verifyToken;
 
 /**
  * Rutas específicas del plugin de Email
