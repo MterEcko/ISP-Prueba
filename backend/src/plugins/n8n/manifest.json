@@ -1,0 +1,98 @@
+{
+  "name": "n8n",
+  "version": "1.0.0",
+  "displayName": "n8n Automation",
+  "description": "Plugin para automatización de workflows con n8n",
+  "category": "automation",
+  "author": "Sistema ISP",
+  "icon": "mdi-lightning-bolt",
+  "price": 0,
+  "isPremium": false,
+  "main": "src/index.js",
+  "capabilities": ["workflow", "automation", "webhooks", "integrations"],
+  "tables": [
+    {
+      "name": "Plugin_N8nWorkflows",
+      "model": "N8nWorkflow",
+      "file": "src/models/n8nWorkflow.model.js"
+    },
+    {
+      "name": "Plugin_N8nExecutions",
+      "model": "N8nExecution",
+      "file": "src/models/n8nExecution.model.js"
+    }
+  ],
+  "routes": [
+    {
+      "path": "/webhook/n8n/:workflowId",
+      "method": "POST",
+      "handler": "handleWebhook"
+    },
+    {
+      "path": "/workflows",
+      "method": "GET",
+      "handler": "getWorkflows"
+    },
+    {
+      "path": "/workflows/:id",
+      "method": "GET",
+      "handler": "getWorkflow"
+    },
+    {
+      "path": "/workflows/:id/execute",
+      "method": "POST",
+      "handler": "executeWorkflow"
+    }
+  ],
+  "configuration": {
+    "n8nUrl": {
+      "type": "string",
+      "label": "URL de n8n",
+      "required": true,
+      "description": "URL completa de la instancia de n8n (ej: http://localhost:5678)"
+    },
+    "apiKey": {
+      "type": "string",
+      "label": "API Key",
+      "required": true,
+      "secret": true,
+      "description": "API Key de n8n para autenticación"
+    },
+    "autoSync": {
+      "type": "boolean",
+      "label": "Sincronización Automática",
+      "default": true,
+      "description": "Sincronizar workflows automáticamente cada hora"
+    },
+    "webhookBaseUrl": {
+      "type": "string",
+      "label": "URL Base para Webhooks",
+      "required": false,
+      "description": "URL base pública para recibir webhooks de n8n"
+    },
+    "enabledIntegrations": {
+      "type": "array",
+      "label": "Integraciones Habilitadas",
+      "default": [],
+      "description": "Lista de integraciones habilitadas (JSON array)"
+    }
+  },
+  "permissions": [
+    "manage_workflows",
+    "execute_workflows",
+    "view_executions",
+    "manage_integrations"
+  ],
+  "webhookSupport": {
+    "n8n": {
+      "events": [
+        "workflow.started",
+        "workflow.completed",
+        "workflow.failed",
+        "execution.created"
+      ],
+      "signatureHeader": "n8n-signature",
+      "verificationMethod": "hmac_sha256"
+    }
+  }
+}

@@ -102,7 +102,7 @@
             :id="fieldKey"
             v-model="formData[fieldKey]"
             :required="fieldConfig.required"
-            :placeholder="'["item1", "item2"]'"
+            placeholder='["item1", "item2"]'
             rows="3"
           ></textarea>
         </div>
