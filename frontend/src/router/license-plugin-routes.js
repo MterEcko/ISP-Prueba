@@ -47,6 +47,15 @@ const basePluginRoutes = [
       requiresAuth: true,
       title: 'Plugin Marketplace'
     }
+  },
+  {
+    path: '/plugins/marketplace/:pluginId',
+    name: 'PluginMarketplaceDetail',
+    component: PluginMarketplaceView,
+    meta: {
+      requiresAuth: true,
+      title: 'Detalles del Plugin'
+    }
   }
 ];
 

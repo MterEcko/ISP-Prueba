@@ -12,6 +12,32 @@
       </v-col>
     </v-row>
 
+    <!-- Alerta cuando se filtra un plugin específico -->
+    <v-row v-if="pluginFilter">
+      <v-col cols="12">
+        <v-alert
+          type="info"
+          variant="tonal"
+          closable
+          @click:close="clearPluginFilter"
+        >
+          <template v-slot:prepend>
+            <v-icon>mdi-filter</v-icon>
+          </template>
+          <strong>Mostrando plugin específico:</strong> {{ pluginFilter }}
+          <template v-slot:append>
+            <v-btn
+              size="small"
+              variant="text"
+              @click="clearPluginFilter"
+            >
+              Ver todos los plugins
+            </v-btn>
+          </template>
+        </v-alert>
+      </v-col>
+    </v-row>
+
     <!-- Filtros -->
     <v-row class="my-4">
       <v-col cols="12" md="6">
@@ -128,6 +154,7 @@ export default {
       sortBy: 'popularity',
       currentPage: 1,
       installingPlugins: [],
+      pluginFilter: null, // Para filtrar un plugin específico desde la URL
       sortOptions: [
         { title: 'Más populares', value: 'popularity' },
         { title: 'Nombre A-Z', value: 'name' },
@@ -183,6 +210,18 @@ export default {
     filteredPlugins() {
       let filtered = [...this.plugins];
 
+      // NUEVO: Filtrar por plugin específico (desde URL)
+      if (this.pluginFilter) {
+        filtered = filtered.filter(p =>
+          p.id === this.pluginFilter ||
+          p.name === this.pluginFilter ||
+          p.slug === this.pluginFilter ||
+          p.name.toLowerCase() === this.pluginFilter.toLowerCase()
+        );
+        // Si se especifica un plugin, retornar solo ese sin aplicar otros filtros
+        return filtered;
+      }
+
       // Filtrar por categoría
       if (this.selectedCategory !== 'all') {
         filtered = filtered.filter(p => p.category === this.selectedCategory);
@@ -225,6 +264,19 @@ export default {
     }
   },
   async mounted() {
+    // Verificar si hay un plugin específico en la URL
+    // Soporta: /plugins/marketplace?plugin=nombre o ?pluginId=id o ?slug=slug
+    const pluginParam = this.$route.query.plugin ||
+                       this.$route.query.pluginId ||
+                       this.$route.query.slug ||
+                       this.$route.params.pluginId ||
+                       this.$route.params.plugin;
+
+    if (pluginParam) {
+      this.pluginFilter = pluginParam;
+      console.log('🔍 Filtrando marketplace para plugin:', pluginParam);
+    }
+
     await this.loadMarketplacePlugins();
   },
   methods: {
@@ -335,6 +387,12 @@ export default {
         message,
         color
       };
+    },
+    clearPluginFilter() {
+      this.pluginFilter = null;
+      // Limpiar parámetros de la URL sin recargar la página
+      this.$router.replace({ query: {} }).catch(() => {});
+      console.log('✅ Filtro de plugin eliminado, mostrando todos los plugins');
     }
   },
   watch: {
@@ -344,6 +402,17 @@ export default {
     },
     search() {
       this.currentPage = 1;
+    },
+    '$route.query': {
+      handler(newQuery) {
+        // Actualizar filtro cuando cambian los parámetros de la URL
+        const pluginParam = newQuery.plugin || newQuery.pluginId || newQuery.slug;
+        if (pluginParam !== this.pluginFilter) {
+          this.pluginFilter = pluginParam || null;
+          console.log('🔄 Filtro de plugin actualizado desde URL:', this.pluginFilter);
+        }
+      },
+      deep: true
     }
   }
 };

@@ -473,6 +473,36 @@ class SystemPluginController {
       logger.info(`📁 Creando directorio del plugin: ${pluginDir}`);
       await fsPromises.mkdir(pluginDir, { recursive: true });
 
+      // VALIDACIÓN DE LICENCIA antes de instalar
+      try {
+        const licenseClient = require('../services/licenseClient');
+        const canInstall = await licenseClient.canInstallPlugin(manifest.name);
+
+        if (!canInstall.allowed) {
+          // Limpiar archivos temporales
+          if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+          if (fs.existsSync(pluginDir)) fs.rmSync(pluginDir, { recursive: true });
+
+          let message = 'No tienes permiso para instalar este plugin';
+          if (canInstall.reason === 'Plugin limit reached') {
+            message = `Límite de plugins alcanzado (${canInstall.current}/${canInstall.max})`;
+          } else if (canInstall.reason === 'Plugin not included in plan') {
+            message = `El plugin "${manifest.name}" no está incluido en tu licencia`;
+          }
+
+          logger.warn(`Instalación de plugin ${manifest.name} denegada: ${canInstall.reason}`);
+          return res.status(403).json({
+            success: false,
+            message,
+            reason: canInstall.reason,
+            requiresUpgrade: canInstall.requiresPurchase || false
+          });
+        }
+      } catch (licenseError) {
+        logger.warn(`Error validando licencia: ${licenseError.message}`);
+        // Continuar sin validación en caso de error
+      }
+
       // Extraer contenido del ZIP
       logger.info(`📂 Extrayendo archivos del plugin...`);
       zip.extractAllTo(pluginDir, true);
@@ -654,6 +684,34 @@ class SystemPluginController {
           success: false,
           message: `Plugin ${plugin.name} no encontrado en el sistema de archivos`
         });
+      }
+
+      // VALIDACIÓN DE LICENCIA
+      try {
+        const licenseClient = require('../services/licenseClient');
+        const canInstall = await licenseClient.canInstallPlugin(plugin.name);
+
+        if (!canInstall.allowed) {
+          let message = 'No tienes permiso para activar este plugin';
+          if (canInstall.reason === 'Plugin limit reached') {
+            message = `Límite de plugins alcanzado (${canInstall.current}/${canInstall.max}). Actualiza tu licencia para activar más plugins.`;
+          } else if (canInstall.reason === 'Plugin not included in plan') {
+            message = `El plugin "${plugin.name}" no está incluido en tu plan de licencia actual. Actualiza tu licencia para acceder a este plugin.`;
+          } else if (canInstall.reason === 'Invalid license') {
+            message = 'Tu licencia no es válida. Por favor, verifica tu licencia en la sección de configuración.';
+          }
+
+          logger.warn(`Intento de activar plugin ${plugin.name} denegado: ${canInstall.reason}`);
+          return res.status(403).json({
+            success: false,
+            message,
+            reason: canInstall.reason,
+            requiresUpgrade: canInstall.requiresPurchase || false
+          });
+        }
+      } catch (licenseError) {
+        logger.warn(`Error validando licencia para plugin ${plugin.name}: ${licenseError.message}`);
+        // Continuar sin validación de licencia en caso de error
       }
 
       // Activar plugin (medir tiempo)
