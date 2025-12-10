@@ -1,51 +1,40 @@
-// Sistema de carga dinamica de plugins
-// Escanea la carpeta de plugins y registra rutas automaticamente
+// Sistema de carga dinamica de plugins desde el backend
+// Los archivos ConfigView.vue ahora están en el backend
 
 export function loadPluginRoutes() {
-  const pluginRoutes = [];
+  // Lista de plugins conocidos (se puede obtener dinámicamente desde la API)
+  const knownPlugins = [
+    'email',
+    'jellyfin',
+    'mercadopago',
+    'openpay',
+    'paypal',
+    'stripe',
+    'telegram',
+    'whatsapp-meta',
+    'whatsapp-twilio'
+  ];
 
-  // Usar require.context para obtener todos los ConfigView.vue
-  try {
-    const pluginContext = require.context(
-      '../views/plugins',
-      true,
-      /ConfigView\.vue$/
-    );
+  const pluginRoutes = knownPlugins.map(pluginName => {
+    // Convertir nombre-con-guiones a NombreEnCamelCase
+    const componentName = pluginName
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('');
 
-    pluginContext.keys().forEach(key => {
-      // Extraer nombre del plugin de la ruta
-      // Ejemplo: ./whatsapp-twilio/ConfigView.vue -> whatsapp-twilio
-      const match = key.match(/\.\/([^/]+)\/ConfigView\.vue$/);
-
-      if (match) {
-        const pluginName = match[1];
-
-        // Convertir nombre-con-guiones a NombreEnCamelCase
-        const componentName = pluginName
-          .split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join('');
-
-        // Crear ruta dinamica
-        pluginRoutes.push({
-          path: `/plugins/${pluginName}/config`,
-          name: `${componentName}Config`,
-          component: () => import(`../views/plugins/${pluginName}/ConfigView.vue`),
-          meta: {
-            requiresAuth: true,
-            title: `Configuracion ${componentName}`,
-            pluginName: pluginName
-          }
-        });
-
-        console.log(`✅ Plugin route registered: /plugins/${pluginName}/config`);
+    return {
+      path: `/plugins/${pluginName}/config`,
+      name: `${componentName}Config`,
+      component: () => import('@/views/plugins/DynamicPluginConfig.vue'),
+      meta: {
+        requiresAuth: true,
+        title: `Configuracion ${componentName}`,
+        pluginName: pluginName
       }
-    });
+    };
+  });
 
-    console.log(`✅ Total ${pluginRoutes.length} plugin routes loaded dynamically`);
-  } catch (error) {
-    console.error('Error loading plugin routes:', error);
-  }
+  console.log(`✅ Total ${pluginRoutes.length} plugin routes loaded dynamically`);
 
   return pluginRoutes;
 }
