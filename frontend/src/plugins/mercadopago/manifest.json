@@ -1,0 +1,196 @@
+{
+  "name": "mercadopago",
+  "version": "1.0.0",
+  "description": "Plugin para procesamiento de pagos con MercadoPago",
+  "category": "payment",
+  "author": "Sistema ISP",
+  "main": "src/mercadopago.controller.js",
+  "channelType": "payment_gateway",
+  "capabilities": ["process_payment", "refund", "webhook", "payment_status"],
+  "providers": ["mercadopago"],
+  "countries": ["AR", "BR", "CL", "CO", "MX", "PE", "UY"],
+  "tables": [],
+  "routes": [
+    {
+      "path": "/webhook/mercadopago",
+      "method": "POST",
+      "handler": "handleWebhook"
+    }
+  ],
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "accessToken": {
+        "type": "string",
+        "title": "Access Token",
+        "description": "Token de acceso de MercadoPago (APP_USR-xxx o TEST-xxx)",
+        "pattern": "^(APP_USR-|TEST-)"
+      },
+      "sandbox": {
+        "type": "boolean",
+        "title": "Modo Sandbox",
+        "description": "Activar modo de pruebas para desarrollo",
+        "default": false
+      },
+      "webhookSecret": {
+        "type": "string",
+        "title": "Webhook Secret",
+        "description": "Secreto para verificar la autenticidad de los webhooks (opcional)",
+        "format": "password"
+      },
+      "country": {
+        "type": "string",
+        "enum": ["AR", "BR", "CL", "CO", "MX", "PE", "UY"],
+        "title": "País de Operación",
+        "description": "País donde opera el proveedor de servicios",
+        "default": "MX"
+      },
+      "currency": {
+        "type": "string",
+        "enum": ["ARS", "BRL", "CLP", "COP", "MXN", "PEN", "UYU"],
+        "title": "Moneda",
+        "description": "Moneda principal para los pagos",
+        "default": "MXN"
+      },
+      "notificationEmail": {
+        "type": "string",
+        "format": "email",
+        "title": "Email de Notificaciones",
+        "description": "Email para recibir notificaciones de pagos"
+      }
+    },
+    "required": ["accessToken", "country"],
+    "dependencies": {
+      "country": {
+        "oneOf": [
+          {
+            "properties": {
+              "country": { "enum": ["AR"] },
+              "currency": { "enum": ["ARS"] }
+            }
+          },
+          {
+            "properties": {
+              "country": { "enum": ["BR"] },
+              "currency": { "enum": ["BRL"] }
+            }
+          },
+          {
+            "properties": {
+              "country": { "enum": ["CL"] },
+              "currency": { "enum": ["CLP"] }
+            }
+          },
+          {
+            "properties": {
+              "country": { "enum": ["CO"] },
+              "currency": { "enum": ["COP"] }
+            }
+          },
+          {
+            "properties": {
+              "country": { "enum": ["MX"] },
+              "currency": { "enum": ["MXN"] }
+            }
+          },
+          {
+            "properties": {
+              "country": { "enum": ["PE"] },
+              "currency": { "enum": ["PEN"] }
+            }
+          },
+          {
+            "properties": {
+              "country": { "enum": ["UY"] },
+              "currency": { "enum": ["UYU"] }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "permissions": [
+    "process_payments",
+    "manage_refunds",
+    "view_payment_statistics",
+    "manage_billing"
+  ],
+  "webhookSupport": {
+    "mercadopago": {
+      "events": ["payment.created", "payment.updated"],
+      "signatureHeader": "X-Signature",
+      "verificationMethod": "hmac_sha256"
+    }
+  },
+  "paymentMethods": {
+    "MX": [
+      {
+        "id": "credit_card",
+        "name": "Tarjeta de Crédito",
+        "types": ["visa", "mastercard", "amex"],
+        "processingTime": "immediate"
+      },
+      {
+        "id": "debit_card",
+        "name": "Tarjeta de Débito",
+        "types": ["visa_debit", "mastercard_debit"],
+        "processingTime": "immediate"
+      },
+      {
+        "id": "oxxo",
+        "name": "OXXO",
+        "types": ["oxxo"],
+        "processingTime": "1-3_business_days"
+      },
+      {
+        "id": "spei",
+        "name": "Transferencia SPEI",
+        "types": ["spei"],
+        "processingTime": "immediate"
+      }
+    ],
+    "AR": [
+      {
+        "id": "credit_card",
+        "name": "Tarjeta de Crédito",
+        "types": ["visa", "mastercard"],
+        "processingTime": "immediate"
+      },
+      {
+        "id": "rapipago",
+        "name": "RapiPago",
+        "types": ["rapipago"],
+        "processingTime": "1-2_business_days"
+      }
+    ],
+    "BR": [
+      {
+        "id": "credit_card",
+        "name": "Cartão de Crédito",
+        "types": ["visa", "mastercard"],
+        "processingTime": "immediate"
+      },
+      {
+        "id": "pix",
+        "name": "PIX",
+        "types": ["pix"],
+        "processingTime": "immediate"
+      },
+      {
+        "id": "boleto",
+        "name": "Boleto Bancário",
+        "types": ["boleto"],
+        "processingTime": "1-3_business_days"
+      }
+    ]
+  },
+  "fees": {
+    "description": "Tarifas varían por país y método de pago",
+    "details": "https://www.mercadopago.com/costs-section"
+  },
+  "supportedCurrencies": ["ARS", "BRL", "CLP", "COP", "MXN", "PEN", "UYU"],
+  "minimumVersions": {
+    "node": "14.0.0",
+    "mercadopago": "1.5.0"
+  }
+}

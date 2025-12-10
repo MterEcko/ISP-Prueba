@@ -1,0 +1,63 @@
+{
+  "name": "paypal",
+  "version": "1.0.0",
+  "displayName": "PayPal",
+  "description": "Plugin para procesamiento de pagos con PayPal",
+  "category": "payment",
+  "author": "Sistema ISP",
+  "icon": "mdi-paypal",
+  "price": 0,
+  "isPremium": false,
+  "channelType": "payment_gateway",
+  "capabilities": ["process_payment", "refund", "subscription", "payment_status"],
+  "providers": ["paypal"],
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "clientId": {
+        "type": "string",
+        "title": "Client ID",
+        "description": "Client ID de tu aplicacion PayPal"
+      },
+      "clientSecret": {
+        "type": "string",
+        "title": "Client Secret",
+        "description": "Secret de tu aplicacion PayPal",
+        "format": "password"
+      },
+      "testMode": {
+        "type": "boolean",
+        "title": "Modo de Pruebas",
+        "description": "Habilitar para usar ambiente sandbox",
+        "default": false
+      },
+      "currency": {
+        "type": "string",
+        "enum": ["USD", "EUR", "MXN", "GBP", "CAD", "AUD", "BRL"],
+        "title": "Moneda",
+        "default": "USD"
+      },
+      "returnUrl": {
+        "type": "string",
+        "title": "URL de Retorno",
+        "description": "URL donde se redirige despues de pago exitoso"
+      },
+      "cancelUrl": {
+        "type": "string",
+        "title": "URL de Cancelacion",
+        "description": "URL donde se redirige si se cancela el pago"
+      },
+      "webhookId": {
+        "type": "string",
+        "title": "Webhook ID",
+        "description": "ID del webhook configurado en PayPal (opcional)"
+      }
+    },
+    "required": ["clientId", "clientSecret"]
+  },
+  "permissions": [
+    "process_payments",
+    "manage_refunds",
+    "view_payment_statistics"
+  ]
+}

@@ -87,6 +87,40 @@ module.exports = function(app) {
     controller.updateWhatsAppSettings
   );
 
+  app.post(
+    "/api/settings/whatsapp/test",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.testWhatsAppSettings
+  );
+
+  // ===============================
+  // CONFIGURACIÓN DE SMS
+  // ===============================
+
+  app.get(
+    "/api/settings/sms",
+    //[authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.getSMSSettings
+  );
+
+  app.put(
+    "/api/settings/sms",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.updateSMSSettings
+  );
+
+  app.post(
+    "/api/settings/sms/test",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.testSMSSettings
+  );
+
+  app.get(
+    "/api/settings/sms/status",
+    //[authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.getSMSGatewayStatus
+  );
+
   // ===============================
   // CONFIGURACIÓN DE JELLYFIN
   // ===============================
@@ -178,6 +212,28 @@ module.exports = function(app) {
   );
 
   // ===============================
+  // CONFIGURACIÓN DE DOMINIO Y CORS
+  // ===============================
+
+  app.get(
+    "/api/settings/domain",
+    //[authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.getDomainSettings
+  );
+
+  app.put(
+    "/api/settings/domain",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.updateDomainSettings
+  );
+
+  app.post(
+    "/api/settings/cors/reload",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.reloadCors
+  );
+
+  // ===============================
   // ENDPOINTS GENERALES
   // ===============================
 
@@ -207,5 +263,23 @@ module.exports = function(app) {
     "/api/settings/cache/invalidate",
     //[authJwt.verifyToken, authJwt.checkRole("admin")],
     controller.invalidateCache
+  );
+
+  // ===============================
+  // CRUD PERSONALIZADO
+  // ===============================
+
+  // Crear nueva configuración personalizada
+  app.post(
+    "/api/settings",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.createSetting
+  );
+
+  // Eliminar configuración
+  app.delete(
+    "/api/settings/:key",
+    [authJwt.verifyToken, authJwt.checkRole("admin")],
+    controller.deleteSetting
   );
 };

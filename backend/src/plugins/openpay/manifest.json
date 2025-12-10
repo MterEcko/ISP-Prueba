@@ -1,0 +1,80 @@
+{
+  "name": "openpay",
+  "version": "1.0.0",
+  "displayName": "Openpay",
+  "description": "Plugin para procesamiento de pagos con Openpay",
+  "category": "payment",
+  "author": "Sistema ISP",
+  "icon": "mdi-credit-card-outline",
+  "price": 0,
+  "isPremium": false,
+  "channelType": "payment_gateway",
+  "capabilities": ["process_payment", "refund", "payment_status", "store_payment", "bank_transfer"],
+  "providers": ["openpay"],
+  "countries": ["MX", "CO", "PE"],
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "merchantId": {
+        "type": "string",
+        "title": "Merchant ID",
+        "description": "ID de comercio de Openpay"
+      },
+      "privateKey": {
+        "type": "string",
+        "title": "Private Key",
+        "description": "Llave privada de Openpay",
+        "format": "password"
+      },
+      "publicKey": {
+        "type": "string",
+        "title": "Public Key",
+        "description": "Llave publica de Openpay"
+      },
+      "sandboxMode": {
+        "type": "boolean",
+        "title": "Modo Sandbox",
+        "description": "Habilitar para usar ambiente de pruebas",
+        "default": false
+      },
+      "country": {
+        "type": "string",
+        "enum": ["MX", "CO", "PE"],
+        "title": "Pais",
+        "default": "MX"
+      },
+      "enableCards": {
+        "type": "boolean",
+        "title": "Habilitar pagos con tarjeta",
+        "default": true
+      },
+      "enableStores": {
+        "type": "boolean",
+        "title": "Habilitar pago en tiendas",
+        "default": true
+      },
+      "enableBanks": {
+        "type": "boolean",
+        "title": "Habilitar transferencia bancaria",
+        "default": true
+      },
+      "expirationDays": {
+        "type": "number",
+        "title": "Dias de expiracion",
+        "description": "Dias antes de que expire un cargo",
+        "default": 7
+      },
+      "webhookUrl": {
+        "type": "string",
+        "title": "URL de Webhook",
+        "description": "URL para recibir notificaciones de pago"
+      }
+    },
+    "required": ["merchantId", "privateKey", "publicKey"]
+  },
+  "permissions": [
+    "process_payments",
+    "manage_refunds",
+    "view_payment_statistics"
+  ]
+}

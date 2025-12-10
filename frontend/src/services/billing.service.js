@@ -1,315 +1,867 @@
-import axios from 'axios';
-import authHeader from './auth-header';
-import { API_URL } from './frontend_apiConfig';
+// backend/src/services/billing.service.js
+// Motor Principal de Facturación - VERSIÓN ACTUALIZADA
+
+const db = require('../models');
+const { Client, ClientBilling, Invoice, Payment, Subscription, NotificationQueue, ServicePackage } = db;
+const { Op } = db.Sequelize;
+const billingConfig = require('../config/billing-config');
+const ClientSuspensionService = require('./client.suspension.service');
 
 class BillingService {
-  // ===============================
-  // GESTIÓN DE FACTURACIÓN DE CLIENTES - RUTAS REALES
-  // ===============================
 
-  // GET /api/client-billing - Obtener todas las facturaciones de clientes
-  getAllClientBillings(params = {}) {
-    let queryParams = new URLSearchParams();
+  /**
+   * Procesa automáticamente todos los clientes para:
+   * - Generar facturas del período actual si no existen
+   * - Generar facturas perdidas de días anteriores
+   * - Generar facturas nuevas (5 días antes del vencimiento)
+   * - Suspender servicios vencidos
+   * - Enviar recordatorios
+   */
+  async processDailyBilling() {
+    console.log('Iniciando procesamiento diario de facturación...');
     
-    if (params.page) queryParams.append('page', params.page);
-    if (params.size) queryParams.append('size', params.size);
-    if (params.clientId) queryParams.append('clientId', params.clientId);
-    if (params.status) queryParams.append('status', params.status);
-    if (params.paymentMethod) queryParams.append('paymentMethod', params.paymentMethod);
-    
-    return axios.get(`${API_URL}client-billing?${queryParams.toString()}`, { 
-      headers: authHeader() 
-    });
+    try {
+      // 1. NUEVO: Generar facturas del período actual si no existen
+      await this.generateMissingCurrentPeriodInvoices();
+      
+      // 2. Generar facturas perdidas de días anteriores
+      await this.generateMissedInvoices();
+      
+      // 3. Generar facturas automáticas (5 días antes)
+      await this.generateAutomaticInvoices();
+      
+      // 4. Suspender servicios vencidos
+      await this.suspendOverdueServices();
+      
+      // 5. Enviar recordatorios de pago
+      await this.sendPaymentReminders();
+      
+      console.log('Procesamiento diario completado');
+      
+    } catch (error) {
+      console.error('Error en procesamiento diario:', error);
+      throw error;
+    }
   }
 
-  // GET /api/client-billing/:id - Obtener facturación de cliente por ID
-  getClientBillingById(id) {
-    return axios.get(`${API_URL}client-billing/${id}`, { headers: authHeader() });
-  }
+  /**
+   * NUEVO: Genera facturas para clientes que no tienen factura del período actual
+   * Se ejecuta cuando lastPaymentDate indica que deberían tener factura pero no la tienen
+   */
 
-  // GET /api/client-billing/by-client/:clientId - Obtener facturación por ID de cliente
-  getClientBillingByClientId(clientId) {
-    return axios.get(`${API_URL}client-billing/by-client/${clientId}`, { headers: authHeader() });
-  }
-
-  // POST /api/client-billing - Crear nueva facturación de cliente
-  createClientBilling(billingData) {
-    return axios.post(`${API_URL}client-billing`, billingData, { headers: authHeader() });
-  }
-
-  // PUT /api/client-billing/:id - Actualizar facturación de cliente
-  updateClientBilling(id, billingData) {
-    return axios.put(`${API_URL}client-billing/${id}`, billingData, { headers: authHeader() });
-  }
-
-  // DELETE /api/client-billing/:id - Eliminar facturación de cliente
-  deleteClientBilling(id) {
-    return axios.delete(`${API_URL}client-billing/${id}`, { headers: authHeader() });
-  }
-
-  // ===============================
-  // OPERACIONES DE PROCESAMIENTO
-  // ===============================
-
-  // POST /api/client-billing/process-all - Procesar facturación de todos los clientes
-  processAllClientsBilling(processData = {}) {
-    return axios.post(`${API_URL}client-billing/process-all`, processData, { headers: authHeader() });
-  }
-
-  // GET /api/client-billing/:clientId/calculate - Calcular facturación mensual
-  calculateMonthlyBilling(clientId) {
-    return axios.get(`${API_URL}client-billing/${clientId}/calculate`, { headers: authHeader() });
-  }
-
-  // POST /api/client-billing/:clientId/invoice - Generar factura para cliente
-  generateInvoice(clientId, invoiceData) {
-    return axios.post(`${API_URL}client-billing/${clientId}/invoice`, invoiceData, { headers: authHeader() });
-  }
-
-  // ===============================
-  // OPERACIONES DE ESTADO
-  // ===============================
-
-  // PUT /api/client-billing/:clientId/status - Actualizar estado del cliente
-  updateClientStatus(clientId, status) {
-    return axios.put(`${API_URL}client-billing/${clientId}/status`, { status }, { headers: authHeader() });
-  }
-
-  // ===============================
-  // PAGOS
-  // ===============================
-
-  // POST /api/client-billing/:clientId/payment - Registrar pago para cliente
-  registerPayment(clientId, paymentData) {
-    return axios.post(`${API_URL}client-billing/${clientId}/payment`, paymentData, { headers: authHeader() });
-  }
-
-  // PUT /api/client-billing/:clientId/penalty - Aplicar penalización por pago tardío
-  applyLatePaymentPenalty(clientId, penaltyData = {}) {
-    return axios.put(`${API_URL}client-billing/${clientId}/penalty`, penaltyData, { headers: authHeader() });
-  }
-
-  // ===============================
-  // REPORTES Y CONSULTAS ESPECÍFICAS
-  // ===============================
-
-  // GET /api/client-billing/overdue - Obtener clientes con pagos vencidos
-  getOverdueClients(params = {}) {
-    let queryParams = new URLSearchParams();
-    
-    if (params.days) queryParams.append('days', params.days);
-    if (params.zoneId) queryParams.append('zoneId', params.zoneId);
-    
-    return axios.get(`${API_URL}client-billing/overdue?${queryParams.toString()}`, { 
-      headers: authHeader() 
-    });
-  }
-
-  // GET /api/client-billing/upcoming - Obtener próximos pagos
-  getUpcomingPayments(params = {}) {
-    let queryParams = new URLSearchParams();
-    
-    if (params.days) queryParams.append('days', params.days);
-    if (params.zoneId) queryParams.append('zoneId', params.zoneId);
-    
-    return axios.get(`${API_URL}client-billing/upcoming?${queryParams.toString()}`, { 
-      headers: authHeader() 
-    });
-  }
-
-  // GET /api/client-billing/statistics - Obtener estadísticas de facturación
-  getBillingStatistics(params = {}) {
-    let queryParams = new URLSearchParams();
-    
-    if (params.startDate) queryParams.append('startDate', params.startDate);
-    if (params.endDate) queryParams.append('endDate', params.endDate);
-    
-    return axios.get(`${API_URL}client-billing/statistics?${queryParams.toString()}`, { 
-      headers: authHeader() 
-    });
-  }
+async generateMissingCurrentPeriodInvoices() {
+  console.log('Verificando clientes sin factura del período actual...');
   
-  getClientInvoices(clientId, params = {}) {
-  let queryParams = new URLSearchParams();
-  if (params.page) queryParams.append('page', params.page);
-  if (params.size) queryParams.append('size', params.size);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   
-  return axios.get(`${API_URL}invoices/client/${clientId}?${queryParams.toString()}`, { 
-    headers: authHeader() 
+  const allActiveClients = await ClientBilling.findAll({
+    where: {
+      clientStatus: 'active'
+    },
+    include: [
+      {
+        model: Client,
+        as: 'client',
+        where: { active: true }
+      },
+      {
+        model: ServicePackage,
+        as: 'ServicePackage',
+        where: { active: true }
+      }
+    ]
   });
+  
+  let generatedCount = 0;
+  
+  for (const clientBilling of allActiveClients) {
+    try {
+      const { periodStart, periodEnd } = this.calculateCurrentPeriodFromBillingDay(
+        today,
+        clientBilling.billingDay
+      );
+      
+      // Verificar si existe factura para el período actual
+      const existingInvoice = await Invoice.findOne({
+        where: {
+          clientId: clientBilling.clientId,
+          billingPeriodStart: periodStart,
+          billingPeriodEnd: periodEnd,
+          status: {
+            [Op.notIn]: ['cancelled', 'overdue']
+          }
+        }
+      });
+      
+      // CAMBIO CRÍTICO: Generar si NO existe, sin validar lastPaymentDate
+      if (!existingInvoice) {
+        await this.createInvoiceForClient(clientBilling, periodStart, periodEnd);
+        generatedCount++;
+        console.log(`Factura generada para cliente ${clientBilling.clientId} (período ${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateString()})`);
+      }
+      
+    } catch (error) {
+      console.error(`Error generando factura para cliente ${clientBilling.clientId}:`, error.message);
+    }
+  }
+  
+  if (generatedCount > 0) {
+    console.log(`${generatedCount} facturas del período actual generadas`);
+  } else {
+    console.log('Todos los clientes tienen factura del período actual');
+  }
 }
 
-  // ===============================
-  // MÉTODOS DE UTILIDAD
-  // ===============================
 
-  // Validar datos de facturación de cliente
-  validateBillingData(billingData) {
-    const errors = [];
-
-    if (!billingData.clientId || isNaN(parseInt(billingData.clientId))) {
-      errors.push('Cliente es requerido');
-    }
-
-    if (!billingData.servicePackageId || isNaN(parseInt(billingData.servicePackageId))) {
-      errors.push('Paquete de servicio es requerido');
-    }
-
-    if (!billingData.currentIpPoolId || isNaN(parseInt(billingData.currentIpPoolId))) {
-      errors.push('Pool de IPs es requerido');
-    }
-
-    if (!billingData.billingDay || isNaN(parseInt(billingData.billingDay)) || 
-        parseInt(billingData.billingDay) < 1 || parseInt(billingData.billingDay) > 31) {
-      errors.push('Día de facturación debe estar entre 1 y 31');
-    }
-
-    if (billingData.monthlyFee && (isNaN(parseFloat(billingData.monthlyFee)) || parseFloat(billingData.monthlyFee) < 0)) {
-      errors.push('Tarifa mensual debe ser un número válido mayor o igual a 0');
-    }
-
-    if (billingData.graceDays && (isNaN(parseInt(billingData.graceDays)) || parseInt(billingData.graceDays) < 0)) {
-      errors.push('Días de gracia debe ser un número válido mayor o igual a 0');
-    }
-
-    if (billingData.penaltyFee && (isNaN(parseFloat(billingData.penaltyFee)) || parseFloat(billingData.penaltyFee) < 0)) {
-      errors.push('Tarifa de penalización debe ser un número válido mayor o igual a 0');
-    }
-
-    // Validar fechas
-    if (billingData.lastPaymentDate && billingData.nextDueDate) {
-      const lastPayment = new Date(billingData.lastPaymentDate);
-      const nextDue = new Date(billingData.nextDueDate);
+  /**
+   * NUEVO: Calcula el período actual basado en billingDay
+   */
+  calculateCurrentPeriodFromBillingDay(referenceDate, billingDay) {
+    const year = referenceDate.getFullYear();
+    const month = referenceDate.getMonth();
+    const currentDay = referenceDate.getDate();
+    
+    let periodStart, periodEnd;
+    
+    const adjustedBillingDay = this.adjustBillingDayForMonth(year, month, billingDay);
+    
+    if (currentDay >= adjustedBillingDay) {
+      periodStart = new Date(year, month, adjustedBillingDay);
       
-      if (lastPayment > nextDue) {
-        errors.push('Fecha del último pago no puede ser posterior a la próxima fecha de vencimiento');
+      const nextMonth = month + 1;
+      const nextYear = nextMonth > 11 ? year + 1 : year;
+      const adjustedNextMonth = nextMonth > 11 ? 0 : nextMonth;
+      const adjustedNextDay = this.adjustBillingDayForMonth(nextYear, adjustedNextMonth, billingDay);
+      
+      periodEnd = new Date(nextYear, adjustedNextMonth, adjustedNextDay - 1);
+    } else {
+      const prevMonth = month - 1;
+      const prevYear = prevMonth < 0 ? year - 1 : year;
+      const adjustedPrevMonth = prevMonth < 0 ? 11 : prevMonth;
+      const adjustedPrevDay = this.adjustBillingDayForMonth(prevYear, adjustedPrevMonth, billingDay);
+      
+      periodStart = new Date(prevYear, adjustedPrevMonth, adjustedPrevDay);
+      periodEnd = new Date(year, month, adjustedBillingDay - 1);
+    }
+    
+    return { periodStart, periodEnd };
+  }
+
+  /**
+   * Genera facturas perdidas de días anteriores
+   */
+  async generateMissedInvoices() {
+    console.log('Verificando facturas perdidas...');
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const clientsMissingInvoices = await ClientBilling.findAll({
+      where: {
+        nextDueDate: {
+          [Op.lte]: today
+        },
+        clientStatus: 'active'
+      },
+      include: [
+        {
+          model: Client,
+          as: 'client',
+          where: { active: true }
+        },
+        {
+          model: ServicePackage,
+          as: 'ServicePackage',
+          where: { active: true }
+        }
+      ]
+    });
+
+    let recoveredCount = 0;
+    
+    for (const clientBilling of clientsMissingInvoices) {
+      try {
+        const { periodStart, periodEnd } = this.calculateBillingPeriod(
+          clientBilling.nextDueDate,
+          clientBilling.billingDay
+        );
+        
+        const existingInvoice = await Invoice.findOne({
+          where: {
+            clientId: clientBilling.clientId,
+            billingPeriodStart: periodStart,
+            billingPeriodEnd: periodEnd
+          }
+        });
+        
+        if (!existingInvoice) {
+          await this.createInvoiceForClient(clientBilling, periodStart, periodEnd);
+          recoveredCount++;
+          console.log(`Factura recuperada para cliente ${clientBilling.clientId}`);
+        }
+        
+      } catch (error) {
+        console.error(`Error recuperando factura para cliente ${clientBilling.clientId}:`, error.message);
       }
     }
-
-    return errors;
-  }
-
-  // Formatear estado de facturación para UI
-  formatBillingStatus(status) {
-    const statusMap = {
-      'active': { label: 'Activo', class: 'status-active', color: '#4CAF50' },
-      'suspended': { label: 'Suspendido', class: 'status-suspended', color: '#FF9800' },
-      'cancelled': { label: 'Cancelado', class: 'status-cancelled', color: '#F44336' },
-      'overdue': { label: 'Vencido', class: 'status-overdue', color: '#E91E63' },
-      'pending': { label: 'Pendiente', class: 'status-pending', color: '#2196F3' },
-      'grace_period': { label: 'Período de Gracia', class: 'status-grace', color: '#9C27B0' }
-    };
-
-    return statusMap[status] || { label: status, class: 'status-unknown', color: '#757575' };
-  }
-
-  // Formatear método de pago para UI
-  formatPaymentMethod(method) {
-    const methodMap = {
-      'cash': 'Efectivo',
-      'transfer': 'Transferencia',
-      'card': 'Tarjeta',
-      'check': 'Cheque',
-      'online': 'Pago en Línea',
-      'mercadopago': 'Mercado Pago',
-      'paypal': 'PayPal',
-      'spei': 'SPEI',
-      'oxxo': 'OXXO',
-      'other': 'Otro'
-    };
-
-    return methodMap[method] || method;
-  }
-
-  // Calcular días de retraso
-  calculateOverdueDays(dueDate) {
-    if (!dueDate) return 0;
     
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = today - due;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays > 0 ? diffDays : 0;
-  }
-
-  // Calcular total con penalizaciones
-  calculateTotalWithPenalty(baseAmount, overdueDays, penaltyFee = 0, graceDays = 0) {
-    if (overdueDays <= graceDays) return parseFloat(baseAmount);
-    
-    const effectiveOverdueDays = overdueDays - graceDays;
-    const penaltyAmount = parseFloat(penaltyFee) || 0;
-    
-    // Si hay tarifa de penalización fija, aplicarla
-    if (penaltyAmount > 0) {
-      return parseFloat(baseAmount) + penaltyAmount;
-    }
-    
-    // Si no, aplicar penalización por defecto (5% por mes)
-    const monthsOverdue = Math.ceil(effectiveOverdueDays / 30);
-    const penalty = parseFloat(baseAmount) * (0.05 * monthsOverdue);
-    
-    return parseFloat(baseAmount) + penalty;
-  }
-
-  // Calcular próxima fecha de facturación
-  // eslint-disable-next-line no-unused-vars
-  calculateNextBillingDate(billingDay, lastPaymentDate = null) {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    
-    // Crear fecha para este mes
-    let nextBillingDate = new Date(currentYear, currentMonth, billingDay);
-    
-    // Si ya pasó el día de facturación de este mes, usar el siguiente mes
-    if (nextBillingDate <= today) {
-      nextBillingDate = new Date(currentYear, currentMonth + 1, billingDay);
-    }
-    
-    return nextBillingDate;
-  }
-
-  // Determinar estado basado en fechas
-  determineBillingStatus(nextDueDate, graceDays = 0) {
-    if (!nextDueDate) return 'pending';
-    
-    const today = new Date();
-    const dueDate = new Date(nextDueDate);
-    const diffTime = today - dueDate;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays <= 0) {
-      return 'active'; // Aún no vence
-    } else if (diffDays <= graceDays) {
-      return 'grace_period'; // En período de gracia
+    if (recoveredCount > 0) {
+      console.log(`${recoveredCount} facturas perdidas recuperadas`);
     } else {
-      return 'overdue'; // Vencido
+      console.log('No hay facturas perdidas');
     }
   }
 
-  // Formatear información de facturación para mostrar
-  formatBillingInfo(billing) {
-    if (!billing) return null;
+  /**
+   * Genera facturas 5 días antes del vencimiento
+   */
+  async generateAutomaticInvoices() {
+    console.log('Generando facturas automáticas...');
     
-    const overdueDays = this.calculateOverdueDays(billing.nextDueDate);
-    const status = this.determineBillingStatus(billing.nextDueDate, billing.graceDays);
-    const totalWithPenalty = this.calculateTotalWithPenalty(
-      billing.monthlyFee, 
-      overdueDays, 
-      billing.penaltyFee, 
-      billing.graceDays
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + billingConfig.AUTO_BILLING.invoiceGenerationDays);
+    
+    const clientsNeedingInvoice = await ClientBilling.findAll({
+      where: {
+        nextDueDate: {
+          [Op.between]: [today, targetDate]
+        },
+        clientStatus: 'active'
+      },
+      include: [
+        {
+          model: Client,
+          as: 'client',
+          where: { active: true }
+        },
+        {
+          model: ServicePackage,
+          as: 'ServicePackage',
+          where: { active: true }
+        }
+      ]
+    });
+    
+    console.log(`${clientsNeedingInvoice.length} clientes necesitan factura`);
+    
+    for (const clientBilling of clientsNeedingInvoice) {
+      try {
+        const { periodStart, periodEnd } = this.calculateBillingPeriod(
+          clientBilling.nextDueDate,
+          clientBilling.billingDay
+        );
+        
+        const existingInvoice = await Invoice.findOne({
+          where: {
+            clientId: clientBilling.clientId,
+            billingPeriodStart: periodStart,
+            billingPeriodEnd: periodEnd
+          }
+        });
+        
+        if (existingInvoice) {
+          console.log(`Factura ya existe para cliente ${clientBilling.clientId}`);
+          continue;
+        }
+        
+        await this.createInvoiceForClient(clientBilling, periodStart, periodEnd);
+        console.log(`Factura creada para cliente ${clientBilling.clientId}`);
+        
+      } catch (error) {
+        console.error(`Error creando factura para cliente ${clientBilling.clientId}:`, error.message);
+      }
+    }
+  }
+
+  /**
+   * Maneja correctamente meses cortos (28/30 días)
+   */
+  calculateBillingPeriod(nextDueDate, billingDay) {
+    const dueDate = new Date(nextDueDate);
+    
+    const year = dueDate.getFullYear();
+    const month = dueDate.getMonth();
+    
+    const adjustedBillingDay = this.adjustBillingDayForMonth(year, month, billingDay);
+    
+    const periodStart = new Date(year, month, adjustedBillingDay);
+    
+    const nextMonth = month + 1;
+    const nextYear = nextMonth > 11 ? year + 1 : year;
+    const adjustedNextMonth = nextMonth > 11 ? 0 : nextMonth;
+    
+    const adjustedNextBillingDay = this.adjustBillingDayForMonth(
+      nextYear, 
+      adjustedNextMonth, 
+      billingDay
     );
     
+    const periodEnd = new Date(nextYear, adjustedNextMonth, adjustedNextBillingDay - 1);
+    
+    return { periodStart, periodEnd };
+  }
+
+  /**
+   * Ajusta billingDay para meses cortos
+   */
+  adjustBillingDayForMonth(year, month, requestedDay) {
+    const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+    return Math.min(requestedDay, lastDayOfMonth);
+  }
+
+  /**
+   * MODIFICADO: Crea factura y cancela facturas antiguas pendientes
+   */
+  async createInvoiceForClient(clientBilling, periodStart, periodEnd) {
+    const subscription = await Subscription.findOne({
+      where: { 
+        clientId: clientBilling.clientId,
+        status: 'active'
+      }
+    });
+    
+    if (!subscription) {
+      console.log(`Cliente ${clientBilling.clientId} no tiene subscription activa - NO se crea factura`);
+      return null;
+    }
+    
+    const dueDate = new Date(periodEnd);
+    dueDate.setDate(dueDate.getDate() + clientBilling.graceDays);
+    
+    const invoiceNumber = this.generateInvoiceNumber(clientBilling.clientId);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // NUEVO: Buscar facturas pendientes de períodos anteriores que no han vencido
+    const oldPendingInvoices = await Invoice.findAll({
+      where: {
+        clientId: clientBilling.clientId,
+        status: 'pending',
+        dueDate: {
+          [Op.gte]: today
+        },
+        billingPeriodEnd: {
+          [Op.lt]: periodEnd
+        }
+      }
+    });
+    
+    // NUEVO: Cancelar facturas antiguas que ya no aplican
+    if (oldPendingInvoices.length > 0) {
+      const cancelledNumbers = [];
+      
+      for (const oldInvoice of oldPendingInvoices) {
+        await Invoice.update(
+          { 
+            status: 'cancelled',
+            invoiceData: {
+              ...oldInvoice.invoiceData,
+              cancelledBy: invoiceNumber,
+              cancelledAt: new Date().toISOString(),
+              cancelReason: 'Reemplazada por factura del nuevo período'
+            }
+          },
+          { where: { id: oldInvoice.id } }
+        );
+        
+        cancelledNumbers.push(oldInvoice.invoiceNumber);
+        console.log(`Factura ${oldInvoice.invoiceNumber} cancelada (reemplazada por ${invoiceNumber})`);
+      }
+      
+      // Crear nueva factura con referencia a las canceladas
+      const invoice = await Invoice.create({
+        clientId: clientBilling.clientId,
+        subscriptionId: subscription.id,
+        invoiceNumber: invoiceNumber,
+        billingPeriodStart: periodStart,
+        billingPeriodEnd: periodEnd,
+        amount: clientBilling.monthlyFee,
+        taxAmount: 0,
+        totalAmount: clientBilling.monthlyFee,
+        dueDate: dueDate,
+        status: 'pending',
+        invoiceData: {
+          servicePackage: clientBilling.ServicePackage?.name,
+          billingDay: clientBilling.billingDay,
+          generatedAt: new Date().toISOString(),
+          subscriptionId: subscription.id,
+          replacedInvoices: cancelledNumbers
+        }
+      });
+      
+      await this.updateNextDueDate(clientBilling, periodEnd);
+      
+      console.log(`Factura ${invoiceNumber} creada (reemplazó ${cancelledNumbers.length} facturas antiguas)`);
+      return invoice;
+      
+    } else {
+      // Crear factura normalmente (sin cancelaciones)
+      const invoice = await Invoice.create({
+        clientId: clientBilling.clientId,
+        subscriptionId: subscription.id,
+        invoiceNumber: invoiceNumber,
+        billingPeriodStart: periodStart,
+        billingPeriodEnd: periodEnd,
+        amount: clientBilling.monthlyFee,
+        taxAmount: 0,
+        totalAmount: clientBilling.monthlyFee,
+        dueDate: dueDate,
+        status: 'pending',
+        invoiceData: {
+          servicePackage: clientBilling.ServicePackage?.name,
+          billingDay: clientBilling.billingDay,
+          generatedAt: new Date().toISOString(),
+          subscriptionId: subscription.id
+        }
+      });
+      
+      await this.updateNextDueDate(clientBilling, periodEnd);
+      
+      console.log(`Factura ${invoiceNumber} creada - Nuevo nextDueDate actualizado`);
+      return invoice;
+    }
+  }
+
+  /**
+   * NUEVO: Método separado para actualizar nextDueDate
+   */
+  async updateNextDueDate(clientBilling, periodEnd) {
+    const newNextDueDate = new Date(periodEnd);
+    newNextDueDate.setMonth(newNextDueDate.getMonth() + 1);
+    
+    const adjustedDay = this.adjustBillingDayForMonth(
+      newNextDueDate.getFullYear(),
+      newNextDueDate.getMonth(),
+      clientBilling.billingDay
+    );
+    newNextDueDate.setDate(adjustedDay);
+    
+    await ClientBilling.update(
+      { nextDueDate: newNextDueDate },
+      { where: { clientId: clientBilling.clientId } }
+    );
+  }
+
+  /**
+   * Genera número de factura único
+   */
+  generateInvoiceNumber(clientId) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const timestamp = Date.now().toString().slice(-4);
+    
+    return `${billingConfig.AUTO_BILLING.invoicePrefix}-${year}${month}-${clientId}-${timestamp}`;
+  }
+
+  /**
+   * Suspende servicios vencidos
+   */
+  async suspendOverdueServices() {
+    console.log('Suspendiendo servicios vencidos...');
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const overdueClients = await ClientBilling.findAll({
+      where: {
+        nextDueDate: {
+          [Op.lt]: today
+        },
+        clientStatus: 'active'
+      },
+      include: [
+        {
+          model: Client,
+          as: 'client',
+          where: { active: true }
+        }
+      ]
+    });
+    
+    for (const clientBilling of overdueClients) {
+      try {
+        await this.suspendClientService(clientBilling.clientId);
+        await this.createSuspensionNotification(clientBilling);
+        console.log(`Servicio suspendido para cliente ${clientBilling.clientId}`);
+      } catch (error) {
+        console.error(`Error suspendiendo cliente ${clientBilling.clientId}:`, error.message);
+      }
+    }
+  }
+
+  /**
+   * Envía recordatorios de pago
+   */
+  async sendPaymentReminders() {
+    console.log('Enviando recordatorios de pago...');
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const threeDaysFromNow = new Date(today);
+    threeDaysFromNow.setDate(today.getDate() + 3);
+    
+    const clientsNeedingReminder = await ClientBilling.findAll({
+      where: {
+        nextDueDate: {
+          [Op.between]: [today, threeDaysFromNow]
+        },
+        clientStatus: 'active'
+      },
+      include: [
+        {
+          model: Client,
+          as: 'client',
+          where: { active: true }
+        }
+      ]
+    });
+    
+    for (const clientBilling of clientsNeedingReminder) {
+      try {
+        await this.createPaymentReminderNotification(clientBilling);
+        console.log(`Recordatorio enviado a cliente ${clientBilling.clientId}`);
+      } catch (error) {
+        console.error(`Error enviando recordatorio a cliente ${clientBilling.clientId}:`, error.message);
+      }
+    }
+  }
+
+  async suspendClientService(clientId) {
+    // IMPORTANTE: Ahora usamos ClientSuspensionService que también desactiva PPPoE
+    try {
+      await ClientSuspensionService.suspendClient(clientId, 'non_payment');
+      console.log(`✅ Cliente ${clientId} suspendido por falta de pago (incluyendo PPPoE)`);
+    } catch (error) {
+      console.error(`Error suspendiendo cliente ${clientId}:`, error);
+      // Si falla la suspensión completa, al menos actualizar BD
+      await ClientBilling.update(
+        { clientStatus: 'suspended' },
+        { where: { clientId } }
+      );
+      console.log(`⚠️ Cliente ${clientId} suspendido solo en BD (error en PPPoE)`);
+    }
+  }
+
+  async createSuspensionNotification(clientBilling) {
+    return await this.createBillingNotification(clientBilling.clientId, {
+      type: 'service_suspended',
+      title: `SERVICIO SUSPENDIDO - ${clientBilling.client.firstName} ${clientBilling.client.lastName}`,
+      message: `Servicio suspendido por falta de pago. Fecha vencimiento: ${clientBilling.nextDueDate}`,
+      priority: 'high'
+    });
+  }
+
+  async createPaymentReminderNotification(clientBilling) {
+    const daysUntilDue = Math.ceil(
+      (new Date(clientBilling.nextDueDate) - new Date()) / (1000 * 60 * 60 * 24)
+    );
+    
+    return await this.createBillingNotification(clientBilling.clientId, {
+      type: 'payment_reminder',
+      title: `Recordatorio de Pago - ${clientBilling.client.firstName} ${clientBilling.client.lastName}`,
+      message: `Su factura de $${clientBilling.monthlyFee} vence en ${daysUntilDue} días.`,
+      priority: 'normal'
+    });
+  }
+
+  async createBillingNotification(clientId, notificationData) {
+    return await NotificationQueue.create({
+      clientId,
+      channelId: 1,
+      recipient: 'sistema@admin.com',
+      messageData: JSON.stringify({
+        type: notificationData.type,
+        title: notificationData.title,
+        message: notificationData.message,
+        metadata: notificationData.metadata || {}
+      }),
+      scheduledFor: new Date(),
+      status: notificationData.status || 'pending',
+      attempts: 0,
+      maxAttempts: 3,
+      priority: notificationData.priority || 'normal'
+    });
+  }
+
+  // ===== MÉTODOS PARA PAGOS TARDÍOS (sin cambios) =====
+  
+  async processLatePayment(clientId, paymentData) {
+    try {
+      console.log(`Procesando pago tardío para cliente ${clientId}`);
+
+      const client = await this.getClientWithBillingConfig(clientId);
+      if (!client) {
+        throw new Error(`Cliente ${clientId} no encontrado`);
+      }
+
+      const payment = await this.createPaymentRecord(client, paymentData);
+      const currentInvoice = await this.getCurrentInvoice(client);
+      
+      if (!currentInvoice) {
+        throw new Error(`No se encontró factura actual para cliente ${clientId}`);
+      }
+
+      const paymentDates = this.calculatePaymentDates(
+        client.clientBilling.billingDay, 
+        new Date(paymentData.paymentDate)
+      );
+
+      const strategy = this.determineReactivationStrategy(
+        paymentDates.daysRemainingInPeriod,
+        client.clientBilling,
+        currentInvoice
+      );
+
+      const result = await this.executeStrategy(client, payment, currentInvoice, strategy, paymentDates);
+
+      console.log(`Pago tardío procesado exitosamente para cliente ${clientId}`);
+      return result;
+
+    } catch (error) {
+      console.error(`Error procesando pago tardío para cliente ${clientId}:`, error);
+      throw error;
+    }
+  }
+
+  calculatePaymentDates(billingDay, paymentDate) {
+    const currentDate = new Date(paymentDate);
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    
+    const adjustedBillingDay = this.adjustBillingDayForMonth(
+      currentYear, 
+      currentMonth, 
+      billingDay
+    );
+    
+    let periodStartDate, periodEndDate;
+    
+    if (currentDate.getDate() >= adjustedBillingDay) {
+      periodStartDate = new Date(currentYear, currentMonth, adjustedBillingDay);
+      
+      const nextMonth = currentMonth + 1;
+      const nextYear = nextMonth > 11 ? currentYear + 1 : currentYear;
+      const adjustedNextMonth = nextMonth > 11 ? 0 : nextMonth;
+      const adjustedNextDay = this.adjustBillingDayForMonth(nextYear, adjustedNextMonth, billingDay);
+      
+      periodEndDate = new Date(nextYear, adjustedNextMonth, adjustedNextDay - 1);
+    } else {
+      const prevMonth = currentMonth - 1;
+      const prevYear = prevMonth < 0 ? currentYear - 1 : currentYear;
+      const adjustedPrevMonth = prevMonth < 0 ? 11 : prevMonth;
+      const adjustedPrevDay = this.adjustBillingDayForMonth(prevYear, adjustedPrevMonth, billingDay);
+      
+      periodStartDate = new Date(prevYear, adjustedPrevMonth, adjustedPrevDay);
+      periodEndDate = new Date(currentYear, currentMonth, adjustedBillingDay - 1);
+    }
+    
+    const timeDiff = periodEndDate.getTime() - currentDate.getTime();
+    const daysRemainingInPeriod = Math.max(0, Math.ceil(timeDiff / (1000 * 60 * 60 * 24)));
+    
     return {
-      ...billing,
-      overdueDays,
-      status,
-      totalWithPenalty,
-      formattedStatus: this.formatBillingStatus(status),
-      formattedPaymentMethod: this.formatPaymentMethod(billing.paymentMethod)
+      periodStartDate,
+      periodEndDate,
+      nextPeriodStart: new Date(periodEndDate.getTime() + (24 * 60 * 60 * 1000)),
+      daysRemainingInPeriod,
+      currentPaymentDate: currentDate
     };
+  }
+
+  determineReactivationStrategy(daysRemaining, billingConfig, currentInvoice) {
+    const SYSTEM_CONFIG = {
+      autoGiftDaysLimit: 2,
+      minimumChargeableDays: 3
+    };
+    
+    const dailyRate = currentInvoice.amount / 30;
+    const proportionalAmount = dailyRate * daysRemaining;
+    
+    if (daysRemaining <= SYSTEM_CONFIG.autoGiftDaysLimit) {
+      return {
+        action: 'apply_to_next_month',
+        reason: 'minimal_days_gift',
+        daysRemaining,
+        giftDays: daysRemaining,
+        currentInvoiceStatus: 'lost_revenue',
+        paymentApplication: 'next_month',
+        requiresManualAdjustment: false,
+        proportionalAmount: 0,
+        message: `Regalo automático de ${daysRemaining} días - pago aplicado al siguiente período`
+      };
+    } else {
+      return {
+        action: 'partial_month_activation',
+        reason: 'house_never_loses',
+        daysRemaining,
+        giftDays: 0,
+        currentInvoiceStatus: 'paid',
+        paymentApplication: 'current_month',
+        requiresManualAdjustment: true,
+        proportionalAmount,
+        dailyRate,
+        serviceActiveUntil: 'period_end_plus_grace',
+        message: `Reactivación por ${daysRemaining} días - ajuste requerido: $${proportionalAmount.toFixed(2)}`
+      };
+    }
+  }
+
+  async executeStrategy(client, payment, currentInvoice, strategy, paymentDates) {
+    switch (strategy.action) {
+      case 'apply_to_next_month':
+        return await this.executeNextMonthStrategy(client, payment, currentInvoice, strategy, paymentDates);
+      case 'partial_month_activation':
+        return await this.executePartialActivationStrategy(client, payment, currentInvoice, strategy, paymentDates);
+      default:
+        throw new Error(`Estrategia desconocida: ${strategy.action}`);
+    }
+  }
+
+  async executeNextMonthStrategy(client, payment, currentInvoice, strategy, paymentDates) {
+    await Invoice.update({ status: 'lost_revenue' }, { where: { id: currentInvoice.id } });
+    const nextInvoice = await this.getOrCreateNextInvoice(client, paymentDates.nextPeriodStart);
+    await Payment.update({ invoiceId: nextInvoice.id }, { where: { id: payment.id } });
+
+    const serviceEndDate = new Date(paymentDates.nextPeriodStart);
+    serviceEndDate.setMonth(serviceEndDate.getMonth() + 1);
+    serviceEndDate.setDate(serviceEndDate.getDate() - 1);
+
+    await this.reactivateClientService(client.id, serviceEndDate);
+
+    return {
+      success: true,
+      action: 'next_month_application',
+      giftDays: strategy.giftDays,
+      serviceActiveUntil: serviceEndDate,
+      message: strategy.message
+    };
+  }
+
+  async executePartialActivationStrategy(client, payment, currentInvoice, strategy, paymentDates) {
+    await Invoice.update({ status: 'paid' }, { where: { id: currentInvoice.id } });
+    await Payment.update({ invoiceId: currentInvoice.id }, { where: { id: payment.id } });
+
+    const serviceEndDate = new Date(paymentDates.periodEndDate);
+    serviceEndDate.setDate(serviceEndDate.getDate() + client.clientBilling.graceDays);
+
+    await this.reactivateClientService(client.id, serviceEndDate);
+
+    return {
+      success: true,
+      action: 'partial_activation',
+      daysActivated: strategy.daysRemaining,
+      adjustmentRequired: strategy.proportionalAmount,
+      serviceActiveUntil: serviceEndDate,
+      message: strategy.message
+    };
+  }
+
+  async getClientWithBillingConfig(clientId) {
+    return await Client.findByPk(clientId, {
+      include: [{
+        model: ClientBilling,
+        as: 'clientBilling',
+        required: true
+      }]
+    });
+  }
+
+  async createPaymentRecord(client, paymentData) {
+    return await Payment.create({
+      clientId: client.id,
+      amount: paymentData.amount,
+      paymentMethod: paymentData.paymentMethod || 'cash',
+      paymentDate: paymentData.paymentDate,
+      status: 'completed',
+      paymentReference: paymentData.reference || `PAY-${Date.now()}`
+    });
+  }
+
+  async getCurrentInvoice(client) {
+    const currentDate = new Date();
+    const billingDay = client.clientBilling.billingDay;
+    
+    const { periodStart, periodEnd } = this.calculateBillingPeriod(currentDate, billingDay);
+
+    return await Invoice.findOne({
+      where: {
+        clientId: client.id,
+        billingPeriodStart: periodStart,
+        billingPeriodEnd: periodEnd
+      }
+    });
+  }
+
+  async getOrCreateNextInvoice(client, nextPeriodStart) {
+    const nextPeriodEnd = new Date(nextPeriodStart);
+    nextPeriodEnd.setMonth(nextPeriodEnd.getMonth() + 1);
+    nextPeriodEnd.setDate(nextPeriodEnd.getDate() - 1);
+
+    let nextInvoice = await Invoice.findOne({
+      where: {
+        clientId: client.id,
+        billingPeriodStart: nextPeriodStart,
+        billingPeriodEnd: nextPeriodEnd
+      }
+    });
+
+    if (!nextInvoice) {
+      nextInvoice = await Invoice.create({
+        clientId: client.id,
+        invoiceNumber: this.generateInvoiceNumber(client.id),
+        billingPeriodStart: nextPeriodStart,
+        billingPeriodEnd: nextPeriodEnd,
+        amount: client.clientBilling.monthlyFee,
+        totalAmount: client.clientBilling.monthlyFee,
+        dueDate: new Date(nextPeriodStart.getTime() + (client.clientBilling.graceDays * 24 * 60 * 60 * 1000)),
+        status: 'pending'
+      });
+    }
+
+    return nextInvoice;
+  }
+
+  async reactivateClientService(clientId, serviceEndDate) {
+    await Subscription.update(
+      { 
+        status: 'active',
+        endDate: serviceEndDate,
+        lastStatusChange: new Date()
+      },
+      { where: { clientId } }
+    );
+    
+    // IMPORTANTE: Reactivar también el usuario PPPoE si estaba suspendido
+    const currentStatus = await ClientBilling.findOne({ where: { clientId } });
+
+    if (currentStatus && currentStatus.clientStatus === 'suspended') {
+      try {
+        await ClientSuspensionService.reactivateClient(clientId, null);
+        console.log(`✅ Cliente ${clientId} reactivado (incluyendo PPPoE)`);
+      } catch (error) {
+        console.error(`Error reactivando cliente ${clientId} (PPPoE):`, error);
+        // Si falla la reactivación de PPPoE, al menos actualizar BD
+        await ClientBilling.update(
+          { clientStatus: 'active' },
+          { where: { clientId } }
+        );
+        console.log(`⚠️ Cliente ${clientId} reactivado solo en BD (error en PPPoE)`);
+      }
+    } else {
+      await ClientBilling.update(
+        { clientStatus: 'active' },
+        { where: { clientId } }
+      );
+    }
+
+    console.log(`Servicio reactivado para cliente ${clientId} hasta ${serviceEndDate.toLocaleDateString()}`);
   }
 }
 
-export default new BillingService();
+module.exports = new BillingService();

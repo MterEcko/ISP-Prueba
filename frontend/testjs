@@ -1,0 +1,21 @@
+echo const db = require('src/models'); > test.js
+echo. >> test.js
+echo async function testCreateProfile() { >> test.js
+echo   try { >> test.js
+echo     console.log('=== VERIFICANDO DATOS ==='); >> test.js
+echo     const routers = await db.MikrotikRouter.findAll(); >> test.js
+echo     console.log('MikrotikRouters disponibles:'); >> test.js
+echo     routers.forEach(r =^> console.log(`ID: ${r.id}, deviceId: ${r.deviceId}, name: ${r.name}`)); >> test.js
+echo     const packages = await db.ServicePackage.findAll({ order: [['id', 'DESC']], limit: 3 }); >> test.js
+echo     console.log('\nServicePackages recientes:'); >> test.js
+echo     packages.forEach(p =^> console.log(`ID: ${p.id}, name: ${p.name}`)); >> test.js
+echo     console.log('\n=== CREANDO PERFIL DIRECTO ==='); >> test.js
+echo     const newProfile = await db.MikrotikProfile.create({ >> test.js
+echo       servicePackageId: 18, >> test.js
+echo       mikrotikRouterId: 2, >> test.js
+echo       profileName: 'TEST_CONSOLA', >> test.js
+echo       rateLimit: '10M/5M', >> test.js
+echo       burstLimit: '12M/6M', >> test.js
+echo       burstThreshold: '8M/4M', >> test.js
+echo       burstTime: '8s/8s', >> test.js
+echo

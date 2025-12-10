@@ -6,8 +6,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "init-db": "node src/utils/initDatabase.js",
-    "seed": "node src/utils/seed.js"
+    "init-db": "node scripts/init-db.js",
+    "seed": "node scripts/seed-plugins.js",
+    "seed:force": "node scripts/seed-plugins.js --force",
+    "create-licenses": "node scripts/create-test-licenses.js",
+    "setup": "npm run seed:force && npm run create-licenses"
   },
   "keywords": [
     "license-server",

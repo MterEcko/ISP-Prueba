@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const db = require('../models');
+const config = require('../config/auth.config');
 const User = db.User;
 const Role = db.Role;
 
@@ -68,8 +69,8 @@ exports.signin = async (req, res) => {
       lastLogin: new Date()
     });
 
-    // Generar token JWT
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+    // Generar token JWT (usar config.secret para consistencia con socket auth)
+    const token = jwt.sign({ id: user.id, username: user.username }, config.secret, {
       expiresIn: 86400 // 24 horas
     });
 

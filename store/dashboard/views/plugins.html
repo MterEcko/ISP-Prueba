@@ -202,8 +202,15 @@
       const plugin = allPlugins.find(p => p.id === pluginId);
       if (!plugin) return;
 
-      const features = plugin.features ? JSON.parse(plugin.features) : [];
-      const requirements = plugin.requirements ? JSON.parse(plugin.requirements) : {};
+      // Sequelize retorna estos campos ya parseados como arrays/objetos
+      // Solo parsear si vienen como strings
+      const features = Array.isArray(plugin.features)
+        ? plugin.features
+        : (plugin.features ? JSON.parse(plugin.features) : []);
+
+      const requirements = typeof plugin.requirements === 'object' && plugin.requirements !== null
+        ? plugin.requirements
+        : (plugin.requirements ? JSON.parse(plugin.requirements) : {});
 
       alert(`
 📦 ${plugin.name}

@@ -1,0 +1,27 @@
+{
+  "syncIntervals": {
+    "ipPools": 24,
+    "pppoeProfiles": 12,
+    "pppoeUsers": 72,
+    "poolIPs": 24,
+    "tolerance": 3
+  },
+  "notifications": {
+    "enabled": true,
+    "emailRecipients": [
+      "soporte@serviciosqbit.net"
+    ],
+    "webhookUrl": null
+  },
+  "autoFix": {
+    "updateNames": true,
+    "notifyChanges": true,
+    "createMissingRecords": false,
+    "syncIpAssignments": true
+  },
+  "ipManagement": {
+    "autoCreateMissingIPs": true,
+    "freeOrphanedIPs": true,
+    "blockUnknownIPs": true
+  }
+}

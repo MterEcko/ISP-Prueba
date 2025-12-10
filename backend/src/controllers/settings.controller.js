@@ -171,7 +171,9 @@ exports.testEmailSettings = async (req, res) => {
 exports.getTelegramSettings = async (req, res) => {
   try {
     const settings = await configHelper.getTelegramConfig();
-    
+
+    console.log('📖 GET Telegram Settings:', settings);
+
     return res.status(200).json({
       enabled: settings.enabled,
       chatId: settings.chatId,
@@ -179,9 +181,9 @@ exports.getTelegramSettings = async (req, res) => {
     });
   } catch (error) {
     console.error('Error obteniendo configuración de Telegram:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: 'Error obteniendo configuración de Telegram',
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -189,7 +191,16 @@ exports.getTelegramSettings = async (req, res) => {
 exports.updateTelegramSettings = async (req, res) => {
   try {
     const { enabled, botToken, chatId } = req.body;
-    
+
+    console.log('📝 UPDATE Telegram Settings - Request Body:', {
+      enabled: enabled,
+      enabledType: typeof enabled,
+      enabledString: String(enabled),
+      hasBotToken: !!botToken,
+      hasChatId: !!chatId,
+      chatId: chatId
+    });
+
     const updates = {
       telegramEnabled: String(enabled),
       telegramChatId: chatId
@@ -200,17 +211,22 @@ exports.updateTelegramSettings = async (req, res) => {
       updates.telegramBotToken = botToken;
     }
 
+    console.log('💾 Guardando updates:', updates);
     await configHelper.updateModule('telegram', updates);
-    
+
+    // Verificar qué se guardó realmente
+    const savedConfig = await configHelper.getTelegramConfig();
+    console.log('✅ Config guardada:', savedConfig);
+
     return res.status(200).json({
       success: true,
       message: 'Configuración de Telegram actualizada correctamente'
     });
   } catch (error) {
     console.error('Error actualizando configuración de Telegram:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: 'Error actualizando configuración de Telegram',
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -218,25 +234,39 @@ exports.updateTelegramSettings = async (req, res) => {
 exports.testTelegramSettings = async (req, res) => {
   try {
     const config = await configHelper.getTelegramConfig();
-    
+
+    console.log('🔍 DEBUG Telegram Test Config:', {
+      enabled: config.enabled,
+      hasToken: !!config.botToken,
+      tokenLength: config.botToken?.length,
+      hasChatId: !!config.chatId,
+      chatId: config.chatId
+    });
+
     if (!config.enabled) {
-      return res.status(400).json({ 
+      console.log('❌ Telegram no habilitado:', config.enabled);
+      return res.status(400).json({
         success: false,
-        message: 'Telegram no está habilitado' 
+        message: 'Telegram no está habilitado. Actívalo en la configuración primero.'
       });
     }
 
     if (!config.botToken || !config.chatId) {
-      return res.status(400).json({ 
+      console.log('❌ Falta config:', {
+        botToken: config.botToken ? 'presente' : 'FALTA',
+        chatId: config.chatId ? 'presente' : 'FALTA'
+      });
+      return res.status(400).json({
         success: false,
-        message: 'Falta configuración de bot token o chat ID' 
+        message: 'Falta configuración de bot token o chat ID. Verifica que ambos estén guardados.'
       });
     }
 
     // Enviar mensaje de prueba
     const axios = require('axios');
     const url = `https://api.telegram.org/bot${config.botToken}/sendMessage`;
-    
+
+    console.log('📤 Enviando mensaje de prueba a Telegram...');
     const response = await axios.post(url, {
       chat_id: config.chatId,
       text: `✓ Prueba de configuración Telegram\n\nFecha: ${new Date().toLocaleString('es-MX')}\n\nLa integración está funcionando correctamente.`,
@@ -244,6 +274,7 @@ exports.testTelegramSettings = async (req, res) => {
     });
 
     if (response.data.ok) {
+      console.log('✅ Mensaje enviado exitosamente a Telegram');
       return res.status(200).json({
         success: true,
         message: 'Mensaje de prueba enviado correctamente a Telegram'
@@ -252,8 +283,8 @@ exports.testTelegramSettings = async (req, res) => {
       throw new Error(response.data.description || 'Error desconocido');
     }
   } catch (error) {
-    console.error('Error en prueba de Telegram:', error);
-    return res.status(500).json({ 
+    console.error('❌ Error en prueba de Telegram:', error.response?.data || error.message);
+    return res.status(500).json({
       success: false,
       message: 'Error enviando mensaje de prueba',
       error: error.response?.data?.description || error.message
@@ -267,46 +298,242 @@ exports.testTelegramSettings = async (req, res) => {
 
 exports.getWhatsAppSettings = async (req, res) => {
   try {
-    const settings = await configHelper.getWhatsAppConfig();
-    
-    return res.status(200).json({
-      enabled: settings.enabled,
-      apiUrl: settings.apiUrl,
-      hasToken: !!settings.token
-    });
+    const method = await configHelper.get('whatsappMethod', 'twilio');
+    const rawEnabled = await configHelper.get('whatsappEnabled', false);
+
+    // CORRECCIÓN: Detectar "true", "1", 1, true como VERDADERO
+    const isEnabled = rawEnabled === true || rawEnabled === 'true' || rawEnabled === 1 || rawEnabled === '1';
+
+    const settings = {
+      enabled: isEnabled,
+      method: method
+    };
+
+    // Configuracion de Meta API
+    settings.api = {
+      apiUrl: await configHelper.get('whatsappApiUrl', 'https://graph.facebook.com/v17.0/'),
+      phoneNumberId: await configHelper.get('whatsappPhoneNumberId', ''),
+      hasToken: !!(await configHelper.get('whatsappApiToken'))
+    };
+
+    // Configuracion de Twilio
+    settings.twilio = {
+      phoneNumber: await configHelper.get('whatsappTwilioNumber', ''),
+      accountSid: await configHelper.get('whatsappTwilioAccountSid', ''),
+      hasAuthToken: !!(await configHelper.get('whatsappTwilioAuthToken'))
+    };
+
+    return res.status(200).json(settings);
   } catch (error) {
     console.error('Error obteniendo configuración de WhatsApp:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: 'Error obteniendo configuración de WhatsApp',
-      error: error.message 
+      error: error.message
     });
   }
 };
 
+
 exports.updateWhatsAppSettings = async (req, res) => {
   try {
-    const { enabled, apiUrl, token } = req.body;
-    
+    const { enabled, method, api, twilio } = req.body;
+
+    console.log('📝 UPDATE WhatsApp Settings - Request Body:', {
+      enabled: enabled,
+      enabledType: typeof enabled,
+      method: method,
+      hasApi: !!api,
+      hasTwilio: !!twilio
+    });
+
     const updates = {
       whatsappEnabled: String(enabled),
-      whatsappApiUrl: apiUrl
+      whatsappMethod: method || 'twilio'
     };
 
-    if (token && token.trim() !== '') {
-      updates.whatsappToken = token;
+    // Configuracion Meta API
+    if (api) {
+      if (api.apiUrl) updates.whatsappApiUrl = api.apiUrl;
+      if (api.phoneNumberId) updates.whatsappPhoneNumberId = api.phoneNumberId;
+      if (api.apiToken && api.apiToken.trim() !== '') {
+        updates.whatsappApiToken = api.apiToken;
+      }
     }
 
+    // Configuracion Twilio
+    if (twilio) {
+      // --- INICIO DE LA CORRECCIÓN ---
+      if (twilio.phoneNumber) {
+        // 1. Forzar conversión a Texto (String) y quitar espacios
+        let phoneStr = String(twilio.phoneNumber).trim();
+        
+        // 2. Si no tiene '+' al inicio y no tiene 'whatsapp:', se lo agregamos
+        if (!phoneStr.startsWith('+') && !phoneStr.startsWith('whatsapp:')) {
+          phoneStr = '+' + phoneStr;
+        }
+        
+        updates.whatsappTwilioNumber = phoneStr;
+      }
+      // --- FIN DE LA CORRECCIÓN ---
+
+      if (twilio.accountSid && twilio.accountSid.trim() !== '') {
+        updates.whatsappTwilioAccountSid = twilio.accountSid;
+      }
+      if (twilio.authToken && twilio.authToken.trim() !== '') {
+        updates.whatsappTwilioAuthToken = twilio.authToken;
+      }
+    }
+
+    console.log('💾 Guardando WhatsApp updates:', updates);
     await configHelper.updateModule('whatsapp', updates);
-    
+
+    // Verificar qué se guardó realmente
+    const savedConfig = await configHelper.getWhatsAppConfig();
+    console.log('✅ WhatsApp config guardada:', savedConfig);
+
+    // Reinicializar servicio de WhatsApp
+    const whatsappService = require('../services/whatsapp.service');
+    await whatsappService.initialize();
+
     return res.status(200).json({
       success: true,
       message: 'Configuración de WhatsApp actualizada correctamente'
     });
   } catch (error) {
-    console.error('Error actualizando configuración de WhatsApp:', error);
-    return res.status(500).json({ 
+    console.error('❌ Error actualizando configuración de WhatsApp:', error);
+    return res.status(500).json({
       message: 'Error actualizando configuración de WhatsApp',
-      error: error.message 
+      error: error.message
+    });
+  }
+};
+
+
+exports.testWhatsAppSettings = async (req, res) => {
+  try {
+    console.log('📞 TEST WhatsApp - Request Body:', req.body);
+    const { testPhoneNumber } = req.body;
+
+    if (!testPhoneNumber) {
+      console.log('❌ Falta número de teléfono para test de WhatsApp');
+      return res.status(400).json({
+        success: false,
+        message: 'Número de teléfono de prueba requerido'
+      });
+    }
+
+    console.log('📤 Probando WhatsApp con número:', testPhoneNumber);
+    const whatsappService = require('../services/whatsapp.service');
+    const result = await whatsappService.testConnection(testPhoneNumber);
+
+    console.log('✅ Resultado test WhatsApp:', result);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('❌ Error en prueba de WhatsApp:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error enviando mensaje de prueba',
+      error: error.message
+    });
+  }
+};
+
+// ===============================
+// CONFIGURACIÓN DE SMS
+// ===============================
+
+exports.getSMSSettings = async (req, res) => {
+  try {
+    const enabled = await configHelper.get('smsEnabled', false);
+    const gatewayType = await configHelper.get('smsGatewayType', 'generic');
+    const gatewayUrl = await configHelper.get('smsGatewayUrl', '');
+
+    const settings = {
+      enabled: enabled === 'true' || enabled === true,
+      gatewayType: gatewayType,
+      gatewayUrl: gatewayUrl,
+      hasToken: !!(await configHelper.get('smsGatewayToken'))
+    };
+
+    return res.status(200).json(settings);
+  } catch (error) {
+    console.error('Error obteniendo configuración de SMS:', error);
+    return res.status(500).json({
+      message: 'Error obteniendo configuración de SMS',
+      error: error.message
+    });
+  }
+};
+
+exports.updateSMSSettings = async (req, res) => {
+  try {
+    const { enabled, gatewayType, gatewayUrl, gatewayToken } = req.body;
+
+    const updates = {
+      smsEnabled: String(enabled),
+      smsGatewayType: gatewayType || 'generic',
+      smsGatewayUrl: gatewayUrl || ''
+    };
+
+    if (gatewayToken && gatewayToken.trim() !== '') {
+      updates.smsGatewayToken = gatewayToken;
+    }
+
+    await configHelper.updateModule('sms', updates);
+
+    // Reinicializar servicio de SMS
+    const smsService = require('../services/sms.service');
+    await smsService.initialize();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Configuración de SMS actualizada correctamente'
+    });
+  } catch (error) {
+    console.error('Error actualizando configuración de SMS:', error);
+    return res.status(500).json({
+      message: 'Error actualizando configuración de SMS',
+      error: error.message
+    });
+  }
+};
+
+exports.testSMSSettings = async (req, res) => {
+  try {
+    const { testPhoneNumber } = req.body;
+
+    if (!testPhoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Número de teléfono de prueba requerido'
+      });
+    }
+
+    const smsService = require('../services/sms.service');
+    const result = await smsService.testConnection(testPhoneNumber);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Error en prueba de SMS:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error enviando SMS de prueba',
+      error: error.message
+    });
+  }
+};
+
+exports.getSMSGatewayStatus = async (req, res) => {
+  try {
+    const smsService = require('../services/sms.service');
+    const status = await smsService.getGatewayStatus();
+
+    return res.status(200).json(status);
+  } catch (error) {
+    console.error('Error obteniendo estado del gateway SMS:', error);
+    return res.status(500).json({
+      message: 'Error obteniendo estado del gateway',
+      error: error.message
     });
   }
 };
@@ -617,6 +844,108 @@ exports.getNetworkSettings = async (req, res) => {
 };
 
 // ===============================
+// CONFIGURACIÓN DE DOMINIO Y CORS
+// ===============================
+
+exports.getDomainSettings = async (req, res) => {
+  try {
+    const systemDomain = await configHelper.get('system_domain', '');
+    const allowedOrigins = await configHelper.get('allowed_origins', '[]');
+
+    let parsedOrigins = [];
+    try {
+      parsedOrigins = JSON.parse(allowedOrigins);
+    } catch (e) {
+      parsedOrigins = [];
+    }
+
+    return res.status(200).json({
+      systemDomain,
+      allowedOrigins: parsedOrigins
+    });
+  } catch (error) {
+    console.error('Error obteniendo configuración de dominio:', error);
+    return res.status(500).json({
+      message: 'Error obteniendo configuración de dominio',
+      error: error.message
+    });
+  }
+};
+
+exports.updateDomainSettings = async (req, res) => {
+  try {
+    const { systemDomain, allowedOrigins } = req.body;
+
+    // Actualizar system_domain si se proporciona
+    if (systemDomain !== undefined) {
+      await configHelper.set('system_domain', systemDomain, {
+        configType: 'string',
+        module: 'domain',
+        description: 'Dominio principal del sistema'
+      });
+    }
+
+    // Actualizar allowed_origins si se proporciona
+    if (allowedOrigins !== undefined) {
+      // Validar que sea un array
+      if (!Array.isArray(allowedOrigins)) {
+        return res.status(400).json({
+          success: false,
+          message: 'allowedOrigins debe ser un array'
+        });
+      }
+
+      await configHelper.set('allowed_origins', JSON.stringify(allowedOrigins), {
+        configType: 'string',
+        module: 'domain',
+        description: 'Orígenes permitidos para CORS'
+      });
+    }
+
+    // Recargar origenes permitidos en el servidor
+    const mainApp = require('../../index');
+    if (mainApp.reloadAllowedOrigins) {
+      await mainApp.reloadAllowedOrigins();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Configuración de dominio actualizada correctamente'
+    });
+  } catch (error) {
+    console.error('Error actualizando configuración de dominio:', error);
+    return res.status(500).json({
+      message: 'Error actualizando configuración de dominio',
+      error: error.message
+    });
+  }
+};
+
+exports.reloadCors = async (req, res) => {
+  try {
+    const mainApp = require('../../index');
+    if (mainApp.reloadAllowedOrigins) {
+      await mainApp.reloadAllowedOrigins();
+      return res.status(200).json({
+        success: true,
+        message: 'Orígenes CORS recargados correctamente'
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: 'Función de recarga no disponible'
+      });
+    }
+  } catch (error) {
+    console.error('Error recargando CORS:', error);
+    return res.status(500).json({
+      message: 'Error recargando CORS',
+      error: error.message
+    });
+  }
+};
+
+// ===============================
 // TODAS LAS CONFIGURACIONES
 // ===============================
 
@@ -681,16 +1010,114 @@ exports.getConfigByModule = async (req, res) => {
 exports.invalidateCache = async (req, res) => {
   try {
     configHelper.invalidateCache();
-    
+
     return res.status(200).json({
       success: true,
       message: 'Caché de configuraciones invalidado correctamente'
     });
   } catch (error) {
     console.error('Error invalidando caché:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: 'Error invalidando caché',
-      error: error.message 
+      error: error.message
+    });
+  }
+};
+
+// ===============================
+// CREAR CONFIGURACIÓN PERSONALIZADA
+// ===============================
+
+exports.createSetting = async (req, res) => {
+  try {
+    const { key, value, module, description } = req.body;
+
+    if (!key || value === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'La clave y el valor son obligatorios'
+      });
+    }
+
+    // Verificar si la configuración ya existe
+    const existing = await configHelper.get(key);
+    if (existing !== null) {
+      return res.status(400).json({
+        success: false,
+        message: `La configuración con clave "${key}" ya existe`
+      });
+    }
+
+    // Crear nueva configuración
+    const setting = await configHelper.set(key, value, {
+      module: module || 'custom',
+      description: description || `Configuración personalizada: ${key}`
+    });
+
+    configHelper.invalidateCache();
+
+    return res.status(201).json({
+      success: true,
+      data: setting,
+      message: 'Configuración creada exitosamente'
+    });
+  } catch (error) {
+    console.error('Error creando configuración:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error creando configuración',
+      error: error.message
+    });
+  }
+};
+
+// ===============================
+// ELIMINAR CONFIGURACIÓN
+// ===============================
+
+exports.deleteSetting = async (req, res) => {
+  try {
+    const { key } = req.params;
+
+    // Verificar que la configuración existe
+    const setting = await configHelper.get(key);
+    if (setting === null) {
+      return res.status(404).json({
+        success: false,
+        message: `Configuración con clave "${key}" no encontrada`
+      });
+    }
+
+    // No permitir eliminar configuraciones críticas del sistema
+    const protectedKeys = [
+      'company_name',
+      'database_version',
+      'smtp_host',
+      'smtp_port',
+      'system_initialized'
+    ];
+
+    if (protectedKeys.includes(key)) {
+      return res.status(403).json({
+        success: false,
+        message: 'No se pueden eliminar configuraciones críticas del sistema'
+      });
+    }
+
+    // Eliminar configuración
+    await configHelper.delete(key);
+    configHelper.invalidateCache();
+
+    return res.status(200).json({
+      success: true,
+      message: `Configuración "${key}" eliminada exitosamente`
+    });
+  } catch (error) {
+    console.error('Error eliminando configuración:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error eliminando configuración',
+      error: error.message
     });
   }
 };

@@ -1,0 +1,24 @@
+{
+  "name": "@isp-sistema/plugin-stripe",
+  "version": "1.0.0",
+  "description": "Plugin de Stripe para procesamiento de pagos en el Sistema ISP",
+  "main": "src/stripe.controller.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "stripe",
+    "payment",
+    "gateway",
+    "isp",
+    "plugin"
+  ],
+  "author": "Sistema ISP",
+  "license": "MIT",
+  "dependencies": {
+    "stripe": "^10.0.0"
+  },
+  "peerDependencies": {
+    "express": "^4.18.0"
+  }
+}

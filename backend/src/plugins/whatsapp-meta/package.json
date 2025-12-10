@@ -1,0 +1,22 @@
+{
+  "name": "@isp-prueba/whatsapp-meta-plugin",
+  "version": "1.0.0",
+  "description": "Plugin de WhatsApp Business API usando Meta para ISP-Prueba",
+  "main": "src/index.js",
+  "keywords": [
+    "whatsapp",
+    "meta",
+    "facebook",
+    "business-api",
+    "isp-prueba"
+  ],
+  "author": "ISP-Prueba Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "peerDependencies": {
+    "express": "^4.18.0",
+    "sequelize": "^6.35.0"
+  }
+}

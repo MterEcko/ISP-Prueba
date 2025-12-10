@@ -1,0 +1,64 @@
+{
+  "id": "telegram-bot",
+  "name": "Telegram Bot",
+  "slug": "telegram-bot",
+  "version": "1.0.0",
+  "description": "Bot de Telegram para chat y notificaciones con clientes",
+  "longDescription": "Crea un bot de Telegram personalizado para comunicarte con tus clientes. Incluye comandos, mensajes, archivos multimedia y vinculacion de cuentas.",
+  "author": "ISP-Prueba Team",
+  "category": "communication",
+  "price": 0,
+  "isFree": true,
+  "tags": ["telegram", "bot", "chat", "messaging", "free"],
+  "features": [
+    "Bot de Telegram completo",
+    "Comandos personalizados",
+    "Vinculacion de usuarios",
+    "Envio de mensajes, fotos, archivos",
+    "Recepcion de multimedia",
+    "Gestion de conversaciones",
+    "Notificaciones en tiempo real",
+    "WebSocket integration"
+  ],
+  "requirements": {
+    "minVersion": "1.0.0",
+    "requiredLicense": "basic"
+  },
+  "configuration": {
+    "botToken": {
+      "type": "string",
+      "label": "Bot Token",
+      "required": true,
+      "secret": true,
+      "description": "Token del bot obtenido de @BotFather en Telegram"
+    },
+    "botUsername": {
+      "type": "string",
+      "label": "Bot Username",
+      "required": true,
+      "description": "Nombre de usuario del bot (sin @)"
+    },
+    "adminChatId": {
+      "type": "string",
+      "label": "Chat ID de Admin",
+      "required": false,
+      "description": "Tu Chat ID para recibir notificaciones de administrador"
+    },
+    "enableCommands": {
+      "type": "boolean",
+      "label": "Habilitar comandos",
+      "default": true
+    },
+    "welcomeMessage": {
+      "type": "text",
+      "label": "Mensaje de bienvenida",
+      "default": "Bienvenido al chat de ISP-Prueba\n\nPara vincular tu cuenta usa /link TU_EMAIL"
+    }
+  },
+  "permissions": [
+    "send_messages",
+    "receive_messages",
+    "manage_conversations",
+    "access_user_data"
+  ]
+}

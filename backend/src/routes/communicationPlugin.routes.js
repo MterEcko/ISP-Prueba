@@ -57,6 +57,13 @@ module.exports = function(app) {
     communicationPluginController.updateChannel
   );
 
+  // Eliminar canal
+  app.delete(
+    "/api/communication-channels/:id",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_communication")],
+    communicationPluginController.deleteChannel
+  );
+
   // ==================== ENVÍO DE MENSAJES ====================
 
   // RUTAS ESPECÍFICAS PRIMERO

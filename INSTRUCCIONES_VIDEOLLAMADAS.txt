@@ -1,0 +1,293 @@
+SISTEMA DE VIDEO LLAMADAS CON WEBRTC Y SOCKET.IO - INSTRUCCIONES
+
+===============================================================================
+RESUMEN DE CAMBIOS
+===============================================================================
+
+Se ha implementado un sistema completo de senalizacion WebRTC usando Socket.io
+para que las llamadas de voz y video funcionen entre dispositivos diferentes.
+
+Backend:
+- Socket.io instalado y configurado
+- Servidor HTTP con WebSocket en puerto 3000
+- Senalizacion WebRTC completamente funcional
+- Eventos: call-offer, call-answer, ice-candidate, call-reject, call-end
+
+Frontend:
+- socket.io-client instalado
+- Servicio de socket en src/services/socket.service.js
+- Integracion completa en FloatingChat.vue
+- Conexion automatica al iniciar sesion
+
+
+===============================================================================
+PASOS PARA ACTUALIZAR Y PROBAR
+===============================================================================
+
+1. ACTUALIZAR EL CODIGO
+   En tu servidor:
+   cd /ruta/a/ISP-Prueba
+   git pull origin claude/validate-db-routes-01MX4WV8W5gDX6fZM6mafVFd
+
+2. INSTALAR DEPENDENCIAS EN BACKEND
+   cd backend
+   npm install
+
+   (Esto instalara Socket.io automaticamente)
+
+3. INSTALAR DEPENDENCIAS EN FRONTEND
+   cd ../frontend
+   npm install
+
+   (Esto instalara socket.io-client automaticamente)
+
+4. REINICIAR EL BACKEND
+   cd ../backend
+   Detener el servidor actual (Ctrl+C)
+   npm start
+
+   Deberias ver:
+   - Servidor corriendo en el puerto 3000
+   - Socket.io iniciado para llamadas WebRTC
+
+5. RECARGAR EL FRONTEND
+   En el navegador: Ctrl + F5 (hard refresh)
+   Inicia sesion nuevamente
+
+
+===============================================================================
+COMO PROBAR LAS LLAMADAS ENTRE DISPOSITIVOS
+===============================================================================
+
+PREPARACION:
+1. Abre el sistema en 2 dispositivos diferentes
+   - Dispositivo 1: Tu ordenador
+   - Dispositivo 2: Tu movil
+
+2. Conecta ambos a la misma red local
+
+3. Accede al sistema:
+   - Ordenador: http://localhost:8080
+   - Movil: http://IP_DEL_SERVIDOR:8080
+
+   Ejemplo: Si tu servidor esta en 192.168.1.100
+   Movil: http://192.168.1.100:8080
+
+4. Inicia sesion con 2 usuarios diferentes
+   - Ordenador: Usuario A (ej: admin)
+   - Movil: Usuario B (ej: prueba)
+
+PROBAR LLAMADA:
+1. En el Dispositivo 1 (ordenador):
+   - Click en el boton flotante del chat (esquina inferior derecha)
+   - Abre una conversacion con el Usuario B
+   - Click en el icono de telefono o camara
+   - Acepta los permisos de camara/microfono si el navegador los pide
+
+2. En el Dispositivo 2 (movil):
+   - Deberias ver aparecer automaticamente la ventana de llamada entrante
+   - Veras el nombre del usuario llamador
+   - Click en "Aceptar" para responder
+   - Acepta los permisos de camara/microfono
+
+3. La llamada se establece:
+   - Video remoto aparece en pantalla principal
+   - Video local aparece en miniatura (esquina inferior derecha)
+   - Puedes usar los controles: mute, camara on/off, colgar
+
+CONTROLES DURANTE LA LLAMADA:
+- Icono de microfono: Silenciar/activar microfono
+- Icono de camara: Activar/desactivar camara (solo en videollamadas)
+- Icono de telefono rojo: Terminar llamada
+
+
+===============================================================================
+FLUJO TECNICO DE LA LLAMADA
+===============================================================================
+
+1. Usuario A hace click en boton de llamada
+   -> FloatingChat.vue: startVideoCall() o startVoiceCall()
+
+2. VideoCallWindow solicita camara/microfono
+   -> navigator.mediaDevices.getUserMedia()
+
+3. Se crea la oferta WebRTC
+   -> peerConnection.createOffer()
+
+4. Oferta se envia al servidor via Socket.io
+   -> socketService.sendCallOffer(userId, offer, callType)
+   -> Backend recibe: socket.on('call-offer')
+
+5. Servidor envia oferta a Usuario B
+   -> Backend busca socket ID del Usuario B en connectedUsers Map
+   -> io.to(targetSocketId).emit('incoming-call', data)
+
+6. Usuario B recibe llamada entrante
+   -> Frontend: socketService.on('incoming-call')
+   -> FloatingChat: handleIncomingCall()
+   -> VideoCallWindow.receiveCall()
+
+7. Usuario B acepta la llamada
+   -> VideoCallWindow: acceptCall()
+   -> Crea respuesta WebRTC: peerConnection.createAnswer()
+   -> Envia respuesta: socketService.sendCallAnswer()
+
+8. Usuario A recibe respuesta
+   -> socketService.on('call-answered')
+   -> VideoCallWindow.handleAnswer()
+   -> peerConnection.setRemoteDescription()
+
+9. ICE Candidates se intercambian automaticamente
+   -> peerConnection.onicecandidate
+   -> socketService.sendIceCandidate()
+   -> Servidor retransmite a otro usuario
+
+10. Conexion P2P establecida
+    -> peerConnection.ontrack recibe streams
+    -> Videos se muestran en pantalla
+
+
+===============================================================================
+SOLUCIONAR PROBLEMAS
+===============================================================================
+
+PROBLEMA: Las llamadas no funcionan
+SOLUCION:
+1. Verifica que el backend esta corriendo
+2. Abre consola del navegador (F12)
+3. Busca mensaje: "Socket connected: [ID]"
+4. Si no aparece, verifica:
+   - Backend tiene Socket.io instalado
+   - Puerto 3000 esta abierto
+   - CORS configurado correctamente
+
+PROBLEMA: "Socket not connected" en consola
+SOLUCION:
+1. Verifica que el backend esta escuchando en puerto 3000
+2. Revisa que la URL del API es correcta
+3. En frontend/src/services/socket.service.js linea 17:
+   const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000';
+4. Si usas IP diferente, configura VUE_APP_API_URL en .env
+
+PROBLEMA: No se ven los videos
+SOLUCION:
+1. Verifica permisos de camara/microfono en el navegador
+2. En Chrome: Configuracion > Privacidad > Permisos del sitio
+3. Para HTTPS: Necesitas certificado SSL valido
+4. Para HTTP: Solo funciona en localhost o red local
+
+PROBLEMA: El otro usuario no recibe la llamada
+SOLUCION:
+1. Verifica que ambos usuarios estan conectados al socket
+2. En consola backend busca: "Usuario [ID] registrado"
+3. Verifica que el participantId de la conversacion es correcto
+4. Revisa logs del backend para ver si llega el evento call-offer
+
+PROBLEMA: Error de permisos de camara
+SOLUCION:
+1. Navegadores modernos solo permiten camara en HTTPS o localhost
+2. Si estas usando IP (ej: 192.168.1.100):
+   - En Chrome: chrome://flags/#unsafely-treat-insecure-origin-as-secure
+   - Agrega tu IP: http://192.168.1.100:8080
+   - Reinicia Chrome
+3. O configura HTTPS con certificado
+
+
+===============================================================================
+VERIFICACION DE INSTALACION
+===============================================================================
+
+1. Backend tiene Socket.io:
+   cd backend
+   grep "socket.io" package.json
+   Deberia mostrar: "socket.io": "^4.x.x"
+
+2. Frontend tiene socket.io-client:
+   cd frontend
+   grep "socket.io-client" package.json
+   Deberia mostrar: "socket.io-client": "^4.x.x"
+
+3. Backend inicia Socket.io:
+   npm start
+   Deberia mostrar:
+   "Servidor corriendo en el puerto 3000"
+   "Socket.io iniciado para llamadas WebRTC"
+
+4. Frontend se conecta:
+   Abre consola del navegador (F12)
+   Inicia sesion
+   Deberia mostrar:
+   "Socket connected: [SOCKET_ID]"
+   "Usuario [USER_ID] registrado con socket [SOCKET_ID]"
+
+
+===============================================================================
+ARQUITECTURA DEL SISTEMA
+===============================================================================
+
+Backend (Node.js + Express + Socket.io):
+  /home/user/ISP-Prueba/backend/index.js
+    - Servidor HTTP en puerto 3000
+    - Socket.io configurado con CORS
+    - Map de usuarios conectados: connectedUsers
+    - Eventos WebRTC: 8 handlers
+
+Frontend (Vue 2 + socket.io-client):
+  /home/user/ISP-Prueba/frontend/src/services/socket.service.js
+    - Singleton para manejar conexion WebSocket
+    - Metodos para enviar eventos
+    - Sistema de event handlers
+
+  /home/user/ISP-Prueba/frontend/src/components/FloatingChat.vue
+    - Conecta socket al montar
+    - Handlers para llamadas entrantes
+    - Integracion con VideoCallWindow
+
+  /home/user/ISP-Prueba/frontend/src/components/VideoCallWindow.vue
+    - Interfaz de video llamada
+    - WebRTC PeerConnection
+    - Manejo de streams de audio/video
+
+
+===============================================================================
+CARACTERISTICAS IMPLEMENTADAS
+===============================================================================
+
+- Llamadas de voz (solo audio)
+- Videollamadas (audio + video)
+- Senalizacion en tiempo real via WebSocket
+- Intercambio automatico de ICE candidates
+- Llamadas entre dispositivos diferentes
+- Interfaz de llamada entrante
+- Controles de mute/unmute
+- Controles de camara on/off
+- Deteccion de desconexion
+- Reconexion automatica del socket
+- Registro automatico de usuarios al conectar
+- Limpieza de recursos al desconectar
+
+
+===============================================================================
+PROXIMOS PASOS OPCIONALES
+===============================================================================
+
+1. Agregar sonido de llamada entrante
+2. Notificaciones de navegador
+3. Historial de llamadas en BD
+4. Soporte para llamadas grupales
+5. Compartir pantalla
+6. Grabacion de llamadas
+7. Estadisticas de calidad de llamada
+8. TURN server para atravesar NATs restrictivos
+
+
+===============================================================================
+SOPORTE
+===============================================================================
+
+Si tienes problemas:
+1. Revisa la consola del navegador (F12 > Console)
+2. Revisa los logs del backend
+3. Verifica que Socket.io esta instalado
+4. Confirma que el puerto 3000 esta abierto
+5. Asegurate de que ambos dispositivos estan en la misma red

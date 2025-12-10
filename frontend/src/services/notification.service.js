@@ -1,465 +1,547 @@
-import axios from 'axios';
-import authHeader from './auth-header';
-import { API_URL } from './frontend_apiConfig';
+// backend/src/services/notification.service.js
+const db = require('../models');
+const websocketService = require('./websocket.service');
+const logger = require('../utils/logger');
 
+/**
+ * Servicio de notificaciones en tiempo real
+ * Gestiona la creación, envío y seguimiento de notificaciones
+ */
 class NotificationService {
-  // ===============================
-  // NOTIFICACIONES GENERALES
-  // ===============================
-
   /**
-   * Envía una notificación genérica a través del backend
-   * El backend decidirá el canal (Telegram, WhatsApp, Email, etc.) basado en la configuración
-   * @param {object} notificationData - Datos de la notificación
-   * @returns {Promise} - Promesa con la respuesta del backend
+   * Crea y envía una notificación
+   * @param {Object} notificationData - Datos de la notificación
+   * @returns {Promise<Object>} - Notificación creada
    */
-  sendNotification(notificationData) {
-    return axios.post(`${API_URL}/notifications/send`, notificationData, {
-      headers: authHeader()
-    });
-  }
+  async createAndSend(notificationData) {
+    try {
+      const {
+        userId,
+        type,
+        priority = 'medium',
+        title,
+        message,
+        metadata = {},
+        actionUrl = null,
+        actionLabel = null,
+        expiresAt = null,
+        sendViaWebSocket = true,
+        sendViaEmail = false,
+        sendViaSMS = false
+      } = notificationData;
 
-  /**
-   * Obtener todas las notificaciones con filtros
-   * @param {object} params - Parámetros de filtrado
-   * @returns {Promise} - Promesa con las notificaciones
-   */
-  getAllNotifications(params = {}) {
-    let queryParams = new URLSearchParams();
-    
-    if (params.page) queryParams.append('page', params.page);
-    if (params.size) queryParams.append('size', params.size);
-    if (params.status) queryParams.append('status', params.status);
-    if (params.channel) queryParams.append('channel', params.channel);
-    if (params.clientId) queryParams.append('clientId', params.clientId);
-    if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
-    if (params.dateTo) queryParams.append('dateTo', params.dateTo);
+      // Crear notificación en la base de datos
+      const notification = await db.Notification.create({
+        userId,
+        type,
+        priority,
+        title,
+        message,
+        metadata,
+        actionUrl,
+        actionLabel,
+        expiresAt,
+        sentVia: {
+          websocket: sendViaWebSocket,
+          email: sendViaEmail,
+          sms: sendViaSMS
+        }
+      });
 
-    return axios.get(`${API_URL}/notifications?${queryParams.toString()}`, {
-      headers: authHeader()
-    });
-  }
+      // Enviar por WebSocket si está habilitado
+      if (sendViaWebSocket) {
+        this.sendViaWebSocket(notification);
+      }
 
-  /**
-   * Obtener notificación por ID
-   * @param {number} id - ID de la notificación
-   * @returns {Promise} - Promesa con la notificación
-   */
-  getNotification(id) {
-    return axios.get(`${API_URL}/notifications/${id}`, {
-      headers: authHeader()
-    });
-  }
+      // TODO: Enviar por Email si está habilitado
+      // if (sendViaEmail) {
+      //   this.sendViaEmail(notification);
+      // }
 
-  /**
-   * Marcar notificación como leída
-   * @param {number} id - ID de la notificación
-   * @returns {Promise} - Promesa con el resultado
-   */
-  markAsRead(id) {
-    return axios.patch(`${API_URL}/notifications/${id}/read`, {}, {
-      headers: authHeader()
-    });
-  }
+      // TODO: Enviar por SMS si está habilitado
+      // if (sendViaSMS) {
+      //   this.sendViaSMS(notification);
+      // }
 
-  /**
-   * Eliminar notificación
-   * @param {number} id - ID de la notificación
-   * @returns {Promise} - Promesa con el resultado
-   */
-  deleteNotification(id) {
-    return axios.delete(`${API_URL}/notifications/${id}`, {
-      headers: authHeader()
-    });
-  }
+      logger.info(`Notificación creada: ${notification.id} (${type}) para usuario ${userId || 'todos'}`);
 
-  // ===============================
-  // TELEGRAM
-  // ===============================
-
-  /**
-   * Envía un mensaje directo a través de Telegram
-   * @param {string} chatId - El ID del chat de Telegram
-   * @param {string} message - El mensaje a enviar
-   * @param {object} options - Opciones adicionales (keyboard, parse_mode, etc.)
-   * @returns {Promise} - Promesa con la respuesta del backend
-   */
-  sendTelegramMessage(chatId, message, options = {}) {
-    return axios.post(`${API_URL}/notifications/telegram/send-message`, {
-      chatId,
-      message,
-      ...options
-    }, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Obtener información del bot de Telegram
-   * @returns {Promise} - Promesa con la información del bot
-   */
-  getTelegramBotInfo() {
-    return axios.get(`${API_URL}/notifications/telegram/bot-info`, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Obtener actualizaciones de Telegram
-   * @returns {Promise} - Promesa con las actualizaciones
-   */
-  getTelegramUpdates() {
-    return axios.get(`${API_URL}/notifications/telegram/updates`, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Configurar webhook de Telegram
-   * @param {string} webhookUrl - URL del webhook
-   * @returns {Promise} - Promesa con el resultado
-   */
-  setTelegramWebhook(webhookUrl) {
-    return axios.post(`${API_URL}/notifications/telegram/webhook`, {
-      webhookUrl
-    }, {
-      headers: authHeader()
-    });
-  }
-
-  // ===============================
-  // WHATSAPP
-  // ===============================
-
-  /**
-   * Envía un mensaje de plantilla de WhatsApp
-   * @param {string} phoneNumber - Número de WhatsApp del destinatario
-   * @param {string} templateName - Nombre de la plantilla aprobada
-   * @param {string} languageCode - Código de idioma (e.g., "es_MX")
-   * @param {Array} components - Componentes de la plantilla
-   * @returns {Promise} - Promesa con la respuesta del backend
-   */
-  sendWhatsAppTemplate(phoneNumber, templateName, languageCode, components = []) {
-    return axios.post(`${API_URL}/notifications/whatsapp/send-template`, {
-      phoneNumber,
-      templateName,
-      languageCode,
-      components
-    }, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Enviar mensaje de texto simple por WhatsApp
-   * @param {string} phoneNumber - Número de WhatsApp
-   * @param {string} message - Mensaje a enviar
-   * @returns {Promise} - Promesa con la respuesta
-   */
-  sendWhatsAppMessage(phoneNumber, message) {
-    return axios.post(`${API_URL}/notifications/whatsapp/send-message`, {
-      phoneNumber,
-      message
-    }, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Obtener plantillas de WhatsApp disponibles
-   * @returns {Promise} - Promesa con las plantillas
-   */
-  getWhatsAppTemplates() {
-    return axios.get(`${API_URL}/notifications/whatsapp/templates`, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Verificar estado de WhatsApp Business
-   * @returns {Promise} - Promesa con el estado
-   */
-  getWhatsAppStatus() {
-    return axios.get(`${API_URL}/notifications/whatsapp/status`, {
-      headers: authHeader()
-    });
-  }
-
-  // ===============================
-  // EMAIL
-  // ===============================
-
-  /**
-   * Enviar email
-   * @param {object} emailData - Datos del email (to, subject, body, template, etc.)
-   * @returns {Promise} - Promesa con la respuesta
-   */
-  sendEmail(emailData) {
-    return axios.post(`${API_URL}/notifications/email/send`, emailData, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Enviar email masivo
-   * @param {object} bulkEmailData - Datos para envío masivo
-   * @returns {Promise} - Promesa con la respuesta
-   */
-  sendBulkEmail(bulkEmailData) {
-    return axios.post(`${API_URL}/notifications/email/send-bulk`, bulkEmailData, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Obtener plantillas de email
-   * @returns {Promise} - Promesa con las plantillas
-   */
-  getEmailTemplates() {
-    return axios.get(`${API_URL}/notifications/email/templates`, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Probar configuración SMTP
-   * @param {object} smtpConfig - Configuración SMTP
-   * @returns {Promise} - Promesa con el resultado de la prueba
-   */
-  testSmtpConnection(smtpConfig) {
-    return axios.post(`${API_URL}/notifications/email/test-smtp`, smtpConfig, {
-      headers: authHeader()
-    });
-  }
-
-  // ===============================
-  // PLANTILLAS Y CONFIGURACIÓN
-  // ===============================
-
-  /**
-   * Obtener todas las plantillas de mensajes
-   * @param {string} channel - Canal específico (opcional)
-   * @returns {Promise} - Promesa con las plantillas
-   */
-  getMessageTemplates(channel = null) {
-    const params = channel ? `?channel=${channel}` : '';
-    return axios.get(`${API_URL}/notifications/templates${params}`, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Crear nueva plantilla de mensaje
-   * @param {object} templateData - Datos de la plantilla
-   * @returns {Promise} - Promesa con la respuesta
-   */
-  createMessageTemplate(templateData) {
-    return axios.post(`${API_URL}/notifications/templates`, templateData, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Actualizar plantilla de mensaje
-   * @param {number} id - ID de la plantilla
-   * @param {object} templateData - Datos actualizados
-   * @returns {Promise} - Promesa con la respuesta
-   */
-  updateMessageTemplate(id, templateData) {
-    return axios.put(`${API_URL}/notifications/templates/${id}`, templateData, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Eliminar plantilla de mensaje
-   * @param {number} id - ID de la plantilla
-   * @returns {Promise} - Promesa con la respuesta
-   */
-  deleteMessageTemplate(id) {
-    return axios.delete(`${API_URL}/notifications/templates/${id}`, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Vista previa de plantilla con variables
-   * @param {number} templateId - ID de la plantilla
-   * @param {object} variables - Variables para reemplazar
-   * @returns {Promise} - Promesa con la vista previa
-   */
-  previewTemplate(templateId, variables = {}) {
-    return axios.post(`${API_URL}/notifications/templates/${templateId}/preview`, {
-      variables
-    }, {
-      headers: authHeader()
-    });
-  }
-
-  // ===============================
-  // CONFIGURACIÓN DE CANALES
-  // ===============================
-
-  /**
-   * Obtener configuración de canales de notificación
-   * @returns {Promise} - Promesa con la configuración
-   */
-  getChannelConfiguration() {
-    return axios.get(`${API_URL}/notifications/channels/config`, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Actualizar configuración de canal
-   * @param {string} channel - Canal (telegram, whatsapp, email)
-   * @param {object} config - Nueva configuración
-   * @returns {Promise} - Promesa con la respuesta
-   */
-  updateChannelConfiguration(channel, config) {
-    return axios.put(`${API_URL}/notifications/channels/${channel}/config`, config, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Probar conexión de canal
-   * @param {string} channel - Canal a probar
-   * @returns {Promise} - Promesa con el resultado de la prueba
-   */
-  testChannelConnection(channel) {
-    return axios.post(`${API_URL}/notifications/channels/${channel}/test`, {}, {
-      headers: authHeader()
-    });
-  }
-
-  // ===============================
-  // ESTADÍSTICAS Y REPORTES
-  // ===============================
-
-  /**
-   * Obtener estadísticas de notificaciones
-   * @param {object} params - Parámetros de filtrado
-   * @returns {Promise} - Promesa con las estadísticas
-   */
-  getNotificationStatistics(params = {}) {
-    let queryParams = new URLSearchParams();
-    
-    if (params.period) queryParams.append('period', params.period);
-    if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
-    if (params.dateTo) queryParams.append('dateTo', params.dateTo);
-    if (params.channel) queryParams.append('channel', params.channel);
-
-    return axios.get(`${API_URL}/notifications/statistics?${queryParams.toString()}`, {
-      headers: authHeader()
-    });
-  }
-
-  /**
-   * Obtener historial de envíos
-   * @param {object} params - Parámetros de filtrado
-   * @returns {Promise} - Promesa con el historial
-   */
-  getDeliveryHistory(params = {}) {
-    let queryParams = new URLSearchParams();
-    
-    if (params.page) queryParams.append('page', params.page);
-    if (params.size) queryParams.append('size', params.size);
-    if (params.channel) queryParams.append('channel', params.channel);
-    if (params.status) queryParams.append('status', params.status);
-    if (params.clientId) queryParams.append('clientId', params.clientId);
-    if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
-    if (params.dateTo) queryParams.append('dateTo', params.dateTo);
-
-    return axios.get(`${API_URL}/notifications/delivery-history?${queryParams.toString()}`, {
-      headers: authHeader()
-    });
-  }
-
-  // ===============================
-  // MÉTODOS DE UTILIDAD
-  // ===============================
-
-  /**
-   * Validar número de teléfono para WhatsApp
-   * @param {string} phoneNumber - Número a validar
-   * @returns {boolean} - Si el número es válido
-   */
-  validatePhoneNumber(phoneNumber) {
-    // Formato internacional sin + al inicio
-    const phoneRegex = /^[1-9]\d{1,14}$/;
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    return phoneRegex.test(cleanPhone);
-  }
-
-  /**
-   * Formatear número de teléfono para WhatsApp
-   * @param {string} phoneNumber - Número a formatear
-   * @returns {string} - Número formateado
-   */
-  formatPhoneNumber(phoneNumber) {
-    // Remover caracteres no numéricos
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    
-    // Si no tiene código de país, asumir México (+52)
-    if (cleanPhone.length === 10) {
-      return `52${cleanPhone}`;
+      return notification;
+    } catch (error) {
+      logger.error(`Error creando notificación: ${error.message}`);
+      throw error;
     }
-    
-    return cleanPhone;
   }
 
   /**
-   * Obtener variables disponibles para plantillas
-   * @returns {Array} - Lista de variables disponibles
+   * Envía una notificación por WebSocket
+   * @param {Object} notification - Notificación a enviar
    */
-  getAvailableVariables() {
-    return [
-      { name: 'cliente_nombre', description: 'Nombre del cliente' },
-      { name: 'cliente_apellido', description: 'Apellido del cliente' },
-      { name: 'factura_numero', description: 'Número de factura' },
-      { name: 'factura_monto', description: 'Monto de la factura' },
-      { name: 'factura_fecha_vencimiento', description: 'Fecha de vencimiento' },
-      { name: 'servicio_velocidad', description: 'Velocidad del servicio' },
-      { name: 'empresa_nombre', description: 'Nombre de la empresa' },
-      { name: 'empresa_telefono', description: 'Teléfono de la empresa' },
-      { name: 'fecha_actual', description: 'Fecha actual' }
-    ];
-  }
-
-  /**
-   * Formatear estado de notificación para UI
-   * @param {string} status - Estado de la notificación
-   * @returns {object} - Objeto con formato para UI
-   */
-  formatNotificationStatus(status) {
-    const statusMap = {
-      'pending': { label: 'Pendiente', class: 'status-pending', color: '#2196F3' },
-      'sent': { label: 'Enviado', class: 'status-sent', color: '#4CAF50' },
-      'delivered': { label: 'Entregado', class: 'status-delivered', color: '#8BC34A' },
-      'failed': { label: 'Fallido', class: 'status-failed', color: '#F44336' },
-      'read': { label: 'Leído', class: 'status-read', color: '#9C27B0' }
+  sendViaWebSocket(notification) {
+    const notificationPayload = {
+      id: notification.id,
+      type: notification.type,
+      priority: notification.priority,
+      title: notification.title,
+      message: notification.message,
+      metadata: notification.metadata,
+      actionUrl: notification.actionUrl,
+      actionLabel: notification.actionLabel,
+      createdAt: notification.createdAt
     };
 
-    return statusMap[status] || { label: status, class: 'status-unknown', color: '#757575' };
+    if (notification.userId) {
+      // Enviar a un usuario específico
+      websocketService.emitToUser(notification.userId, 'notification:new', notificationPayload);
+    } else {
+      // Broadcast a todos los usuarios
+      websocketService.broadcast('notification:new', notificationPayload);
+    }
   }
 
   /**
-   * Formatear canal de notificación para UI
-   * @param {string} channel - Canal de notificación
-   * @returns {string} - Nombre formateado del canal
+   * Notificación de pago recibido
    */
-  formatChannelName(channel) {
-    const channelMap = {
-      'telegram': 'Telegram',
-      'whatsapp': 'WhatsApp',
-      'email': 'Email',
-      'sms': 'SMS',
-      'push': 'Push Notification'
-    };
+  async notifyPaymentReceived(payment, client) {
+    return this.createAndSend({
+      userId: null, // Notificar a todos los admin/manager
+      type: 'payment_received',
+      priority: 'high',
+      title: 'Pago Recibido',
+      message: `Se recibió un pago de $\${payment.monto} de \${client.nombre}`,
+      metadata: {
+        paymentId: payment.id,
+        clientId: client.id,
+        amount: payment.monto,
+        method: payment.metodo_pago
+      },
+      actionUrl: `/payments/\${payment.id}`,
+      actionLabel: 'Ver Pago',
+      sendViaWebSocket: true
+    });
+  }
 
-    return channelMap[channel] || channel;
+  /**
+   * Notificación de pago fallido
+   */
+  async notifyPaymentFailed(payment, client, errorMessage) {
+    return this.createAndSend({
+      userId: null,
+      type: 'payment_failed',
+      priority: 'high',
+      title: 'Pago Fallido',
+      message: `El pago de $\${payment.monto} de \${client.nombre} falló: \${errorMessage}`,
+      metadata: {
+        paymentId: payment.id,
+        clientId: client.id,
+        amount: payment.monto,
+        error: errorMessage
+      },
+      actionUrl: `/payments/\${payment.id}`,
+      actionLabel: 'Ver Detalles',
+      sendViaWebSocket: true
+    });
+  }
+
+  /**
+   * Notificación de nuevo cliente
+   */
+  async notifyNewClient(client, createdByUserId) {
+    return this.createAndSend({
+      userId: null,
+      type: 'client_created',
+      priority: 'medium',
+      title: 'Nuevo Cliente',
+      message: `Cliente \${client.nombre} registrado exitosamente`,
+      metadata: {
+        clientId: client.id,
+        clientName: client.nombre,
+        createdBy: createdByUserId
+      },
+      actionUrl: `/clients/\${client.id}`,
+      actionLabel: 'Ver Cliente',
+      sendViaWebSocket: true
+    });
+  }
+
+  /**
+   * Notificación de cliente suspendido
+   */
+  async notifyClientSuspended(client, reason) {
+    return this.createAndSend({
+      userId: null,
+      type: 'client_suspended',
+      priority: 'medium',
+      title: 'Cliente Suspendido',
+      message: `Cliente \${client.nombre} ha sido suspendido: \${reason}`,
+      metadata: {
+        clientId: client.id,
+        clientName: client.nombre,
+        reason: reason
+      },
+      actionUrl: `/clients/\${client.id}`,
+      actionLabel: 'Ver Cliente',
+      sendViaWebSocket: true
+    });
+  }
+
+  /**
+   * Notificación de nuevo ticket
+   */
+  async notifyNewTicket(ticket, client) {
+    return this.createAndSend({
+      userId: null,
+      type: 'ticket_created',
+      priority: ticket.priority === 'urgent' ? 'urgent' : 'medium',
+      title: 'Nuevo Ticket',
+      message: `Nuevo ticket #\${ticket.id} de \${client.nombre}: \${ticket.subject}`,
+      metadata: {
+        ticketId: ticket.id,
+        clientId: client.id,
+        subject: ticket.subject,
+        priority: ticket.priority
+      },
+      actionUrl: `/tickets/\${ticket.id}`,
+      actionLabel: 'Ver Ticket',
+      sendViaWebSocket: true
+    });
+  }
+
+  /**
+   * Notificación de ticket asignado
+   */
+  async notifyTicketAssigned(ticket, assignedToUserId, assignedByUsername) {
+    return this.createAndSend({
+      userId: assignedToUserId,
+      type: 'ticket_assigned',
+      priority: 'high',
+      title: 'Ticket Asignado',
+      message: `Se te ha asignado el ticket #\${ticket.id}: \${ticket.subject}`,
+      metadata: {
+        ticketId: ticket.id,
+        subject: ticket.subject,
+        assignedBy: assignedByUsername
+      },
+      actionUrl: `/tickets/\${ticket.id}`,
+      actionLabel: 'Ver Ticket',
+      sendViaWebSocket: true
+    });
+  }
+
+  /**
+   * Notificación de factura vencida
+   */
+  async notifyInvoiceOverdue(invoice, client) {
+    return this.createAndSend({
+      userId: null,
+      type: 'invoice_overdue',
+      priority: 'high',
+      title: 'Factura Vencida',
+      message: `Factura #\${invoice.numero_factura} de \${client.nombre} está vencida ($\${invoice.total})`,
+      metadata: {
+        invoiceId: invoice.id,
+        clientId: client.id,
+        amount: invoice.total,
+        dueDate: invoice.fecha_vencimiento
+      },
+      actionUrl: `/invoices/\${invoice.id}`,
+      actionLabel: 'Ver Factura',
+      sendViaWebSocket: true
+    });
+  }
+
+  /**
+   * Notificación de alerta del sistema
+   */
+  async notifySystemAlert(title, message, metadata = {}) {
+    return this.createAndSend({
+      userId: null,
+      type: 'system_alert',
+      priority: 'urgent',
+      title: title,
+      message: message,
+      metadata: metadata,
+      sendViaWebSocket: true
+    });
+  }
+
+  /**
+   * Notificación de error en plugin
+   */
+  async notifyPluginError(pluginName, errorMessage, metadata = {}) {
+    return this.createAndSend({
+      userId: null,
+      type: 'plugin_error',
+      priority: 'high',
+      title: `Error en Plugin: \${pluginName}`,
+      message: errorMessage,
+      metadata: {
+        plugin: pluginName,
+        ...metadata
+      },
+      actionUrl: '/plugins',
+      actionLabel: 'Ver Plugins',
+      sendViaWebSocket: true
+    });
+  }
+
+  /**
+   * Notificación de inventario bajo
+   */
+  async notifyLowInventory(product, currentStock, minStock) {
+    return this.createAndSend({
+      userId: null,
+      type: 'low_inventory',
+      priority: 'medium',
+      title: 'Inventario Bajo',
+      message: `El producto "\${product.nombre}" tiene stock bajo: \${currentStock} unidades (mínimo: \${minStock})`,
+      metadata: {
+        productId: product.id,
+        productName: product.nombre,
+        currentStock: currentStock,
+        minStock: minStock
+      },
+      actionUrl: `/inventory/\${product.id}`,
+      actionLabel: 'Ver Producto',
+      sendViaWebSocket: true
+    });
+  }
+
+  /**
+   * Notificación de dispositivo desconectado
+   */
+  async notifyDeviceOffline(device) {
+    return this.createAndSend({
+      userId: null,
+      type: 'device_offline',
+      priority: 'high',
+      title: 'Dispositivo Desconectado',
+      message: `El dispositivo \${device.name} (\${device.ip}) está fuera de línea`,
+      metadata: {
+        deviceId: device.id,
+        deviceName: device.name,
+        deviceIp: device.ip
+      },
+      actionUrl: `/devices/\${device.id}`,
+      actionLabel: 'Ver Dispositivo',
+      sendViaWebSocket: true
+    });
+  }
+
+  /**
+   * Obtiene las notificaciones de un usuario
+   * @param {number} userId - ID del usuario
+   * @param {Object} options - Opciones de filtrado
+   * @returns {Promise<Object>} - Notificaciones y totales
+   */
+  async getUserNotifications(userId, options = {}) {
+    try {
+      const {
+        limit = 50,
+        offset = 0,
+        unreadOnly = false,
+        types = null,
+        priority = null,
+        includeArchived = false
+      } = options;
+
+      const where = {
+        userId: userId
+      };
+
+      if (unreadOnly) {
+        where.isRead = false;
+      }
+
+      if (!includeArchived) {
+        where.isArchived = false;
+      }
+
+      if (types && Array.isArray(types)) {
+        where.type = types;
+      }
+
+      if (priority) {
+        where.priority = priority;
+      }
+
+      // Excluir notificaciones expiradas
+      where.expiresAt = {
+        [db.Sequelize.Op.or]: [
+          null,
+          { [db.Sequelize.Op.gt]: new Date() }
+        ]
+      };
+
+      const { count, rows } = await db.Notification.findAndCountAll({
+        where,
+        limit,
+        offset,
+        order: [
+          ['priority', 'DESC'], // Urgentes primero
+          ['createdAt', 'DESC'] // Más recientes primero
+        ]
+      });
+
+      // Contar no leídas
+      const unreadCount = await db.Notification.count({
+        where: {
+          userId: userId,
+          isRead: false,
+          isArchived: false,
+          expiresAt: {
+            [db.Sequelize.Op.or]: [
+              null,
+              { [db.Sequelize.Op.gt]: new Date() }
+            ]
+          }
+        }
+      });
+
+      return {
+        notifications: rows,
+        total: count,
+        unreadCount: unreadCount
+      };
+    } catch (error) {
+      logger.error(`Error obteniendo notificaciones: \${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Marca una notificación como leída
+   * @param {number} notificationId - ID de la notificación
+   * @param {number} userId - ID del usuario (para verificar permisos)
+   */
+  async markAsRead(notificationId, userId) {
+    try {
+      const notification = await db.Notification.findOne({
+        where: {
+          id: notificationId,
+          userId: userId
+        }
+      });
+
+      if (!notification) {
+        throw new Error('Notificación no encontrada');
+      }
+
+      if (!notification.isRead) {
+        await notification.update({
+          isRead: true,
+          readAt: new Date()
+        });
+      }
+
+      return notification;
+    } catch (error) {
+      logger.error(`Error marcando notificación como leída: \${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Marca todas las notificaciones de un usuario como leídas
+   * @param {number} userId - ID del usuario
+   */
+  async markAllAsRead(userId) {
+    try {
+      const result = await db.Notification.update(
+        {
+          isRead: true,
+          readAt: new Date()
+        },
+        {
+          where: {
+            userId: userId,
+            isRead: false
+          }
+        }
+      );
+
+      return { updated: result[0] };
+    } catch (error) {
+      logger.error(`Error marcando todas las notificaciones como leídas: \${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Archiva una notificación
+   * @param {number} notificationId - ID de la notificación
+   * @param {number} userId - ID del usuario
+   */
+  async archiveNotification(notificationId, userId) {
+    try {
+      const notification = await db.Notification.findOne({
+        where: {
+          id: notificationId,
+          userId: userId
+        }
+      });
+
+      if (!notification) {
+        throw new Error('Notificación no encontrada');
+      }
+
+      await notification.update({
+        isArchived: true,
+        archivedAt: new Date()
+      });
+
+      return notification;
+    } catch (error) {
+      logger.error(`Error archivando notificación: \${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Elimina notificaciones expiradas
+   */
+  async cleanupExpiredNotifications() {
+    try {
+      const result = await db.Notification.destroy({
+        where: {
+          expiresAt: {
+            [db.Sequelize.Op.lt]: new Date()
+          }
+        }
+      });
+
+      logger.info(`Eliminadas \${result} notificaciones expiradas`);
+      return result;
+    } catch (error) {
+      logger.error(`Error limpiando notificaciones expiradas: \${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Elimina notificaciones archivadas antiguas (más de 30 días)
+   */
+  async cleanupOldArchivedNotifications(daysToKeep = 30) {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+
+      const result = await db.Notification.destroy({
+        where: {
+          isArchived: true,
+          archivedAt: {
+            [db.Sequelize.Op.lt]: cutoffDate
+          }
+        }
+      });
+
+      logger.info(`Eliminadas \${result} notificaciones archivadas antiguas`);
+      return result;
+    } catch (error) {
+      logger.error(`Error limpiando notificaciones archivadas: \${error.message}`);
+      throw error;
+    }
   }
 }
 
-export default new NotificationService();
+// Exportar instancia singleton
+module.exports = new NotificationService();

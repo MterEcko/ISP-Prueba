@@ -1,0 +1,418 @@
+<!-- backend/src/templates/documents/contrato-servicio.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contrato de Servicio - {{nombre_completo}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #333;
+            background: white;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #2196F3;
+        }
+
+        .logo-container {
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            color: #2196F3;
+            font-size: 20pt;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 10pt;
+            font-style: italic;
+        }
+
+        .contract-number {
+            text-align: right;
+            font-size: 10pt;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .contract-number strong {
+            color: #2196F3;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            background: #f0f0f0;
+            color: #2196F3;
+            padding: 10px 15px;
+            font-size: 13pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-left: 4px solid #2196F3;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 20px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            padding: 8px 0;
+        }
+
+        .info-item label {
+            font-weight: bold;
+            color: #555;
+            display: block;
+            font-size: 9pt;
+            margin-bottom: 3px;
+        }
+
+        .info-item .value {
+            color: #333;
+            font-size: 11pt;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .terms {
+            text-align: justify;
+            line-height: 1.8;
+        }
+
+        .terms h3 {
+            color: #2196F3;
+            font-size: 12pt;
+            margin: 20px 0 10px 0;
+        }
+
+        .terms p {
+            margin-bottom: 12px;
+        }
+
+        .terms ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .terms ol li {
+            margin-bottom: 8px;
+        }
+
+        .highlight-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .highlight-box strong {
+            color: #856404;
+        }
+
+        .signatures {
+            margin-top: 50px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            page-break-inside: avoid;
+        }
+
+        .signature-block {
+            text-align: center;
+        }
+
+        .signature-line {
+            border-top: 2px solid #333;
+            margin: 60px 20px 10px 20px;
+        }
+
+        .signature-label {
+            font-weight: bold;
+            color: #555;
+            margin-top: 5px;
+        }
+
+        .signature-name {
+            color: #333;
+            font-size: 10pt;
+            margin-top: 3px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        .qr-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .qr-section p {
+            margin-top: 10px;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .container {
+                max-width: 100%;
+                padding: 20px;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .signatures {
+                page-break-before: avoid;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Encabezado -->
+        <div class="header">
+            <div class="logo-container">
+                <system-logo width="180" height="60"></system-logo>
+            </div>
+            <h1>Contrato de Prestación de Servicios</h1>
+            <p class="subtitle">Servicios de Internet de Banda Ancha</p>
+        </div>
+
+        <div class="contract-number">
+            <strong>Contrato No.:</strong> {{numero_contrato}}<br>
+            <strong>Fecha:</strong> {{fecha_generacion}}
+        </div>
+
+        <!-- Datos del Cliente -->
+        <div class="section">
+            <div class="section-title">I. DATOS DEL CLIENTE</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Nombre Completo:</label>
+                    <div class="value">{{nombre_completo}}</div>
+                </div>
+                <div class="info-item">
+                    <label>Teléfono:</label>
+                    <div class="value">{{telefono}}</div>
+                </div>
+                <div class="info-item full-width">
+                    <label>Domicilio:</label>
+                    <div class="value">{{domicilio}}</div>
+                </div>
+                <div class="info-item">
+                    <label>Correo Electrónico:</label>
+                    <div class="value">{{email}}</div>
+                </div>
+                <div class="info-item">
+                    <label>WhatsApp:</label>
+                    <div class="value">{{whatsapp}}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Datos del Servicio -->
+        <div class="section">
+            <div class="section-title">II. SERVICIO CONTRATADO</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Plan de Servicio:</label>
+                    <div class="value">{{plan_servicio}}</div>
+                </div>
+                <div class="info-item">
+                    <label>Velocidad de Descarga:</label>
+                    <div class="value">{{velocidad_descarga}} Mbps</div>
+                </div>
+                <div class="info-item">
+                    <label>Velocidad de Carga:</label>
+                    <div class="value">{{velocidad_subida}} Mbps</div>
+                </div>
+                <div class="info-item">
+                    <label>Renta Mensual:</label>
+                    <div class="value">${{precio_mensual}} MXN</div>
+                </div>
+                <div class="info-item full-width">
+                    <label>Fecha de Inicio del Servicio:</label>
+                    <div class="value">{{fecha_inicio}}</div>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <strong>IMPORTANTE:</strong> El servicio se facturará mensualmente por adelantado. 
+                El pago deberá realizarse dentro de los primeros 5 días de cada mes.
+            </div>
+        </div>
+
+        <!-- Términos y Condiciones -->
+        <div class="section terms">
+            <div class="section-title">III. TÉRMINOS Y CONDICIONES</div>
+
+            <h3>1. OBJETO DEL CONTRATO</h3>
+            <p>
+                Por medio del presente contrato, el PROVEEDOR se compromete a proporcionar al CLIENTE 
+                el servicio de acceso a Internet de banda ancha mediante tecnología inalámbrica o fibra óptica, 
+                según corresponda, bajo las condiciones y especificaciones establecidas en este documento.
+            </p>
+
+            <h3>2. OBLIGACIONES DEL PROVEEDOR</h3>
+            <ol>
+                <li>Proporcionar el servicio de Internet con las velocidades contratadas, sujeto a las condiciones técnicas del servicio.</li>
+                <li>Realizar la instalación del equipo necesario para la prestación del servicio.</li>
+                <li>Brindar soporte técnico durante el horario establecido.</li>
+                <li>Notificar con anticipación sobre trabajos de mantenimiento programado.</li>
+                <li>Proteger la información personal del cliente conforme a la legislación vigente.</li>
+            </ol>
+
+            <h3>3. OBLIGACIONES DEL CLIENTE</h3>
+            <ol>
+                <li>Realizar el pago de la renta mensual en tiempo y forma.</li>
+                <li>Hacer uso responsable del servicio de Internet.</li>
+                <li>No compartir el servicio con terceros sin autorización del proveedor.</li>
+                <li>Cuidar el equipo proporcionado por el proveedor.</li>
+                <li>Reportar cualquier falla o irregularidad en el servicio.</li>
+                <li>Permitir el acceso del personal técnico para instalación, mantenimiento o retiro del equipo.</li>
+            </ol>
+
+            <h3>4. VIGENCIA Y TERMINACIÓN</h3>
+            <p>
+                El presente contrato tendrá una vigencia indefinida a partir de la fecha de inicio del servicio, 
+                pudiendo ser terminado por cualquiera de las partes mediante aviso por escrito con 15 días de anticipación.
+            </p>
+
+            <h3>5. FACTURACIÓN Y PAGOS</h3>
+            <ol>
+                <li>El servicio se factura mensualmente por adelantado.</li>
+                <li>El periodo de gracia para el pago es de 5 días posteriores a la fecha de corte.</li>
+                <li>Después del periodo de gracia, el servicio será suspendido automáticamente.</li>
+                <li>Se aplicará un cargo por reconexión en caso de suspensión por falta de pago.</li>
+                <li>El cliente puede realizar su pago mediante los métodos autorizados por el proveedor.</li>
+            </ol>
+
+            <h3>6. SUSPENSIÓN Y CANCELACIÓN DEL SERVICIO</h3>
+            <p>
+                El proveedor podrá suspender o cancelar el servicio en los siguientes casos:
+            </p>
+            <ol>
+                <li>Falta de pago por más de 5 días después de la fecha de corte.</li>
+                <li>Uso indebido o ilegal del servicio de Internet.</li>
+                <li>Daño intencional al equipo proporcionado.</li>
+                <li>Incumplimiento de las obligaciones establecidas en este contrato.</li>
+            </ol>
+
+            <h3>7. EQUIPO EN COMODATO</h3>
+            <p>
+                El equipo necesario para la prestación del servicio (router, antena, cables, etc.) 
+                es proporcionado en comodato y permanece como propiedad del proveedor. 
+                El cliente se compromete a devolverlo en buen estado al término del contrato.
+            </p>
+
+            <h3>8. SOPORTE TÉCNICO</h3>
+            <p>
+                El cliente tendrá acceso a soporte técnico a través de los canales establecidos por el proveedor. 
+                El tiempo de respuesta dependerá de la naturaleza y prioridad de la falla reportada.
+            </p>
+
+            <h3>9. LIMITACIÓN DE RESPONSABILIDAD</h3>
+            <p>
+                El proveedor no será responsable por:
+            </p>
+            <ol>
+                <li>Interrupciones del servicio causadas por fallas de energía eléctrica o caso fortuito.</li>
+                <li>Daños indirectos o pérdidas de información del cliente.</li>
+                <li>El contenido al que el cliente acceda a través del servicio de Internet.</li>
+                <li>Fallas técnicas atribuibles a equipos del cliente no proporcionados por el proveedor.</li>
+            </ol>
+
+            <h3>10. PRIVACIDAD Y PROTECCIÓN DE DATOS</h3>
+            <p>
+                El proveedor se compromete a proteger la información personal del cliente conforme a la 
+                Ley Federal de Protección de Datos Personales en Posesión de los Particulares.
+            </p>
+
+            <h3>11. JURISDICCIÓN</h3>
+            <p>
+                Para la interpretación y cumplimiento de este contrato, las partes se someten a las leyes 
+                y tribunales competentes de la República Mexicana.
+            </p>
+        </div>
+
+        <!-- Código QR -->
+        <div class="qr-section">
+            <qr-code data="{{qr_data}}" size="150"></qr-code>
+            <p>Código de verificación del contrato</p>
+        </div>
+
+        <!-- Firmas -->
+        <div class="signatures">
+            <div class="signature-block">
+                <div class="signature-line"></div>
+                <div class="signature-label">FIRMA DEL CLIENTE</div>
+                <div class="signature-name">{{nombre_completo}}</div>
+            </div>
+            <div class="signature-block">
+                <div class="signature-line"></div>
+                <div class="signature-label">FIRMA DEL PROVEEDOR</div>
+                <div class="signature-name">Sistema ISP</div>
+            </div>
+        </div>
+
+        <!-- Pie de página -->
+        <div class="footer">
+            <p>
+                <strong>Contrato No. {{numero_contrato}}</strong> | 
+                Generado el {{fecha_generacion}}
+            </p>
+            <p>
+                Este documento es válido como contrato de prestación de servicios entre las partes.<br>
+                Ambas partes declaran haber leído y aceptado todos los términos y condiciones aquí establecidos.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

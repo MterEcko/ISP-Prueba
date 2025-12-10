@@ -1,0 +1,22 @@
+{
+  "name": "@isp-prueba/jellyfin-plugin",
+  "version": "1.0.0",
+  "description": "Plugin de Jellyfin Media Server para ISP-Prueba",
+  "main": "src/index.js",
+  "keywords": [
+    "jellyfin",
+    "media",
+    "streaming",
+    "video",
+    "isp-prueba"
+  ],
+  "author": "ISP-Prueba Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "peerDependencies": {
+    "express": "^4.18.0",
+    "sequelize": "^6.35.0"
+  }
+}

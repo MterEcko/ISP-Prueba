@@ -18,39 +18,123 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 // ==================== MIDDLEWARE ====================
 
-// Security headers
-app.use(helmet());
+// Security headers: Configuración personalizada para permitir 'scripts' en línea
+// Esto resuelve el error "Executing inline script violates..."
+app.use(helmet({
+    // Deshabilita la cabecera X-Content-Type-Options si causa problemas con estáticos
+    // xContentTypeOptions: false,
+    
+    // Configuración detallada de CSP:
+    contentSecurityPolicy: {
+        directives: {
+            // Fuentes permitidas para SCRIPTS: 'self', scripts en línea, unpkg.com y Cloudflare
+            scriptSrc: [
+                "'self'",
+                "'unsafe-inline'", // Permite <script>...</script> en el HTML
+                "https://unpkg.com", // Permite cargar leaflet.js
+                "https://static.cloudflareinsights.com" // Permite Cloudflare Analytics
+            ], 
+            
+            // Fuentes permitidas para ESTILOS: 'self', estilos en línea, y unpkg.com
+            styleSrc: [
+                "'self'", 
+                "'unsafe-inline'", // Permite estilos en línea
+                "https://unpkg.com" // *** SOLUCIÓN 2: Permite cargar leaflet.css ***
+            ],
+            
+            // Si usas imágenes de Leaflet o de otros lados:
+            imgSrc: ["'self'", "data:", "https://unpkg.com", "https://tile.openstreetmap.org"],
+
+            // Permitir peticiones AJAX/fetch a estos destinos
+            connectSrc: [
+                "'self'",
+                "https://store.serviciosqbit.net",
+                "http://store.serviciosqbit.net",
+                "https://isp.serviciosqbit.net",
+                "http://isp.serviciosqbit.net",
+                "https://static.cloudflareinsights.com"
+            ],
+
+            // Deshabilitar la directiva script-src-attr
+            // Esto es necesario porque algunas versiones de Helmet la configuran como 'none'
+            // y bloquean los onclick, onchange, etc.
+            scriptSrcAttr: null, // *** SOLUCIÓN 3: Permite los onclick, onchange, etc. ***
+        },
+    },
+}));
 
 // Compression
 app.use(compression());
 
-// CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8080'];
+// CORS - Configuración permisiva para desarrollo
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+  'http://localhost:8080',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://store.serviciosqbit.net',
+  'http://store.serviciosqbit.net',
+  'https://isp.serviciosqbit.net',
+  'http://isp.serviciosqbit.net'
+];
+
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    // Permitir peticiones sin origin (ej: Postman, curl, mismo servidor)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Verificar si el origin está en la lista permitida
+    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      // En desarrollo, permitir cualquier origin de localhost o IP local
+      if (process.env.NODE_ENV !== 'production') {
+        if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.match(/https?:\/\/10\.\d+\.\d+\.\d+/)) {
+          return callback(null, true);
+        }
+      }
+
+      console.warn(`⚠️ CORS bloqueó petición desde: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-access-token'],
+  exposedHeaders: ['x-access-token']
 }));
 
 // Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Trust proxy - Solo confiar en proxies conocidos (nginx, cloudflare, etc)
+// Configuración segura para express-rate-limit
+if (process.env.TRUST_PROXY === 'true') {
+  // En producción, especifica IPs o cantidad de proxies confiables
+  app.set('trust proxy', 1); // Solo confía en el primer proxy
+} else {
+  // En desarrollo sin proxy, deshabilitar
+  app.set('trust proxy', false);
+}
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000,
   max: process.env.RATE_LIMIT_MAX_REQUESTS || 100,
-  message: 'Demasiadas peticiones desde esta IP, por favor intenta de nuevo más tarde.'
+  message: 'Demasiadas peticiones desde esta IP, por favor intenta de nuevo más tarde.',
+  // Deshabilitar validaciones estrictas en desarrollo
+  validate: {
+    trustProxy: false, // No validar trust proxy en desarrollo
+    xForwardedForHeader: false
+  }
 });
 app.use('/api/', limiter);
 
 // Static files (para servir plugins descargables)
 app.use('/downloads', express.static(path.join(__dirname, 'uploads/plugins')));
+app.use('/store/plugins', express.static(path.join(__dirname, 'plugins')));
 
 // Request logging
 app.use((req, res, next) => {
@@ -137,10 +221,10 @@ db.sequelize.authenticate()
   .then(() => {
     logger.info('✅ Conexión a base de datos establecida');
 
-    // Sincronizar modelos (crear tablas si no existen)
-    // force: true SOLO PARA PRIMERA VEZ con PostgreSQL - crea tablas limpias
-    // Después cambiar a { force: false } o { alter: true }
-    return db.sequelize.sync({ force: true });
+    // Sincronizar modelos SIN borrar datos existentes
+    // force: false = No borra tablas existentes
+    // alter: false = No modifica estructura (usar migrations en producción)
+    return db.sequelize.sync({ force: false, alter: false });
   })
   .then(() => {
     logger.info('✅ Modelos de base de datos sincronizados');

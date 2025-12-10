@@ -1,42 +1,35 @@
-import axios from 'axios';
-import { API_URL } from './frontend_apiConfig';
+const db = require('../models');
+const googleCalendarService = require('./googleCalendar.service');
+const microsoftCalendarService = require('./microsoftCalendar.service');
+const logger = require('../config/logger');
+const { Op } = require('sequelize');
 
 class CalendarService {
   /**
-   * Obtener eventos
-   */
-  async getEvents(filters = {}) {
-    try {
-      const response = await axios.get(API_URL + 'calendar/events', { params: filters });
-      return response.data;
-    } catch (error) {
-      console.error('Error getting events:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtener evento por ID
-   */
-  async getEventById(id) {
-    try {
-      const response = await axios.get(API_URL + `calendar/events/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error getting event:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Crear evento
    */
-  async createEvent(eventData) {
+  async createEvent(eventData, userId) {
     try {
-      const response = await axios.post(API_URL + 'calendar/events', eventData);
-      return response.data;
+      // Crear evento local
+      const event = await db.CalendarEvent.create({
+        ...eventData,
+        createdBy: userId
+      });
+
+      // Sincronizar con calendarios externos si está habilitado
+      await this.syncEventToExternalCalendars(event, userId);
+
+      return await db.CalendarEvent.findByPk(event.id, {
+        include: [
+          {
+            model: db.User,
+            as: 'creator',
+            attributes: ['id', 'username', 'fullName', 'email']
+          }
+        ]
+      });
     } catch (error) {
-      console.error('Error creating event:', error);
+      logger.error('Error creando evento:', error);
       throw error;
     }
   }
@@ -44,12 +37,32 @@ class CalendarService {
   /**
    * Actualizar evento
    */
-  async updateEvent(id, eventData) {
+  async updateEvent(eventId, eventData, userId) {
     try {
-      const response = await axios.put(API_URL + `calendar/events/${id}`, eventData);
-      return response.data;
+      const event = await db.CalendarEvent.findByPk(eventId);
+      if (!event) throw new Error('Evento no encontrado');
+
+      // Verificar permisos
+      if (event.createdBy !== userId) {
+        throw new Error('No tienes permiso para modificar este evento');
+      }
+
+      await event.update(eventData);
+
+      // Sincronizar actualización con calendarios externos
+      await this.syncEventToExternalCalendars(event, userId);
+
+      return await db.CalendarEvent.findByPk(event.id, {
+        include: [
+          {
+            model: db.User,
+            as: 'creator',
+            attributes: ['id', 'username', 'fullName', 'email']
+          }
+        ]
+      });
     } catch (error) {
-      console.error('Error updating event:', error);
+      logger.error('Error actualizando evento:', error);
       throw error;
     }
   }
@@ -57,185 +70,312 @@ class CalendarService {
   /**
    * Eliminar evento
    */
-  async deleteEvent(id) {
+  async deleteEvent(eventId, userId) {
     try {
-      const response = await axios.delete(API_URL + `calendar/events/${id}`);
-      return response.data;
+      const event = await db.CalendarEvent.findByPk(eventId);
+      if (!event) throw new Error('Evento no encontrado');
+
+      // Verificar permisos
+      if (event.createdBy !== userId) {
+        throw new Error('No tienes permiso para eliminar este evento');
+      }
+
+      // Eliminar de calendarios externos
+      const integrations = await db.CalendarIntegration.findAll({
+        where: { userId, isActive: true }
+      });
+
+      for (const integration of integrations) {
+        try {
+          if (integration.provider === 'google' && event.googleEventId) {
+            await googleCalendarService.deleteEvent(integration.id, event.googleEventId);
+          } else if (integration.provider === 'microsoft' && event.microsoftEventId) {
+            await microsoftCalendarService.deleteEvent(integration.id, event.microsoftEventId);
+          }
+        } catch (error) {
+          logger.error(`Error eliminando evento de ${integration.provider}:`, error);
+        }
+      }
+
+      await event.destroy();
+      return { success: true };
     } catch (error) {
-      console.error('Error deleting event:', error);
-      throw error;
-    }
-  }
-
-  // === GOOGLE CALENDAR ===
-
-  /**
-   * Obtener URL de autorización de Google
-   */
-  async getGoogleAuthUrl() {
-    try {
-      const response = await axios.get(API_URL + 'calendar/google/auth-url');
-      return response.data;
-    } catch (error) {
-      console.error('Error getting Google auth URL:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtener calendarios de Google
-   */
-  async getGoogleCalendars() {
-    try {
-      const response = await axios.get(API_URL + 'calendar/google/calendars');
-      return response.data;
-    } catch (error) {
-      console.error('Error getting Google calendars:', error);
-      throw error;
-    }
-  }
-
-  // === MICROSOFT CALENDAR ===
-
-  /**
-   * Obtener URL de autorización de Microsoft
-   */
-  async getMicrosoftAuthUrl() {
-    try {
-      const response = await axios.get(API_URL + 'calendar/microsoft/auth-url');
-      return response.data;
-    } catch (error) {
-      console.error('Error getting Microsoft auth URL:', error);
+      logger.error('Error eliminando evento:', error);
       throw error;
     }
   }
 
   /**
-   * Obtener calendarios de Microsoft
+   * Obtener eventos
    */
-  async getMicrosoftCalendars() {
+  async getEvents(filters = {}, userId) {
     try {
-      const response = await axios.get(API_URL + 'calendar/microsoft/calendars');
-      return response.data;
+      const where = {};
+
+      // Filtros de fecha
+      if (filters.startDate || filters.endDate) {
+        where.startDate = {};
+        if (filters.startDate) where.startDate[Op.gte] = filters.startDate;
+        if (filters.endDate) where.startDate[Op.lte] = filters.endDate;
+      }
+
+      // Filtro por tipo de evento
+      if (filters.eventType) {
+        where.eventType = filters.eventType;
+      }
+
+      // Filtro por estado
+      if (filters.status) {
+        where.status = filters.status;
+      }
+
+      // Filtro por usuario (eventos creados o asignados)
+      if (filters.userId || userId) {
+        const userIdFilter = filters.userId || userId;
+        where[Op.or] = [
+          { createdBy: userIdFilter },
+          { assignedTo: { [Op.contains]: [userIdFilter] } }
+        ];
+      }
+
+      const events = await db.CalendarEvent.findAll({
+        where,
+        include: [
+          {
+            model: db.User,
+            as: 'creator',
+            attributes: ['id', 'username', 'fullName', 'email']
+          }
+        ],
+        order: [['startDate', 'ASC']]
+      });
+
+      return events;
     } catch (error) {
-      console.error('Error getting Microsoft calendars:', error);
+      logger.error('Error obteniendo eventos:', error);
       throw error;
     }
   }
 
-  // === INTEGRACIONES ===
-
   /**
-   * Obtener integraciones del usuario
+   * Sincronizar evento con calendarios externos
    */
-  async getIntegrations() {
+  async syncEventToExternalCalendars(event, userId) {
     try {
-      const response = await axios.get(API_URL + 'calendar/integrations');
-      return response.data;
-    } catch (error) {
-      console.error('Error getting integrations:', error);
-      throw error;
-    }
-  }
+      const integrations = await db.CalendarIntegration.findAll({
+        where: {
+          userId,
+          isActive: true,
+          syncEnabled: true
+        }
+      });
 
-  /**
-   * Desconectar integración
-   */
-  async disconnectIntegration(id) {
-    try {
-      const response = await axios.delete(API_URL + `calendar/integrations/${id}`);
-      return response.data;
+      const syncedWith = [];
+
+      for (const integration of integrations) {
+        try {
+          if (integration.provider === 'google') {
+            if (event.googleEventId) {
+              // Actualizar evento existente
+              await googleCalendarService.updateEvent(
+                integration.id,
+                event.googleEventId,
+                {
+                  title: event.title,
+                  description: event.description,
+                  location: event.location,
+                  startDate: event.startDate,
+                  endDate: event.endDate,
+                  reminders: event.reminders
+                }
+              );
+            } else {
+              // Crear nuevo evento
+              const result = await googleCalendarService.createEvent(
+                integration.id,
+                {
+                  title: event.title,
+                  description: event.description,
+                  location: event.location,
+                  startDate: event.startDate,
+                  endDate: event.endDate,
+                  reminders: event.reminders
+                }
+              );
+
+              await event.update({
+                googleEventId: result.googleEventId,
+                googleCalendarId: result.googleCalendarId
+              });
+            }
+            syncedWith.push('google');
+          } else if (integration.provider === 'microsoft') {
+            if (event.microsoftEventId) {
+              // Actualizar evento existente
+              await microsoftCalendarService.updateEvent(
+                integration.id,
+                event.microsoftEventId,
+                {
+                  title: event.title,
+                  description: event.description,
+                  location: event.location,
+                  startDate: event.startDate,
+                  endDate: event.endDate,
+                  reminders: event.reminders
+                }
+              );
+            } else {
+              // Crear nuevo evento
+              const result = await microsoftCalendarService.createEvent(
+                integration.id,
+                {
+                  title: event.title,
+                  description: event.description,
+                  location: event.location,
+                  startDate: event.startDate,
+                  endDate: event.endDate,
+                  reminders: event.reminders
+                }
+              );
+
+              await event.update({
+                microsoftEventId: result.microsoftEventId,
+                microsoftCalendarId: result.microsoftCalendarId
+              });
+            }
+            syncedWith.push('microsoft');
+          }
+        } catch (error) {
+          logger.error(`Error sincronizando con ${integration.provider}:`, error);
+        }
+      }
+
+      if (syncedWith.length > 0) {
+        await event.update({
+          syncedWith,
+          lastSyncedAt: new Date()
+        });
+      }
     } catch (error) {
-      console.error('Error disconnecting integration:', error);
-      throw error;
+      logger.error('Error sincronizando evento:', error);
     }
   }
 
   /**
    * Sincronizar desde calendarios externos
    */
-  async syncFromExternal(startDate, endDate) {
+  async syncFromExternalCalendars(userId, startDate, endDate) {
     try {
-      const response = await axios.post(API_URL + 'calendar/sync', {
-        params: { startDate, endDate }
+      const integrations = await db.CalendarIntegration.findAll({
+        where: {
+          userId,
+          isActive: true,
+          syncEnabled: true
+        }
       });
-      return response.data;
+
+      const externalEvents = [];
+
+      for (const integration of integrations) {
+        try {
+          let events = [];
+
+          if (integration.provider === 'google') {
+            events = await googleCalendarService.syncFromGoogle(
+              integration.id,
+              startDate,
+              endDate
+            );
+
+            // Importar eventos que no existan localmente
+            for (const extEvent of events) {
+              const existing = await db.CalendarEvent.findOne({
+                where: { googleEventId: extEvent.googleEventId }
+              });
+
+              if (!existing) {
+                await db.CalendarEvent.create({
+                  title: extEvent.title,
+                  description: extEvent.description,
+                  startDate: extEvent.startDate,
+                  endDate: extEvent.endDate,
+                  location: extEvent.location,
+                  createdBy: userId,
+                  googleEventId: extEvent.googleEventId,
+                  syncedWith: ['google'],
+                  lastSyncedAt: new Date()
+                });
+              }
+            }
+          } else if (integration.provider === 'microsoft') {
+            events = await microsoftCalendarService.syncFromMicrosoft(
+              integration.id,
+              startDate,
+              endDate
+            );
+
+            // Importar eventos que no existan localmente
+            for (const extEvent of events) {
+              const existing = await db.CalendarEvent.findOne({
+                where: { microsoftEventId: extEvent.microsoftEventId }
+              });
+
+              if (!existing) {
+                await db.CalendarEvent.create({
+                  title: extEvent.title,
+                  description: extEvent.description,
+                  startDate: extEvent.startDate,
+                  endDate: extEvent.endDate,
+                  location: extEvent.location,
+                  createdBy: userId,
+                  microsoftEventId: extEvent.microsoftEventId,
+                  syncedWith: ['microsoft'],
+                  lastSyncedAt: new Date()
+                });
+              }
+            }
+          }
+
+          externalEvents.push(...events);
+        } catch (error) {
+          logger.error(`Error sincronizando desde ${integration.provider}:`, error);
+        }
+      }
+
+      return {
+        imported: externalEvents.length,
+        events: externalEvents
+      };
     } catch (error) {
-      console.error('Error syncing from external:', error);
+      logger.error('Error sincronizando desde calendarios externos:', error);
       throw error;
     }
   }
 
   /**
-   * Conectar con Google Calendar
+   * Obtener integraciones de usuario
    */
-  connectGoogle() {
-    this.getGoogleAuthUrl().then(response => {
-      if (response.success && response.data.authUrl) {
-        window.location.href = response.data.authUrl;
-      }
+  async getUserIntegrations(userId) {
+    return await db.CalendarIntegration.findAll({
+      where: { userId },
+      attributes: { exclude: ['accessToken', 'refreshToken'] }
     });
   }
 
   /**
-   * Conectar con Microsoft Calendar
+   * Desconectar integración
    */
-  connectMicrosoft() {
-    this.getMicrosoftAuthUrl().then(response => {
-      if (response.success && response.data.authUrl) {
-        window.location.href = response.data.authUrl;
-      }
+  async disconnectIntegration(integrationId, userId) {
+    const integration = await db.CalendarIntegration.findOne({
+      where: { id: integrationId, userId }
     });
-  }
 
-  /**
-   * Helpers para eventos
-   */
-  getEventColor(eventType) {
-    const colors = {
-      meeting: '#3498db',
-      task: '#2ecc71',
-      reminder: '#f39c12',
-      installation: '#9b59b6',
-      maintenance: '#e74c3c',
-      call: '#1abc9c',
-      other: '#95a5a6'
-    };
-    return colors[eventType] || colors.other;
-  }
+    if (!integration) throw new Error('Integración no encontrada');
 
-  getEventTypeLabel(eventType) {
-    const labels = {
-      meeting: 'Reunión',
-      task: 'Tarea',
-      reminder: 'Recordatorio',
-      installation: 'Instalación',
-      maintenance: 'Mantenimiento',
-      call: 'Llamada',
-      other: 'Otro'
-    };
-    return labels[eventType] || 'Otro';
-  }
+    await integration.update({ isActive: false, syncEnabled: false });
 
-  getPriorityLabel(priority) {
-    const labels = {
-      low: 'Baja',
-      medium: 'Media',
-      high: 'Alta',
-      urgent: 'Urgente'
-    };
-    return labels[priority] || 'Media';
-  }
-
-  getStatusLabel(status) {
-    const labels = {
-      pending: 'Pendiente',
-      confirmed: 'Confirmado',
-      cancelled: 'Cancelado',
-      completed: 'Completado'
-    };
-    return labels[status] || 'Pendiente';
+    return { success: true };
   }
 }
 
-export default new CalendarService();
+module.exports = new CalendarService();

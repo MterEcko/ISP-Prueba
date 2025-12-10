@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const db = require('../models');
+const config = require('../config/auth.config');
 const User = db.User;
 
 verifyToken = (req, res, next) => {
@@ -11,7 +12,7 @@ verifyToken = (req, res, next) => {
     });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, config.secret, (err, decoded) => {
     if (err) {
       return res.status(401).json({
         message: "No autorizado"
