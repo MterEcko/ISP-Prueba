@@ -107,6 +107,11 @@ class SocketService {
     }
   }
 
+  // Alias para compatibilidad con VideoCallWindow
+  sendCallOffer(targetUserId, offer, callType = 'video') {
+    return this.initiateCall(targetUserId, offer, callType);
+  }
+
   // Responder llamada
   answerCall(callerId, answer) {
     if (this.socket) {

@@ -130,16 +130,27 @@ class SystemPluginController {
         where: { name }
       });
 
+      logger.info(`🔍 Buscando plugin '${name}' en BD: ${plugin ? 'ENCONTRADO' : 'NO ENCONTRADO'}`);
+
       // AUTO-REGISTRO: Si el plugin no existe en BD pero existe en filesystem, registrarlo
       if (!plugin) {
         const pluginPath = path.join(this.pluginsPath, name);
         const manifestPath = path.join(pluginPath, 'manifest.json');
+
+        logger.info(`📁 Verificando filesystem: ${manifestPath}`);
+        logger.info(`📁 Existe manifest: ${fs.existsSync(manifestPath)}`);
 
         if (fs.existsSync(manifestPath)) {
           try {
             logger.info(`🔄 Auto-registrando plugin: ${name}`);
             const manifestContent = fs.readFileSync(manifestPath, 'utf8');
             const manifest = JSON.parse(manifestContent);
+
+            logger.info(`📋 Manifest leído:`, {
+              name: manifest.name,
+              version: manifest.version,
+              category: manifest.category
+            });
 
             plugin = await SystemPlugin.create({
               name: name,
@@ -155,10 +166,11 @@ class SystemPluginController {
 
             logger.info(`✅ Plugin ${name} registrado automáticamente`);
           } catch (error) {
-            logger.error(`Error auto-registrando plugin ${name}: ${error.message}`);
-            return res.status(404).json({
+            logger.error(`Error auto-registrando plugin ${name}:`, error);
+            return res.status(500).json({
               success: false,
-              message: 'Plugin no encontrado y no se pudo auto-registrar'
+              message: `No se pudo auto-registrar el plugin: ${error.message}`,
+              error: error.message
             });
           }
         } else {
