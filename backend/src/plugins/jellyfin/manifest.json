@@ -74,5 +74,17 @@
     "manage_access",
     "view_statistics",
     "send_emails"
+  ],
+  "tables": [
+    {
+      "name": "Plugin_JellyfinAccounts",
+      "model": "JellyfinAccount",
+      "file": "src/models/jellyfinAccount.model.js"
+    },
+    {
+      "name": "Plugin_JellyfinProfiles",
+      "model": "JellyfinProfile",
+      "file": "src/models/jellyfinProfile.model.js"
+    }
   ]
 }

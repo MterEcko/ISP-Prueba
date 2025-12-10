@@ -113,16 +113,41 @@ async function synchronizeDatabase() {
     });
 
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
-    
+
+    // ==================== CARGAR MODELOS DE PLUGINS ====================
+    try {
+      console.log('\n=== CARGANDO MODELOS DE PLUGINS ===');
+      const pluginModelsService = require('./services/pluginModels.service');
+
+      // Obtener plugins activos
+      const activePlugins = await db.SystemPlugin.findAll({ where: { active: true } });
+      const activePluginNames = activePlugins.map(p => p.name);
+
+      // Cargar modelos de plugins
+      await pluginModelsService.loadPluginModels(db.sequelize, db, activePluginNames);
+
+      // Sincronizar tablas de plugins
+      await pluginModelsService.syncPluginModels(db.sequelize, { force: false, alter: false });
+
+      // Mostrar estadísticas
+      const stats = pluginModelsService.getStats();
+      console.log(`✅ Modelos de plugins cargados: ${stats.totalModels}`);
+      console.log('=== FIN CARGA DE MODELOS DE PLUGINS ===\n');
+    } catch (error) {
+      console.error('❌ Error cargando modelos de plugins:', error.message);
+      console.warn('⚠️ El sistema continuará pero las tablas de plugins no estarán disponibles');
+    }
+    // ==================== FIN CARGA DE MODELOS ====================
+
     // ==================== AGREGAR ESTE BLOQUE AQUÍ ====================
     try {
       console.log('\n=== INICIALIZANDO SISTEMA DE CONFIGURACIONES ===');
       configHelper.init(db);
       console.log('✅ ConfigHelper inicializado con instancia de DB');
-      
+
       await configHelper.loadAllConfigs();
       console.log('✅ Configuraciones cargadas en caché');
-      
+
       // Mostrar configuración de email actual
       const emailConfig = await configHelper.getEmailConfig();
       console.log('📧 Configuración de Email:');
@@ -136,7 +161,7 @@ async function synchronizeDatabase() {
       console.warn('⚠️ El sistema continuará pero las configuraciones dinámicas no estarán disponibles');
     }
     // ==================== FIN DEL BLOQUE ====================
-    
+
     await initial(); // Esta línea ya debe existir en tu código
     
   } catch (error) {

@@ -1240,6 +1240,22 @@ class SystemPluginController {
       // Almacenar plugin activo
       this.activePlugins.set(plugin.name, pluginController);
 
+      // Cargar modelos del plugin si los tiene
+      try {
+        const pluginModelsService = require('../services/pluginModels.service');
+        const db = require('../models');
+
+        await pluginModelsService.loadPluginModels(db.sequelize, db, [plugin.name]);
+        await pluginModelsService.syncPluginModels(db.sequelize, { force: false, alter: false });
+
+        const models = pluginModelsService.getPluginModels(plugin.name);
+        if (models.length > 0) {
+          logger.info(`✅ Modelos del plugin ${plugin.name} cargados: ${models.length} tabla(s)`);
+        }
+      } catch (modelError) {
+        logger.warn(`⚠️ No se pudieron cargar modelos del plugin ${plugin.name}: ${modelError.message}`);
+      }
+
       logger.info(`Plugin ${plugin.name} activado exitosamente`);
 
     } catch (error) {
@@ -1255,7 +1271,7 @@ class SystemPluginController {
   async _deactivatePlugin(plugin) {
     try {
       const activePlugin = this.activePlugins.get(plugin.name);
-      
+
       if (activePlugin) {
         // Llamar método de limpieza si existe
         if (activePlugin.cleanup && typeof activePlugin.cleanup === 'function') {
@@ -1265,7 +1281,20 @@ class SystemPluginController {
         // Remover de plugins activos
         this.activePlugins.delete(plugin.name);
       }
-      
+
+      // Descargar modelos del plugin
+      try {
+        const pluginModelsService = require('../services/pluginModels.service');
+        const db = require('../models');
+
+        const result = await pluginModelsService.unloadPluginModels(plugin.name, db);
+        if (result.unloaded > 0) {
+          logger.info(`✅ Modelos del plugin ${plugin.name} descargados: ${result.unloaded} modelo(s)`);
+        }
+      } catch (modelError) {
+        logger.warn(`⚠️ No se pudieron descargar modelos del plugin ${plugin.name}: ${modelError.message}`);
+      }
+
       logger.info(`Plugin ${plugin.name} desactivado exitosamente`);
 
     } catch (error) {
