@@ -971,13 +971,24 @@ async function initial() {
     }
 
     // ==================== CREAR PLANTILLAS POR DEFECTO ====================
-    
+
     const MessageTemplate = db.MessageTemplate;
     const templateCount = await MessageTemplate.count();
-    
+
     if (templateCount === 0) {
+      const emailChannel = await CommunicationChannel.findOne({
+        where: { channelType: "email" }
+      });
+
+      if (!emailChannel) {
+        console.log("No se encontró canal de email, creando plantillas sin canal asociado");
+      }
+
+      const channelId = emailChannel ? emailChannel.id : null;
+
       await MessageTemplate.bulkCreate([
         {
+          channelId,
           name: "Recordatorio de Pago",
           templateType: "paymentReminder",
           subject: "Recordatorio de Pago - {firstName}",
@@ -994,6 +1005,7 @@ Gracias por su preferencia.`,
           active: true
         },
         {
+          channelId,
           name: "Bienvenida Nuevo Cliente",
           templateType: "welcome",
           subject: "¡Bienvenido a nuestros servicios!",
@@ -1010,6 +1022,7 @@ Si tiene alguna pregunta, no dude en contactarnos.
           active: true
         },
         {
+          channelId,
           name: "Suspensión de Servicio",
           templateType: "suspension",
           subject: "Suspensión de Servicio - {firstName}",
@@ -1027,6 +1040,7 @@ Equipo de Soporte`,
           active: true
         },
         {
+          channelId,
           name: "Reactivación de Servicio",
           templateType: "reactivation",
           subject: "¡Servicio Reactivado! - {firstName}",

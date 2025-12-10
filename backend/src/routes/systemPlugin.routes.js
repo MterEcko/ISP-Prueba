@@ -170,5 +170,12 @@ module.exports = function(app) {
     systemPluginController.updatePluginConfig
   );
 
+  // Obtener vista de configuración de plugin
+  app.get(
+    "/api/system-plugins/:name/config-view",
+    [authJwt.verifyToken],
+    systemPluginController.getPluginConfigView
+  );
+
 
 };

@@ -199,6 +199,16 @@
           </router-link>
         </li>
 
+        <!-- Plugins instalados -->
+        <template v-if="activePlugins.length > 0">
+          <li v-for="plugin in activePlugins" :key="plugin.name">
+            <router-link :to="`/plugins/${plugin.name}/config`">
+              <span class="icon">{{ getPluginIcon(plugin) }}</span>
+              <span class="text" v-if="!isCollapsed">{{ plugin.displayName || plugin.name }}</span>
+            </router-link>
+          </li>
+        </template>
+
         <!-- Sección de Administración -->
         <li class="menu-separator" v-if="!isCollapsed">
           <span class="text">ADMINISTRACIÓN</span>
@@ -246,11 +256,14 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'SidebarComponent',
   data() {
     return {
-      isCollapsed: false
+      isCollapsed: false,
+      activePlugins: []
     };
   },
   computed: {
@@ -258,7 +271,34 @@ export default {
       return this.$store.state.auth.user;
     }
   },
+  mounted() {
+    this.loadActivePlugins();
+  },
   methods: {
+    async loadActivePlugins() {
+      try {
+        const response = await axios.get('/api/system-plugins/active');
+        if (response.data.success) {
+          this.activePlugins = response.data.data;
+        }
+      } catch (error) {
+        console.error('Error cargando plugins activos:', error);
+      }
+    },
+    getPluginIcon(plugin) {
+      const iconMap = {
+        'email': '📧',
+        'telegram': '✈️',
+        'whatsapp-meta': '💚',
+        'whatsapp-twilio': '💬',
+        'mercadopago': '💳',
+        'paypal': '🅿️',
+        'openpay': '💰',
+        'jellyfin': '📺',
+        'stripe': '💳'
+      };
+      return iconMap[plugin.name] || '🔌';
+    },
     toggleSidebar() {
       this.isCollapsed = !this.isCollapsed;
       // Emitir evento para que el layout principal se ajuste

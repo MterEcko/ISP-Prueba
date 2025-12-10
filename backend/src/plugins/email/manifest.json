@@ -1,4 +1,3 @@
-// backend/src/plugins/email/manifest.json
 {
   "name": "email",
   "version": "1.0.0",

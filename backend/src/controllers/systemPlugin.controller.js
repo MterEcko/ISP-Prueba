@@ -992,6 +992,50 @@ class SystemPluginController {
   };
 
   /**
+   * Obtener vista de configuración de plugin
+   * GET /api/system-plugins/:name/config-view
+   */
+  getPluginConfigView = async (req, res) => {
+    try {
+      const { name } = req.params;
+
+      if (!name) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nombre de plugin es requerido'
+        });
+      }
+
+      const configViewPath = path.join(this.pluginsPath, name, 'views', 'ConfigView.vue');
+
+      if (!fs.existsSync(configViewPath)) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vista de configuración no encontrada'
+        });
+      }
+
+      const vueContent = fs.readFileSync(configViewPath, 'utf8');
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          pluginName: name,
+          content: vueContent
+        },
+        message: 'Vista obtenida exitosamente'
+      });
+
+    } catch (error) {
+      logger.error(`Error obteniendo vista de configuración: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  };
+
+  /**
    * Inicializar todos los plugins activos
    * POST /api/system-plugins/initialize
    */
@@ -1379,6 +1423,7 @@ module.exports = {
   // Métodos de configuración
   getPluginConfig: systemPluginController.getPluginConfig,
   updatePluginConfig: systemPluginController.updatePluginConfig,
+  getPluginConfigView: systemPluginController.getPluginConfigView,
 
   // Métodos de gestión
   initializeAllPlugins: systemPluginController.initializeAllPlugins,
