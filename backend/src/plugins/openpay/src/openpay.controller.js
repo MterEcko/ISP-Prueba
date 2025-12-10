@@ -7,7 +7,7 @@
 
 const axios = require('axios');
 const crypto = require('crypto');
-const db = require('../../models');
+const db = require('../../../models');
 const Payment = db.Payment;
 const Invoice = db.Invoice;
 const Client = db.Client;

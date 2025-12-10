@@ -256,7 +256,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '@/services/api';
 
 export default {
   name: 'SidebarComponent',
@@ -277,7 +277,7 @@ export default {
   methods: {
     async loadActivePlugins() {
       try {
-        const response = await axios.get('/api/system-plugins/active');
+        const response = await api.get('/system-plugins/active');
         if (response.data.success) {
           this.activePlugins = response.data.data;
         }
