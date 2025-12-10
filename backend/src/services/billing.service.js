@@ -328,10 +328,13 @@ async generateMissingCurrentPeriodInvoices() {
       console.log(`Cliente ${clientBilling.clientId} no tiene subscription activa - NO se crea factura`);
       return null;
     }
-    
-    const dueDate = new Date(periodEnd);
+
+    // CORREGIDO: Para sistema prepago, la fecha de vencimiento es:
+    // billingDay + graceDays (no periodEnd + graceDays)
+    // Ejemplo: si billingDay es 1 y graceDays es 5, vence el día 6 del mes
+    const dueDate = new Date(periodStart);
     dueDate.setDate(dueDate.getDate() + clientBilling.graceDays);
-    
+
     const invoiceNumber = this.generateInvoiceNumber(clientBilling.clientId);
     
     const today = new Date();

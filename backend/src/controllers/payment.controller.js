@@ -570,26 +570,37 @@ exports.getPaymentStatistics = async (req, res) => {
 exports.getAllGateways = async (req, res) => {
   try {
     const { active, country, gatewayType } = req.query;
-    
+
     const whereClause = {};
     if (active !== undefined) whereClause.active = active === 'true';
     if (country) whereClause.country = country;
     if (gatewayType) whereClause.gatewayType = gatewayType;
 
+    // Obtener pasarelas base (efectivo, transferencia, etc.)
     const gateways = await PaymentGateway.findAll({
       where: whereClause,
       order: [['name', 'ASC']]
     });
 
-    // Obtener estadísticas de uso para cada pasarela
+    // Obtener plugins de pago activos
+    const SystemPlugin = db.SystemPlugin;
+    const paymentPlugins = await SystemPlugin.findAll({
+      where: {
+        active: true,
+        category: 'payment'
+      },
+      order: [['name', 'ASC']]
+    });
+
+    // Obtener estadísticas de uso para cada pasarela base
     const gatewaysWithStats = await Promise.all(
       gateways.map(async (gateway) => {
         const paymentCount = await Payment.count({
           where: { gatewayId: gateway.id }
         });
-        
+
         const totalAmount = await Payment.sum('amount', {
-          where: { 
+          where: {
             gatewayId: gateway.id,
             status: 'completed'
           }
@@ -597,6 +608,7 @@ exports.getAllGateways = async (req, res) => {
 
         return {
           ...gateway.toJSON(),
+          isPlugin: false,
           statistics: {
             totalPayments: paymentCount,
             totalAmount: totalAmount || 0,
@@ -608,10 +620,31 @@ exports.getAllGateways = async (req, res) => {
       })
     );
 
+    // Agregar plugins de pago a la lista con formato compatible
+    const pluginGateways = paymentPlugins.map(plugin => ({
+      id: `plugin_${plugin.id}`,
+      pluginId: plugin.id,
+      name: plugin.displayName || plugin.name,
+      gatewayType: plugin.name.toLowerCase(),
+      description: plugin.description,
+      active: plugin.active,
+      isPlugin: true,
+      icon: plugin.icon || 'mdi-credit-card',
+      configuration: plugin.configuration || {},
+      statistics: {
+        totalPayments: 0,
+        totalAmount: 0,
+        lastUsed: null
+      }
+    }));
+
+    // Combinar pasarelas base + plugins
+    const allGateways = [...gatewaysWithStats, ...pluginGateways];
+
     return res.status(200).json({
       success: true,
-      data: gatewaysWithStats,
-      message: `${gateways.length} pasarelas encontradas`
+      data: allGateways,
+      message: `${allGateways.length} pasarelas encontradas (${gateways.length} base + ${paymentPlugins.length} plugins)`
     });
 
   } catch (error) {
