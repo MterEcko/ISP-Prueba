@@ -111,14 +111,15 @@ class WebSocketService {
 
     // Evento: Iniciar llamada
     socket.on('initiate-call', (data) => {
-      const { targetUserId, offer } = data;
-      console.log(`📞 Llamada iniciada de ${socket.username} (${socket.userId}) a usuario ${targetUserId}`);
+      const { targetUserId, offer, callType } = data;
+      console.log(`📞 Llamada ${callType || 'video'} iniciada de ${socket.username} (${socket.userId}) a usuario ${targetUserId}`);
 
       // Enviar notificación de llamada entrante al usuario objetivo
       this.emitToUser(targetUserId, 'incoming-call', {
         callerId: socket.userId,
         callerName: socket.username,
-        offer: offer
+        offer: offer,
+        callType: callType || 'video'
       });
     });
 

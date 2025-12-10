@@ -96,33 +96,34 @@ class SocketService {
   }
 
   // Emitir evento de llamada
-  initiateCall(targetUserId, offer) {
+  initiateCall(targetUserId, offer, callType = 'video') {
     if (this.socket) {
-      this.socket.emit('call-user', {
-        to: targetUserId,
-        from: this.userId,
-        offer: offer
+      console.log('📞 Emitiendo initiate-call a usuario:', targetUserId);
+      this.socket.emit('initiate-call', {
+        targetUserId: targetUserId,
+        offer: offer,
+        callType: callType
       });
     }
   }
 
   // Responder llamada
-  answerCall(targetUserId, answer) {
+  answerCall(callerId, answer) {
     if (this.socket) {
+      console.log('📞 Emitiendo answer-call a usuario:', callerId);
       this.socket.emit('answer-call', {
-        to: targetUserId,
-        from: this.userId,
+        callerId: callerId,
         answer: answer
       });
     }
   }
 
   // Rechazar llamada
-  rejectCall(targetUserId) {
+  rejectCall(callerId) {
     if (this.socket) {
+      console.log('📞 Emitiendo reject-call a usuario:', callerId);
       this.socket.emit('reject-call', {
-        to: targetUserId,
-        from: this.userId
+        callerId: callerId
       });
     }
   }
@@ -130,9 +131,9 @@ class SocketService {
   // Finalizar llamada
   endCall(targetUserId) {
     if (this.socket) {
+      console.log('📞 Emitiendo end-call a usuario:', targetUserId);
       this.socket.emit('end-call', {
-        to: targetUserId,
-        from: this.userId
+        targetUserId: targetUserId
       });
     }
   }
@@ -141,8 +142,7 @@ class SocketService {
   sendIceCandidate(targetUserId, candidate) {
     if (this.socket) {
       this.socket.emit('ice-candidate', {
-        to: targetUserId,
-        from: this.userId,
+        targetUserId: targetUserId,
         candidate: candidate
       });
     }

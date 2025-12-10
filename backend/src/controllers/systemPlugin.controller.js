@@ -126,15 +126,47 @@ class SystemPluginController {
         });
       }
 
-      const plugin = await SystemPlugin.findOne({
+      let plugin = await SystemPlugin.findOne({
         where: { name }
       });
 
+      // AUTO-REGISTRO: Si el plugin no existe en BD pero existe en filesystem, registrarlo
       if (!plugin) {
-        return res.status(404).json({
-          success: false,
-          message: 'Plugin no encontrado'
-        });
+        const pluginPath = path.join(this.pluginsPath, name);
+        const manifestPath = path.join(pluginPath, 'manifest.json');
+
+        if (fs.existsSync(manifestPath)) {
+          try {
+            logger.info(`🔄 Auto-registrando plugin: ${name}`);
+            const manifestContent = fs.readFileSync(manifestPath, 'utf8');
+            const manifest = JSON.parse(manifestContent);
+
+            plugin = await SystemPlugin.create({
+              name: name,
+              version: manifest.version || '1.0.0',
+              displayName: manifest.displayName || name,
+              description: manifest.description || '',
+              category: manifest.category || 'other',
+              active: false,
+              configuration: manifest.configuration || {},
+              pluginTables: manifest.tables || [],
+              pluginRoutes: manifest.routes || []
+            });
+
+            logger.info(`✅ Plugin ${name} registrado automáticamente`);
+          } catch (error) {
+            logger.error(`Error auto-registrando plugin ${name}: ${error.message}`);
+            return res.status(404).json({
+              success: false,
+              message: 'Plugin no encontrado y no se pudo auto-registrar'
+            });
+          }
+        } else {
+          return res.status(404).json({
+            success: false,
+            message: 'Plugin no encontrado'
+          });
+        }
       }
 
       // Leer manifest.json para obtener configuración
