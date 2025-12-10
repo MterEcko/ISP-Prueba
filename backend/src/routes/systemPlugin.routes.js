@@ -177,5 +177,12 @@ module.exports = function(app) {
     systemPluginController.getPluginConfigView
   );
 
+  // Obtener plugin por nombre
+  app.get(
+    "/api/system-plugins/name/:name",
+    [authJwt.verifyToken],
+    systemPluginController.getPluginByName
+  );
+
 
 };

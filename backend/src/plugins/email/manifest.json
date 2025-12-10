@@ -12,7 +12,13 @@
   "channelType": "email",
   "capabilities": ["send", "verify", "template", "webhook"],
   "providers": ["smtp", "sendgrid", "mailgun"],
-  "tables": [],
+  "tables": [
+    {
+      "name": "Plugin_EmailLogs",
+      "model": "EmailLog",
+      "file": "src/models/emailLog.model.js"
+    }
+  ],
   "routes": [
     {
       "path": "/webhook/email",

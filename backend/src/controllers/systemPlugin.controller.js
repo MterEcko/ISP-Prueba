@@ -112,6 +112,70 @@ class SystemPluginController {
   };
 
   /**
+   * Obtener plugin por nombre
+   * GET /api/system-plugins/name/:name
+   */
+  getPluginByName = async (req, res) => {
+    try {
+      const { name } = req.params;
+
+      if (!name) {
+        return res.status(400).json({
+          success: false,
+          message: 'Plugin name es requerido'
+        });
+      }
+
+      const plugin = await SystemPlugin.findOne({
+        where: { name }
+      });
+
+      if (!plugin) {
+        return res.status(404).json({
+          success: false,
+          message: 'Plugin no encontrado'
+        });
+      }
+
+      // Leer manifest.json para obtener configuración
+      const manifestPath = path.join(this.pluginsPath, name, 'manifest.json');
+      let manifest = {};
+
+      if (fs.existsSync(manifestPath)) {
+        try {
+          const manifestContent = fs.readFileSync(manifestPath, 'utf8');
+          manifest = JSON.parse(manifestContent);
+        } catch (error) {
+          logger.error(`Error leyendo manifest de ${name}: ${error.message}`);
+        }
+      }
+
+      // Agregar información adicional si el plugin está cargado
+      const loadedInfo = this.loadedPlugins.get(plugin.name);
+      const pluginData = {
+        ...plugin.toJSON(),
+        ...manifest,
+        loaded: !!loadedInfo,
+        loadedInfo: loadedInfo || null,
+        statistics: await this._getPluginStatistics(plugin)
+      };
+
+      return res.status(200).json({
+        success: true,
+        data: pluginData,
+        message: 'Plugin obtenido exitosamente'
+      });
+
+    } catch (error) {
+      logger.error(`Error obteniendo plugin ${req.params.name}: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  };
+
+  /**
    * Obtener plugins activos
    * GET /api/system-plugins/active
    */

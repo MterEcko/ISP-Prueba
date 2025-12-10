@@ -9,7 +9,13 @@
   "capabilities": ["process_payment", "refund", "webhook", "payment_status"],
   "providers": ["mercadopago"],
   "countries": ["AR", "BR", "CL", "CO", "MX", "PE", "UY"],
-  "tables": [],
+  "tables": [
+    {
+      "name": "Plugin_MercadopagoTransactions",
+      "model": "MercadopagoTransaction",
+      "file": "src/models/mercadopagoTransaction.model.js"
+    }
+  ],
   "routes": [
     {
       "path": "/webhook/mercadopago",
