@@ -114,6 +114,81 @@ async function synchronizeDatabase() {
 
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
 
+    // ==================== AUTO-REGISTRAR PLUGINS DEL FILESYSTEM ====================
+    try {
+      console.log('\n=== AUTO-REGISTRANDO PLUGINS DEL FILESYSTEM ===');
+      const fs = require('fs');
+      const path = require('path');
+      const pluginsPath = path.join(__dirname, 'plugins');
+
+      if (fs.existsSync(pluginsPath)) {
+        const pluginFolders = fs.readdirSync(pluginsPath, { withFileTypes: true })
+          .filter(dirent => dirent.isDirectory())
+          .map(dirent => dirent.name);
+
+        let registered = 0;
+        let alreadyExists = 0;
+
+        for (const pluginName of pluginFolders) {
+          try {
+            // Verificar si ya existe en BD
+            const existingPlugin = await db.SystemPlugin.findOne({
+              where: { name: pluginName }
+            });
+
+            if (existingPlugin) {
+              alreadyExists++;
+              continue;
+            }
+
+            // Leer manifest.json para obtener información
+            const manifestPath = path.join(pluginsPath, pluginName, 'manifest.json');
+            let version = '1.0.0';
+            let category = 'general';
+            let displayName = pluginName;
+
+            if (fs.existsSync(manifestPath)) {
+              try {
+                const manifestContent = fs.readFileSync(manifestPath, 'utf8');
+                const manifest = JSON.parse(manifestContent);
+                version = manifest.version || '1.0.0';
+                category = manifest.category || 'general';
+                displayName = manifest.displayName || manifest.name || pluginName;
+              } catch (error) {
+                console.warn(`⚠️  No se pudo leer manifest de ${pluginName}: ${error.message}`);
+              }
+            }
+
+            // Registrar plugin en BD
+            await db.SystemPlugin.create({
+              name: pluginName,
+              displayName: displayName,
+              version: version,
+              category: category,
+              active: true, // Activar por defecto
+              configuration: {},
+              pluginTables: [],
+              pluginRoutes: []
+            });
+
+            registered++;
+            console.log(`✅ Plugin auto-registrado: ${pluginName}`);
+
+          } catch (error) {
+            console.error(`❌ Error registrando plugin ${pluginName}: ${error.message}`);
+          }
+        }
+
+        console.log(`📦 Plugins encontrados: ${pluginFolders.length}`);
+        console.log(`✅ Nuevos registrados: ${registered}`);
+        console.log(`ℹ️  Ya existían: ${alreadyExists}`);
+      }
+      console.log('=== FIN AUTO-REGISTRO DE PLUGINS ===\n');
+    } catch (error) {
+      console.error('❌ Error en auto-registro de plugins:', error.message);
+    }
+    // ==================== FIN AUTO-REGISTRO ====================
+
     // ==================== CARGAR MODELOS DE PLUGINS ====================
     try {
       console.log('\n=== CARGANDO MODELOS DE PLUGINS ===');
