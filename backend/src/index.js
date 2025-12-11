@@ -386,6 +386,16 @@ synchronizeDatabase().then(() => {
     console.log(`   - WebSocket: ws://localhost:${PORT}`);
     console.log(`\n🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
     console.log(`💾 Base de datos: ${process.env.DB_DIALECT || 'sqlite'}`);
+
+    // ==================== INICIALIZAR JOBS DE LICENCIAS ====================
+    try {
+      const LicenseValidationJob = require('./jobs/license-validation.job');
+      LicenseValidationJob.initializeJobs();
+      console.log('🔐 Jobs de validación de licencias inicializados');
+    } catch (error) {
+      console.error('❌ Error inicializando jobs de licencias:', error.message);
+    }
+    // ==================== FIN JOBS DE LICENCIAS ====================
   });
 });
 
@@ -506,6 +516,14 @@ try {
   console.log('✅ systemLicense.routes registradas');
 } catch (error) {
   console.error('❌ Error en systemLicense.routes:', error.message);
+}
+
+try {
+  console.log('Registrando licenseRegistration.routes...');
+  app.use('/api', require('./routes/licenseRegistration.routes'));
+  console.log('✅ licenseRegistration.routes registradas');
+} catch (error) {
+  console.error('❌ Error en licenseRegistration.routes:', error.message);
 }
 
 try {
