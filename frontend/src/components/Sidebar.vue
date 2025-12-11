@@ -232,6 +232,12 @@
           </router-link>
         </li>
         <li>
+          <router-link to="/license/register">
+            <span class="icon">📝</span>
+            <span class="text" v-if="!isCollapsed">Registrar Empresa</span>
+          </router-link>
+        </li>
+        <li>
           <router-link to="/settings/backups">
             <span class="icon">💾</span>
             <span class="text" v-if="!isCollapsed">Respaldos</span>

@@ -1,6 +1,7 @@
 // Rutas para licencias y plugins
 import LicenseManagementView from '../views/license/LicenseManagementView.vue';
 import LicenseActivationView from '../views/license/LicenseActivationView.vue';
+import CompanyRegistrationView from '../views/license/CompanyRegistrationView.vue';
 import PluginManagementView from '../views/plugins/PluginManagementView.vue';
 import PluginMarketplaceView from '../views/plugins/PluginMarketplaceView.vue';
 
@@ -24,6 +25,15 @@ export const licenseRoutes = [
     meta: {
       requiresAuth: true,
       title: 'Activar Licencia'
+    }
+  },
+  {
+    path: '/license/register',
+    name: 'CompanyRegistration',
+    component: CompanyRegistrationView,
+    meta: {
+      requiresAuth: true,
+      title: 'Registro de Empresa y Licencia'
     }
   }
 ];
