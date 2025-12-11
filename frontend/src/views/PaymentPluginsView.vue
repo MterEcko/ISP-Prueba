@@ -38,32 +38,39 @@
               <form @submit.prevent="saveConfig('mercadopago')">
                 <div class="form-group">
                   <label>Access Token</label>
-                  <input type="text" class="form-control" v-model="configs.mercadopago.accessToken" placeholder="TEST-0000000000000000-000000-00000000000000000000000000000000-000000000">
+                  <input type="password" class="form-control" v-model="configs.mercadopago.accessToken" placeholder="TEST-0000000000000000-000000-00000000000000000000000000000000-000000000">
                   <small class="form-text text-muted">Token de acceso de MercadoPago</small>
                 </div>
                 <div class="form-group">
-                  <label>Public Key</label>
-                  <input type="text" class="form-control" v-model="configs.mercadopago.publicKey" placeholder="TEST-00000000-0000-0000-0000-000000000000">
-                  <small class="form-text text-muted">Clave pública de MercadoPago</small>
+                  <label>País</label>
+                  <select class="form-control" v-model="configs.mercadopago.country">
+                    <option value="AR">Argentina</option>
+                    <option value="BR">Brasil</option>
+                    <option value="CL">Chile</option>
+                    <option value="CO">Colombia</option>
+                    <option value="MX">México</option>
+                    <option value="PE">Perú</option>
+                    <option value="UY">Uruguay</option>
+                  </select>
+                  <small class="form-text text-muted">País donde opera MercadoPago</small>
                 </div>
                 <div class="form-group">
-                  <label>URL de Notificación (Webhook)</label>
-                  <input type="text" class="form-control" v-model="configs.mercadopago.notificationUrl" :placeholder="`${baseUrl}/api/payment/mercadopago/webhook`">
-                  <small class="form-text text-muted">URL para recibir notificaciones de MercadoPago</small>
-                </div>
-                <div class="form-group">
-                  <label>URL de Retorno (Éxito)</label>
-                  <input type="text" class="form-control" v-model="configs.mercadopago.successUrl" :placeholder="`${baseUrl}/payment/success`">
-                  <small class="form-text text-muted">URL a la que se redirige después de un pago exitoso</small>
-                </div>
-                <div class="form-group">
-                  <label>URL de Retorno (Fallo)</label>
-                  <input type="text" class="form-control" v-model="configs.mercadopago.failureUrl" :placeholder="`${baseUrl}/payment/failure`">
-                  <small class="form-text text-muted">URL a la que se redirige después de un pago fallido</small>
+                  <label>Días de Expiración</label>
+                  <input type="number" class="form-control" v-model.number="configs.mercadopago.expirationDays" min="1" max="30">
+                  <small class="form-text text-muted">Días antes de que expire un link de pago</small>
                 </div>
                 <div class="form-check mb-3">
-                  <input type="checkbox" class="form-check-input" id="mpTestMode" v-model="configs.mercadopago.testMode">
-                  <label class="form-check-label" for="mpTestMode">Modo de Prueba</label>
+                  <input type="checkbox" class="form-check-input" id="mpNotifyCustomer" v-model="configs.mercadopago.notifyCustomer">
+                  <label class="form-check-label" for="mpNotifyCustomer">Notificar al cliente</label>
+                </div>
+                <div class="form-group">
+                  <label>URL de Webhook (opcional)</label>
+                  <input type="text" class="form-control" v-model="configs.mercadopago.webhookUrl" :placeholder="`${baseUrl}/api/plugins/mercadopago/webhook`">
+                  <small class="form-text text-muted">URL para recibir notificaciones de pago</small>
+                </div>
+                <div class="form-check mb-3">
+                  <input type="checkbox" class="form-check-input" id="mpSandbox" v-model="configs.mercadopago.sandbox">
+                  <label class="form-check-label" for="mpSandbox">Modo Sandbox (Pruebas)</label>
                 </div>
                 <button type="submit" class="btn btn-primary" :disabled="loading">Guardar Configuración</button>
               </form>
@@ -73,41 +80,57 @@
           <!-- OpenPay -->
           <div class="tab-pane fade" :class="{ 'show active': activeTab === 'openpay' }" id="openpay" role="tabpanel" aria-labelledby="openpay-tab">
             <div class="plugin-config mt-4" v-if="configs.openpay">
-              <h4>Configuración de OpenPay</h4>
+              <h4>Configuración de Openpay</h4>
               <form @submit.prevent="saveConfig('openpay')">
                 <div class="form-group">
-                  <label>ID de Comercio</label>
+                  <label>Merchant ID</label>
                   <input type="text" class="form-control" v-model="configs.openpay.merchantId" placeholder="mxxxxxxxxxxxxxxxxxx">
-                  <small class="form-text text-muted">ID de comercio de OpenPay</small>
+                  <small class="form-text text-muted">ID de comercio de Openpay</small>
                 </div>
                 <div class="form-group">
-                  <label>Clave Privada</label>
-                  <input type="text" class="form-control" v-model="configs.openpay.privateKey" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-                  <small class="form-text text-muted">Clave privada de OpenPay</small>
+                  <label>Private Key</label>
+                  <input type="password" class="form-control" v-model="configs.openpay.privateKey" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                  <small class="form-text text-muted">Llave privada de Openpay</small>
                 </div>
                 <div class="form-group">
-                  <label>Clave Pública</label>
+                  <label>Public Key</label>
                   <input type="text" class="form-control" v-model="configs.openpay.publicKey" placeholder="pk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-                  <small class="form-text text-muted">Clave pública de OpenPay</small>
-                </div>
-                <div class="form-group">
-                  <label>URL de Notificación (Webhook)</label>
-                  <input type="text" class="form-control" v-model="configs.openpay.webhookUrl" :placeholder="`${baseUrl}/api/payment/openpay/webhook`">
-                  <small class="form-text text-muted">URL para recibir notificaciones de OpenPay</small>
-                </div>
-                <div class="form-group">
-                  <label>URL de Retorno (Éxito)</label>
-                  <input type="text" class="form-control" v-model="configs.openpay.successUrl" :placeholder="`${baseUrl}/payment/success`">
-                  <small class="form-text text-muted">URL a la que se redirige después de un pago exitoso</small>
-                </div>
-                <div class="form-group">
-                  <label>URL de Retorno (Fallo)</label>
-                  <input type="text" class="form-control" v-model="configs.openpay.failureUrl" :placeholder="`${baseUrl}/payment/failure`">
-                  <small class="form-text text-muted">URL a la que se redirige después de un pago fallido</small>
+                  <small class="form-text text-muted">Llave pública de Openpay</small>
                 </div>
                 <div class="form-check mb-3">
-                  <input type="checkbox" class="form-check-input" id="opTestMode" v-model="configs.openpay.testMode">
-                  <label class="form-check-label" for="opTestMode">Modo de Prueba</label>
+                  <input type="checkbox" class="form-check-input" id="opSandboxMode" v-model="configs.openpay.sandboxMode">
+                  <label class="form-check-label" for="opSandboxMode">Modo Sandbox (Pruebas)</label>
+                </div>
+                <div class="form-group">
+                  <label>País</label>
+                  <select class="form-control" v-model="configs.openpay.country">
+                    <option value="MX">México</option>
+                    <option value="CO">Colombia</option>
+                    <option value="PE">Perú</option>
+                  </select>
+                  <small class="form-text text-muted">País donde opera Openpay</small>
+                </div>
+                <div class="form-check mb-3">
+                  <input type="checkbox" class="form-check-input" id="opEnableCards" v-model="configs.openpay.enableCards">
+                  <label class="form-check-label" for="opEnableCards">Habilitar pagos con tarjeta</label>
+                </div>
+                <div class="form-check mb-3">
+                  <input type="checkbox" class="form-check-input" id="opEnableStores" v-model="configs.openpay.enableStores">
+                  <label class="form-check-label" for="opEnableStores">Habilitar pago en tiendas</label>
+                </div>
+                <div class="form-check mb-3">
+                  <input type="checkbox" class="form-check-input" id="opEnableBanks" v-model="configs.openpay.enableBanks">
+                  <label class="form-check-label" for="opEnableBanks">Habilitar transferencia bancaria</label>
+                </div>
+                <div class="form-group">
+                  <label>Días de Expiración</label>
+                  <input type="number" class="form-control" v-model.number="configs.openpay.expirationDays" min="1" max="30">
+                  <small class="form-text text-muted">Días antes de que expire un cargo</small>
+                </div>
+                <div class="form-group">
+                  <label>URL de Webhook (opcional)</label>
+                  <input type="text" class="form-control" v-model="configs.openpay.webhookUrl" :placeholder="`${baseUrl}/api/plugins/openpay/webhook`">
+                  <small class="form-text text-muted">URL para recibir notificaciones de pago</small>
                 </div>
                 <button type="submit" class="btn btn-primary" :disabled="loading">Guardar Configuración</button>
               </form>
@@ -130,13 +153,21 @@
                   <small class="form-text text-muted">Client Secret de PayPal</small>
                 </div>
                 <div class="form-group">
-                  <label>URL de Notificación (Webhook)</label>
-                  <input type="text" class="form-control" v-model="configs.paypal.notificationUrl" :placeholder="`${baseUrl}/api/payment/paypal/webhook`">
-                  <small class="form-text text-muted">URL para recibir notificaciones de PayPal</small>
+                  <label>Moneda</label>
+                  <select class="form-control" v-model="configs.paypal.currency">
+                    <option value="USD">USD - Dólar Estadounidense</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="MXN">MXN - Peso Mexicano</option>
+                    <option value="GBP">GBP - Libra Esterlina</option>
+                    <option value="CAD">CAD - Dólar Canadiense</option>
+                    <option value="AUD">AUD - Dólar Australiano</option>
+                    <option value="BRL">BRL - Real Brasileño</option>
+                  </select>
+                  <small class="form-text text-muted">Moneda para transacciones</small>
                 </div>
                 <div class="form-group">
                   <label>URL de Retorno (Éxito)</label>
-                  <input type="text" class="form-control" v-model="configs.paypal.successUrl" :placeholder="`${baseUrl}/payment/success`">
+                  <input type="text" class="form-control" v-model="configs.paypal.returnUrl" :placeholder="`${baseUrl}/payment/success`">
                   <small class="form-text text-muted">URL a la que se redirige después de un pago exitoso</small>
                 </div>
                 <div class="form-group">
@@ -144,9 +175,72 @@
                   <input type="text" class="form-control" v-model="configs.paypal.cancelUrl" :placeholder="`${baseUrl}/payment/cancel`">
                   <small class="form-text text-muted">URL a la que se redirige después de cancelar un pago</small>
                 </div>
+                <div class="form-group">
+                  <label>Webhook ID (opcional)</label>
+                  <input type="text" class="form-control" v-model="configs.paypal.webhookId">
+                  <small class="form-text text-muted">ID del webhook configurado en PayPal</small>
+                </div>
                 <div class="form-check mb-3">
                   <input type="checkbox" class="form-check-input" id="ppTestMode" v-model="configs.paypal.testMode">
-                  <label class="form-check-label" for="ppTestMode">Modo de Prueba</label>
+                  <label class="form-check-label" for="ppTestMode">Modo de Prueba (Sandbox)</label>
+                </div>
+                <button type="submit" class="btn btn-primary" :disabled="loading">Guardar Configuración</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Stripe -->
+          <div class="tab-pane fade" :class="{ 'show active': activeTab === 'stripe' }" id="stripe" role="tabpanel" aria-labelledby="stripe-tab">
+            <div class="plugin-config mt-4" v-if="configs.stripe">
+              <h4>Configuración de Stripe</h4>
+              <form @submit.prevent="saveConfig('stripe')">
+                <div class="form-group">
+                  <label>Publishable Key</label>
+                  <input type="text" class="form-control" v-model="configs.stripe.publishableKey" placeholder="pk_...">
+                  <small class="form-text text-muted">Clave pública de Stripe</small>
+                </div>
+                <div class="form-group">
+                  <label>Secret Key</label>
+                  <input type="password" class="form-control" v-model="configs.stripe.secretKey" placeholder="sk_...">
+                  <small class="form-text text-muted">Clave secreta de Stripe</small>
+                </div>
+                <div class="form-group">
+                  <label>Moneda</label>
+                  <select class="form-control" v-model="configs.stripe.currency">
+                    <option value="USD">USD - Dólar Estadounidense</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="MXN">MXN - Peso Mexicano</option>
+                    <option value="GBP">GBP - Libra Esterlina</option>
+                    <option value="CAD">CAD - Dólar Canadiense</option>
+                    <option value="AUD">AUD - Dólar Australiano</option>
+                    <option value="BRL">BRL - Real Brasileño</option>
+                    <option value="JPY">JPY - Yen Japonés</option>
+                    <option value="CNY">CNY - Yuan Chino</option>
+                  </select>
+                  <small class="form-text text-muted">Moneda para transacciones</small>
+                </div>
+                <div class="form-group">
+                  <label>Nombre de la Empresa</label>
+                  <input type="text" class="form-control" v-model="configs.stripe.companyName">
+                  <small class="form-text text-muted">Aparecerá en los recibos de Stripe</small>
+                </div>
+                <div class="form-check mb-3">
+                  <input type="checkbox" class="form-check-input" id="stripeCapturePayments" v-model="configs.stripe.capturePayments">
+                  <label class="form-check-label" for="stripeCapturePayments">Capturar pagos automáticamente</label>
+                </div>
+                <div class="form-group">
+                  <label>Webhook Secret (opcional)</label>
+                  <input type="password" class="form-control" v-model="configs.stripe.webhookSecret" placeholder="whsec_...">
+                  <small class="form-text text-muted">Secret del webhook para verificar eventos</small>
+                </div>
+                <div class="form-group">
+                  <label>URL de Webhook (informativa)</label>
+                  <input type="text" class="form-control" :value="`${baseUrl}/api/plugins/stripe/webhook`" readonly>
+                  <small class="form-text text-muted">Configura esta URL en tu dashboard de Stripe</small>
+                </div>
+                <div class="form-check mb-3">
+                  <input type="checkbox" class="form-check-input" id="stripeTestMode" v-model="configs.stripe.testMode">
+                  <label class="form-check-label" for="stripeTestMode">Modo de Pruebas</label>
                 </div>
                 <button type="submit" class="btn btn-primary" :disabled="loading">Guardar Configuración</button>
               </form>
@@ -290,28 +384,42 @@ export default {
       configs: {
         mercadopago: {
           accessToken: '',
-          publicKey: '',
-          notificationUrl: '',
-          successUrl: '',
-          failureUrl: '',
-          testMode: true
+          country: 'MX',
+          expirationDays: 7,
+          notifyCustomer: true,
+          webhookUrl: '',
+          sandbox: false
         },
         openpay: {
           merchantId: '',
           privateKey: '',
           publicKey: '',
-          webhookUrl: '',
-          successUrl: '',
-          failureUrl: '',
-          testMode: true
+          sandboxMode: false,
+          country: 'MX',
+          enableCards: true,
+          enableStores: true,
+          enableBanks: true,
+          expirationDays: 7,
+          webhookUrl: ''
         },
         paypal: {
           clientId: '',
           clientSecret: '',
-          notificationUrl: '',
-          successUrl: '',
+          currency: 'USD',
+          returnUrl: '',
           cancelUrl: '',
-          testMode: true
+          webhookId: '',
+          testMode: false
+        },
+        stripe: {
+          publishableKey: '',
+          secretKey: '',
+          currency: 'USD',
+          companyName: '',
+          capturePayments: true,
+          webhookSecret: '',
+          webhookUrl: '',
+          testMode: false
         }
       },
       loading: false,

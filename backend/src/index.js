@@ -117,7 +117,40 @@ async function synchronizeDatabase() {
 
     // Ejecutar auto-migraciones después del sync
     const autoMigration = new AutoMigration(db.sequelize);
+
+    // Registrar migraciones del sistema
     registerSystemMigrations(autoMigration);
+
+    // ============================================
+    // AUTO-MIGRACIONES DE PLUGINS INSTALADOS
+    // ============================================
+    try {
+      const activePlugins = await db.SystemPlugin.findAll({
+        where: { active: true }
+      });
+
+      for (const pluginRecord of activePlugins) {
+        try {
+          const pluginPath = path.join(__dirname, 'plugins', pluginRecord.name, 'src', 'index.js');
+
+          if (fs.existsSync(pluginPath)) {
+            const plugin = require(pluginPath);
+
+            // Si el plugin tiene función de auto-migración, ejecutarla
+            if (typeof plugin.autoMigration === 'function') {
+              console.log(`📦 Registrando migraciones del plugin: ${pluginRecord.displayName || pluginRecord.name}`);
+              plugin.autoMigration(autoMigration);
+            }
+          }
+        } catch (error) {
+          console.warn(`⚠️  No se pudieron cargar migraciones del plugin ${pluginRecord.name}:`, error.message);
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️  Error cargando migraciones de plugins:', error.message);
+    }
+
+    // Ejecutar todas las migraciones (sistema + plugins)
     await autoMigration.runAll();
 
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
