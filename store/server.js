@@ -158,10 +158,15 @@ app.get('/health', (req, res) => {
 app.use('/api/licenses', require('./src/routes/license.routes'));
 app.use('/api/installations', require('./src/routes/installation.routes'));
 app.use('/api/plugins', require('./src/routes/plugin.routes'));
-app.use('/api/marketplace', require('./src/routes/plugin.routes')); // Marketplace es un alias
+app.use('./api/marketplace', require('./src/routes/plugin.routes')); // Marketplace es un alias
 app.use('/api/telemetry', require('./src/routes/telemetry.routes'));
 app.use('/api/remote-control', require('./src/routes/remoteControl.routes'));
 app.use('/api/analytics', require('./src/routes/analytics.routes'));
+
+// Nuevas rutas de Store API para integración con ISP backend
+app.use('/api/licenses', require('./src/routes/licenseStore.routes'));
+app.use('/api/companies', require('./src/routes/company.routes'));
+app.use('/api/cloudflare', require('./src/routes/cloudflare.routes'));
 
 // Dashboard web de administración
 app.use('/dashboard', require('./src/routes/dashboard.routes'));

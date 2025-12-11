@@ -13,25 +13,25 @@ class LicenseValidationJob {
   static initializeJobs() {
     console.log('🔐 Inicializando jobs de validación de licencias...');
 
-    // Job cada hora: Validar licencia con Store
-    this.scheduleHourlyValidation();
+    // Job semanal: Validar licencia con Store (Domingos 2 AM)
+    this.scheduleWeeklyValidation();
 
-    // Job semanal: Actualizar ubicación GPS
+    // Job semanal: Actualizar ubicación GPS (Domingos 3 AM)
     this.scheduleWeeklyGPSUpdate();
 
-    // Job diario: Reportar métricas de uso
+    // Job diario: Reportar métricas de uso (Diario 2 AM)
     this.scheduleDailyMetricsReport();
 
     console.log('✅ Jobs de licencias inicializados correctamente');
   }
 
   /**
-   * Validación cada hora con el Store
+   * Validación semanal con el Store
    */
-  static scheduleHourlyValidation() {
-    // Ejecutar cada hora
-    cron.schedule('0 * * * *', async () => {
-      console.log('🔐 === VALIDACIÓN HORARIA DE LICENCIA ===');
+  static scheduleWeeklyValidation() {
+    // Ejecutar cada domingo a las 2 AM
+    cron.schedule('0 2 * * 0', async () => {
+      console.log('🔐 === VALIDACIÓN SEMANAL DE LICENCIA ===');
       console.log(`⏰ ${new Date().toLocaleString('es-MX')}`);
 
       try {
@@ -70,7 +70,7 @@ class LicenseValidationJob {
       timezone: 'America/Mexico_City'
     });
 
-    console.log('⏰ Job de validación horaria programado');
+    console.log('⏰ Job de validación semanal programado (Domingos 2 AM)');
   }
 
   /**
