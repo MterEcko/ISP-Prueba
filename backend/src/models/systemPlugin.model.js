@@ -13,6 +13,22 @@ module.exports = (sequelize) => {
       //allowNull: false
       //comment: 'jellyfin, fiber, googlePay, voip'
     },
+    displayName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Nombre para mostrar en UI'
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Descripción del plugin'
+    },
+    category: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: 'other',
+      comment: 'payment, communication, automation, integration, other'
+    },
     version: {
       type: DataTypes.STRING,
       allowNull: false

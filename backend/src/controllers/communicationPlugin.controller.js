@@ -311,58 +311,35 @@ exports.deleteChannel = async (req, res) => {
  */
 exports.getAvailablePlugins = async (req, res) => {
   try {
-    const pluginsDir = path.join(__dirname, '../plugins');
-    const availablePlugins = [];
+    // Obtener plugins de comunicación desde la base de datos
+    const SystemPlugin = db.SystemPlugin;
+    const communicationPlugins = await SystemPlugin.findAll({
+      where: {
+        category: 'communication'
+      },
+      order: [['name', 'ASC']]
+    });
 
-    if (fs.existsSync(pluginsDir)) {
-      const pluginFolders = fs.readdirSync(pluginsDir, { withFileTypes: true })
-        .filter(dirent => dirent.isDirectory())
-        .map(dirent => dirent.name);
-
-      for (const folder of pluginFolders) {
-        const pluginPath = path.join(pluginsDir, folder, 'src', `${folder}.controller.js`);
-        
-        if (fs.existsSync(pluginPath)) {
-          // Intentar cargar información del plugin
-          try {
-            const pluginController = require(pluginPath);
-            const pluginInfo = pluginController.getPluginInfo ? 
-              pluginController.getPluginInfo() : 
-              {
-                name: folder,
-                version: '1.0.0',
-                description: `Plugin para ${folder}`,
-                channelType: folder
-              };
-
-            // Solo incluir plugins de comunicación
-            if (['email', 'whatsapp', 'telegram', 'sms', 'voice'].includes(folder) || 
-                (pluginInfo.category && pluginInfo.category === 'communication')) {
-              
-              availablePlugins.push({
-                ...pluginInfo,
-                folder,
-                path: pluginPath,
-                loaded: true,
-                category: 'communication'
-              });
-            }
-          } catch (error) {
-            // Solo agregar si parece ser un plugin de comunicación
-            if (['email', 'whatsapp', 'telegram', 'sms', 'voice'].includes(folder)) {
-              availablePlugins.push({
-                name: folder,
-                folder,
-                path: pluginPath,
-                loaded: false,
-                error: error.message,
-                category: 'communication'
-              });
-            }
-          }
-        }
-      }
-    }
+    const availablePlugins = communicationPlugins.map(plugin => ({
+      id: plugin.id,
+      name: plugin.name,
+      displayName: plugin.displayName || plugin.name,
+      description: plugin.description || `Plugin de comunicación ${plugin.name}`,
+      version: plugin.version,
+      category: plugin.category,
+      active: plugin.active,
+      channelType: plugin.name, // email, whatsapp, telegram, etc.
+      configuration: plugin.configuration,
+      installedAt: plugin.installedAt,
+      // Agregar URL de configuración
+      configUrl: `/plugins/${plugin.name}/config`,
+      // Agregar icono según el tipo
+      icon: plugin.name === 'email' ? 'mdi-email' :
+            plugin.name === 'whatsapp' || plugin.name === 'whatsapp-meta' || plugin.name === 'whatsapp-twilio' ? 'mdi-whatsapp' :
+            plugin.name === 'telegram' ? 'mdi-telegram' :
+            plugin.name === 'sms' ? 'mdi-message-text' :
+            'mdi-message'
+    }));
 
     return res.status(200).json({
       success: true,
@@ -374,7 +351,8 @@ exports.getAvailablePlugins = async (req, res) => {
     logger.error(`Error obteniendo plugins de comunicación: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: 'Error interno del servidor'
+      message: 'Error interno del servidor',
+      error: error.message
     });
   }
 };

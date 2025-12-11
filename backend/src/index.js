@@ -114,6 +114,55 @@ async function synchronizeDatabase() {
 
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
 
+    // ==================== MIGRACIÓN: AGREGAR COLUMNAS A SYSTEMPLUGINS ====================
+    try {
+      console.log('\n=== VERIFICANDO COLUMNAS DE SYSTEMPLUGINS ===');
+      const queryInterface = db.sequelize.getQueryInterface();
+      const tableDescription = await queryInterface.describeTable('SystemPlugins');
+
+      // Agregar displayName si no existe
+      if (!tableDescription.displayName) {
+        await queryInterface.addColumn('SystemPlugins', 'displayName', {
+          type: db.Sequelize.STRING,
+          allowNull: true
+        });
+        console.log('✅ Columna displayName agregada');
+      }
+
+      // Agregar description si no existe
+      if (!tableDescription.description) {
+        await queryInterface.addColumn('SystemPlugins', 'description', {
+          type: db.Sequelize.TEXT,
+          allowNull: true
+        });
+        console.log('✅ Columna description agregada');
+      }
+
+      // Agregar category si no existe
+      if (!tableDescription.category) {
+        await queryInterface.addColumn('SystemPlugins', 'category', {
+          type: db.Sequelize.STRING,
+          allowNull: true,
+          defaultValue: 'other'
+        });
+        console.log('✅ Columna category agregada');
+
+        // Actualizar categorías de plugins existentes
+        await db.sequelize.query(`UPDATE "SystemPlugins" SET category = 'payment' WHERE name IN ('mercadopago', 'openpay', 'paypal', 'stripe');`);
+        await db.sequelize.query(`UPDATE "SystemPlugins" SET category = 'communication' WHERE name IN ('email', 'telegram', 'whatsapp');`);
+        await db.sequelize.query(`UPDATE "SystemPlugins" SET category = 'automation' WHERE name = 'n8n';`);
+        await db.sequelize.query(`UPDATE "SystemPlugins" SET category = 'other' WHERE category IS NULL;`);
+        console.log('✅ Categorías de plugins actualizadas');
+      } else {
+        console.log('ℹ️  Columnas ya existen');
+      }
+
+      console.log('=== FIN VERIFICACIÓN DE COLUMNAS ===\n');
+    } catch (error) {
+      console.error('❌ Error verificando columnas de SystemPlugins:', error.message);
+    }
+    // ==================== FIN MIGRACIÓN ====================
+
     // ==================== AUTO-REGISTRAR PLUGINS DEL FILESYSTEM ====================
     try {
       console.log('\n=== AUTO-REGISTRANDO PLUGINS DEL FILESYSTEM ===');
