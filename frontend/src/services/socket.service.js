@@ -123,6 +123,11 @@ class SocketService {
     }
   }
 
+  // Alias para compatibilidad
+  sendCallAnswer(callerId, answer) {
+    return this.answerCall(callerId, answer);
+  }
+
   // Rechazar llamada
   rejectCall(callerId) {
     if (this.socket) {
@@ -141,6 +146,11 @@ class SocketService {
         targetUserId: targetUserId
       });
     }
+  }
+
+  // Alias para compatibilidad
+  sendCallEnd(targetUserId) {
+    return this.endCall(targetUserId);
   }
 
   // Enviar ICE candidate
