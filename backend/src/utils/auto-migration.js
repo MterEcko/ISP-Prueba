@@ -191,6 +191,40 @@ function registerSystemMigrations(autoMigration) {
 
     return true;
   });
+
+  // Migración 4: Permitir NULL en Payments.gatewayId y paymentReference
+  autoMigration.register('payments-nullable-gateway', async (sequelize) => {
+    const dialect = sequelize.getDialect();
+    const tableExists = await autoMigration.tableExists('Payments');
+
+    if (tableExists && dialect === 'postgres') {
+      try {
+        // Hacer gatewayId nullable
+        await sequelize.query(`
+          ALTER TABLE "Payments"
+          ALTER COLUMN "gatewayId" DROP NOT NULL;
+        `);
+        logger.info('✅ Columna gatewayId ahora permite NULL');
+      } catch (error) {
+        // Ya es nullable o no existe
+        logger.warn(`gatewayId: ${error.message}`);
+      }
+
+      try {
+        // Hacer paymentReference nullable
+        await sequelize.query(`
+          ALTER TABLE "Payments"
+          ALTER COLUMN "paymentReference" DROP NOT NULL;
+        `);
+        logger.info('✅ Columna paymentReference ahora permite NULL');
+      } catch (error) {
+        // Ya es nullable o no existe
+        logger.warn(`paymentReference: ${error.message}`);
+      }
+    }
+
+    return true;
+  });
 }
 
 module.exports = {

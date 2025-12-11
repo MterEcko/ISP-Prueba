@@ -50,6 +50,13 @@ module.exports = function(app) {
     communicationPluginController.activateChannel
   );
 
+  // Probar conexión del canal (DEBE ir antes que PUT /:id)
+  app.post(
+    "/api/communication-channels/:id/test",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_communication")],
+    communicationPluginController.testChannelConnection
+  );
+
   // Actualizar canal
   app.put(
     "/api/communication-channels/:id",

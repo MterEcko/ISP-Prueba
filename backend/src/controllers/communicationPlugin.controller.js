@@ -306,6 +306,60 @@ exports.deleteChannel = async (req, res) => {
 };
 
 /**
+ * Probar conexión de un canal
+ * POST /api/communication-channels/:id/test
+ */
+exports.testChannelConnection = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const channel = await CommunicationChannel.findByPk(id);
+    if (!channel) {
+      return res.status(404).json({
+        success: false,
+        message: 'Canal no encontrado'
+      });
+    }
+
+    // Intentar inicializar el canal para probar la conexión
+    try {
+      await communicationPluginService.initializeChannel(id);
+
+      return res.status(200).json({
+        success: true,
+        message: `Prueba de conexión exitosa para ${channel.name}`,
+        data: {
+          channelName: channel.name,
+          channelType: channel.channelType,
+          status: 'connected',
+          timestamp: new Date()
+        }
+      });
+    } catch (testError) {
+      return res.status(200).json({
+        success: false,
+        message: `Error en la prueba de conexión: ${testError.message}`,
+        data: {
+          channelName: channel.name,
+          channelType: channel.channelType,
+          status: 'failed',
+          error: testError.message,
+          timestamp: new Date()
+        }
+      });
+    }
+
+  } catch (error) {
+    logger.error(`Error probando canal ${req.params.id}: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Obtener plugins disponibles para comunicación
  * GET /api/communication-channels/plugins
  */
