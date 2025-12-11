@@ -1605,6 +1605,7 @@ module.exports = {
   // Métodos principales
   getAllPlugins: systemPluginController.getAllPlugins,
   getPluginById: systemPluginController.getPluginById,
+  getPluginByName: systemPluginController.getPluginByName,  // AÑADIDO: Obtener plugin por nombre
   getActivePlugins: systemPluginController.getActivePlugins,
   getAvailablePlugins: systemPluginController.getAvailablePlugins,
   createPlugin: systemPluginController.createPlugin,
