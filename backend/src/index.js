@@ -163,6 +163,81 @@ async function synchronizeDatabase() {
     }
     // ==================== FIN MIGRACIÓN ====================
 
+    // ==================== MIGRACIÓN: AGREGAR COLUMNAS A SYSTEMLICENSES ====================
+    try {
+      console.log('\n=== VERIFICANDO COLUMNAS DE SYSTEMLICENSES ===');
+      const queryInterface = db.sequelize.getQueryInterface();
+
+      // Verificar si la tabla existe
+      const tables = await queryInterface.showAllTables();
+      if (tables.includes('SystemLicenses')) {
+        const licenseDescription = await queryInterface.describeTable('SystemLicenses');
+
+        // Agregar hardwareId
+        if (!licenseDescription.hardwareId) {
+          await queryInterface.addColumn('SystemLicenses', 'hardwareId', {
+            type: db.Sequelize.STRING(64),
+            allowNull: true
+          });
+          console.log('✅ Columna hardwareId agregada');
+        }
+
+        // Agregar userLimit
+        if (!licenseDescription.userLimit) {
+          await queryInterface.addColumn('SystemLicenses', 'userLimit', {
+            type: db.Sequelize.INTEGER,
+            defaultValue: 5
+          });
+          console.log('✅ Columna userLimit agregada');
+        }
+
+        // Agregar pluginLimit
+        if (!licenseDescription.pluginLimit) {
+          await queryInterface.addColumn('SystemLicenses', 'pluginLimit', {
+            type: db.Sequelize.INTEGER,
+            defaultValue: 3
+          });
+          console.log('✅ Columna pluginLimit agregada');
+        }
+
+        // Agregar includedPlugins
+        if (!licenseDescription.includedPlugins) {
+          await queryInterface.addColumn('SystemLicenses', 'includedPlugins', {
+            type: db.Sequelize.JSON,
+            defaultValue: []
+          });
+          console.log('✅ Columna includedPlugins agregada');
+        }
+
+        // Agregar activatedAt
+        if (!licenseDescription.activatedAt) {
+          await queryInterface.addColumn('SystemLicenses', 'activatedAt', {
+            type: db.Sequelize.DATE,
+            allowNull: true
+          });
+          console.log('✅ Columna activatedAt agregada');
+        }
+
+        // Agregar lastValidated
+        if (!licenseDescription.lastValidated) {
+          await queryInterface.addColumn('SystemLicenses', 'lastValidated', {
+            type: db.Sequelize.DATE,
+            allowNull: true
+          });
+          console.log('✅ Columna lastValidated agregada');
+        }
+
+        console.log('ℹ️  Todas las columnas de licencias verificadas');
+      } else {
+        console.log('ℹ️  Tabla SystemLicenses no existe aún');
+      }
+
+      console.log('=== FIN VERIFICACIÓN DE LICENCIAS ===\n');
+    } catch (error) {
+      console.error('❌ Error verificando columnas de SystemLicenses:', error.message);
+    }
+    // ==================== FIN MIGRACIÓN DE LICENCIAS ====================
+
     // ==================== AUTO-REGISTRAR PLUGINS DEL FILESYSTEM ====================
     try {
       console.log('\n=== AUTO-REGISTRANDO PLUGINS DEL FILESYSTEM ===');
