@@ -7,6 +7,7 @@ class AutoMigration {
   constructor(sequelize) {
     this.sequelize = sequelize;
     this.migrations = [];
+    this.dialect = sequelize.getDialect(); // postgres, mysql, sqlite, etc.
   }
 
   /**
@@ -20,7 +21,7 @@ class AutoMigration {
    * Ejecutar todas las migraciones registradas
    */
   async runAll() {
-    logger.info('🔄 Iniciando auto-migraciones...');
+    logger.info(`🔄 Iniciando auto-migraciones (${this.dialect})...`);
 
     for (const migration of this.migrations) {
       try {
@@ -36,14 +37,23 @@ class AutoMigration {
   }
 
   /**
-   * Verificar si una tabla existe
+   * Verificar si una tabla existe (compatible con PostgreSQL y SQLite)
    */
   async tableExists(tableName) {
-    const [results] = await this.sequelize.query(`
-      SELECT name FROM sqlite_master
-      WHERE type='table' AND name='${tableName}';
-    `);
-    return results.length > 0;
+    if (this.dialect === 'sqlite') {
+      const [results] = await this.sequelize.query(`
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name='${tableName}';
+      `);
+      return results.length > 0;
+    } else if (this.dialect === 'postgres') {
+      const [results] = await this.sequelize.query(`
+        SELECT table_name FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = '${tableName}';
+      `);
+      return results.length > 0;
+    }
+    return false;
   }
 
   /**
@@ -51,13 +61,24 @@ class AutoMigration {
    */
   async columnExists(tableName, columnName) {
     try {
-      const [results] = await this.sequelize.query(`
-        PRAGMA table_info(${tableName});
-      `);
-      return results.some(col => col.name === columnName);
+      if (this.dialect === 'sqlite') {
+        const [results] = await this.sequelize.query(`
+          PRAGMA table_info(${tableName});
+        `);
+        return results.some(col => col.name === columnName);
+      } else if (this.dialect === 'postgres') {
+        const [results] = await this.sequelize.query(`
+          SELECT column_name FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = '${tableName}'
+            AND column_name = '${columnName}';
+        `);
+        return results.length > 0;
+      }
     } catch (error) {
       return false;
     }
+    return false;
   }
 
   /**
@@ -68,8 +89,8 @@ class AutoMigration {
 
     if (!exists) {
       await this.sequelize.query(`
-        ALTER TABLE ${tableName}
-        ADD COLUMN ${columnName} ${columnDefinition};
+        ALTER TABLE "${tableName}"
+        ADD COLUMN "${columnName}" ${columnDefinition};
       `);
       logger.info(`✅ Columna ${columnName} agregada a ${tableName}`);
       return true;
@@ -79,13 +100,34 @@ class AutoMigration {
   }
 
   /**
-   * Validar valores ENUM (SQLite no tiene ENUMs nativos, usa CHECK constraint)
-   * Esta función solo verifica que los valores nuevos sean válidos
+   * Validar y agregar valores ENUM (solo PostgreSQL)
    */
-  validateEnumValues(tableName, columnName, newValues) {
-    // En SQLite, los ENUMs se manejan a nivel de aplicación
-    // Solo registramos que los valores son válidos
-    logger.info(`✅ Valores ENUM validados para ${tableName}.${columnName}: ${newValues.join(', ')}`);
+  async addEnumValue(enumName, newValue) {
+    if (this.dialect === 'postgres') {
+      try {
+        // Verificar si el valor ya existe
+        const [results] = await this.sequelize.query(`
+          SELECT enumlabel FROM pg_enum
+          WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = '${enumName}')
+          AND enumlabel = '${newValue}';
+        `);
+
+        if (results.length === 0) {
+          await this.sequelize.query(`
+            ALTER TYPE "${enumName}" ADD VALUE IF NOT EXISTS '${newValue}';
+          `);
+          logger.info(`✅ Valor '${newValue}' agregado al enum ${enumName}`);
+        }
+      } catch (error) {
+        // Ignorar si el valor ya existe
+        if (!error.message.includes('already exists')) {
+          throw error;
+        }
+      }
+    } else {
+      // SQLite no tiene ENUMs nativos, se valida a nivel de aplicación
+      logger.info(`✅ Valor ENUM '${newValue}' validado para ${enumName} (SQLite)`);
+    }
     return true;
   }
 }
@@ -96,12 +138,19 @@ class AutoMigration {
 function registerSystemMigrations(autoMigration) {
   // Migración 1: Validar enum de Payment.paymentMethod
   autoMigration.register('payment-method-enum-validation', async (sequelize) => {
-    // SQLite no tiene ENUMs nativos, se valida a nivel de modelo
-    // Esta migración solo registra los nuevos valores como válidos
+    const dialect = sequelize.getDialect();
     const newPaymentMethods = ['online', 'mercadopago', 'openpay', 'paypal', 'stripe'];
 
     logger.info('Validando métodos de pago de plugins...');
-    autoMigration.validateEnumValues('Payments', 'paymentMethod', newPaymentMethods);
+
+    if (dialect === 'postgres') {
+      for (const method of newPaymentMethods) {
+        await autoMigration.addEnumValue('enum_Payments_paymentMethod', method);
+      }
+    } else {
+      // SQLite: los ENUMs se validan a nivel de modelo
+      logger.info(`✅ Métodos de pago validados (SQLite): ${newPaymentMethods.join(', ')}`);
+    }
 
     return true;
   });
@@ -113,8 +162,8 @@ function registerSystemMigrations(autoMigration) {
       { name: 'userLimit', definition: 'INTEGER DEFAULT 5' },
       { name: 'pluginLimit', definition: 'INTEGER DEFAULT 3' },
       { name: 'includedPlugins', definition: 'JSON' },
-      { name: 'activatedAt', definition: 'DATETIME' },
-      { name: 'lastValidated', definition: 'DATETIME' }
+      { name: 'activatedAt', definition: 'TIMESTAMP' },
+      { name: 'lastValidated', definition: 'TIMESTAMP' }
     ];
 
     const tableExists = await autoMigration.tableExists('SystemLicenses');
