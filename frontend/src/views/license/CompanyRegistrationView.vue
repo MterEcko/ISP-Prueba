@@ -463,7 +463,7 @@ export default {
   methods: {
     async loadHardwareInfo() {
       try {
-        const response = await api.get('/api/system/hardware-info');
+        const response = await api.get('/system/hardware-info');
         this.hardwareInfo = response.data.hardware;
         this.location = response.data.location;
       } catch (error) {
@@ -475,7 +475,7 @@ export default {
     async validateLicenseKey() {
       this.validatingLicense = true;
       try {
-        const response = await api.post('/api/licenses/validate-key', {
+        const response = await api.post('/licenses/validate-key', {
           licenseKey: this.license.key
         });
 
@@ -520,7 +520,7 @@ export default {
           location: this.location
         };
 
-        const response = await api.post('/api/licenses/register-company', payload);
+        const response = await api.post('/licenses/register-company', payload);
 
         if (response.data.success) {
           this.registrationResult = response.data.data;

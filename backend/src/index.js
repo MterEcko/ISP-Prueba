@@ -100,6 +100,9 @@ console.log('Frontend path:', frontendPath);
 // Base de datos - IMPORTAR LA INSTANCIA CORRECTA
 const db = require('./models');
 
+// Auto-migración del sistema
+const { AutoMigration, registerSystemMigrations } = require('./utils/auto-migration');
+
 // Función para sincronizar modelos en orden
 async function synchronizeDatabase() {
   try {
@@ -111,6 +114,11 @@ async function synchronizeDatabase() {
       force: false,  // NO borrar tablas existentes
       alter: false   // NO modificar estructura automáticamente (usar migraciones para eso)
     });
+
+    // Ejecutar auto-migraciones después del sync
+    const autoMigration = new AutoMigration(db.sequelize);
+    registerSystemMigrations(autoMigration);
+    await autoMigration.runAll();
 
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
 
