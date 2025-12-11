@@ -277,6 +277,19 @@ export default {
       console.log('🔍 Filtrando marketplace para plugin:', pluginParam);
     }
 
+    // Validar licencia con Store al acceder al marketplace
+    try {
+      console.log('🔐 Validando licencia con Store...');
+      await this.$store.dispatch('api/post', {
+        url: '/api/licenses/force-validation',
+        data: {}
+      });
+      console.log('✅ Licencia validada con Store');
+    } catch (error) {
+      console.warn('⚠️ No se pudo validar licencia con Store:', error.message);
+      // No bloquear el marketplace si falla la validación
+    }
+
     await this.loadMarketplacePlugins();
   },
   methods: {
