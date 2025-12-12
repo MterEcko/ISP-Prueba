@@ -7,7 +7,9 @@ const customPluginComponents = {
   'openpay': () => import('@/views/plugins/payment/OpenpayConfig.vue'),
   'paypal': () => import('@/views/plugins/payment/PaypalConfig.vue'),
   'stripe': () => import('@/views/plugins/payment/StripeConfig.vue'),
-  'email': () => import('@/views/plugins/payment/EmailConfig.vue')
+  'email': () => import('@/views/plugins/payment/EmailConfig.vue'),
+  'jellyfin': () => import('@/views/plugins/payment/JellyfinConfig.vue'),
+  'whatsapp-twilio': () => import('@/views/plugins/payment/WhatsappTwilioConfig.vue')
 };
 
 let pluginRoutesCache = [];

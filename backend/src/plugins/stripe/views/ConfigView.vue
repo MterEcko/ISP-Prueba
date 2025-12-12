@@ -263,7 +263,7 @@ export default {
   methods: {
     async loadConfig() {
       try {
-        const response = await api.get('/plugins/stripe/config');
+        const response = await api.get('/api/plugins/stripe/config');
         if (response.data.config) {
           this.config = { ...this.config, ...response.data.config };
           // Actualizar webhookUrl con el origen actual
@@ -275,7 +275,7 @@ export default {
     },
     async loadStatus() {
       try {
-        const response = await api.get('/plugins/stripe/status');
+        const response = await api.get('/api/plugins/stripe/status');
         this.status = response.data;
       } catch (error) {
         console.error(error);
@@ -287,7 +287,7 @@ export default {
 
       this.saving = true;
       try {
-        await api.post('/plugins/stripe/config', this.config);
+        await api.post('/api/plugins/stripe/config', this.config);
         this.snackbar = { show: true, message: 'Configuracion guardada', color: 'success' };
         await this.loadStatus();
       } catch (error) {
@@ -299,7 +299,7 @@ export default {
     async testConnection() {
       this.testing = true;
       try {
-        const response = await api.post('/plugins/stripe/test');
+        const response = await api.post('/api/plugins/stripe/test');
         if (response.data.success) {
           this.snackbar = { show: true, message: 'Conexion exitosa con Stripe', color: 'success' };
           // Recargar estado para mostrar info de la cuenta

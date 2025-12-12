@@ -8,8 +8,8 @@ const backendPluginsDir = path.join(__dirname, '..', 'backend', 'src', 'plugins'
 // Directorio de destino en el frontend
 const frontendPluginsDir = path.join(__dirname, 'src', 'views', 'plugins', 'payment');
 
-// Plugins de pago que queremos sincronizar
-const paymentPlugins = ['mercadopago', 'openpay', 'paypal', 'stripe', 'email'];
+// Plugins que queremos sincronizar (incluye pago, comunicación y servicios)
+const paymentPlugins = ['mercadopago', 'openpay', 'paypal', 'stripe', 'email', 'jellyfin', 'whatsapp-twilio'];
 
 console.log('🔄 Sincronizando ConfigView.vue desde backend...\n');
 
