@@ -184,7 +184,7 @@ export default {
   methods: {
     async loadConfig() {
       try {
-        const response = await api.get('/api/plugins/mercadopago/config');
+        const response = await api.get('/plugins/mercadopago/config');
         if (response.data.config) this.config = { ...this.config, ...response.data.config };
       } catch (error) {
         console.error(error);
@@ -192,7 +192,7 @@ export default {
     },
     async loadStatus() {
       try {
-        const response = await api.get('/api/plugins/mercadopago/status');
+        const response = await api.get('/plugins/mercadopago/status');
         this.status = response.data;
       } catch (error) {
         console.error(error);
@@ -204,7 +204,7 @@ export default {
 
       this.saving = true;
       try {
-        await api.post('/api/plugins/mercadopago/config', this.config);
+        await api.post('/plugins/mercadopago/config', this.config);
         this.snackbar = { show: true, message: 'Configuracion guardada', color: 'success' };
         await this.loadStatus();
       } catch (error) {
@@ -216,7 +216,7 @@ export default {
     async testConnection() {
       this.testing = true;
       try {
-        const response = await api.post('/api/plugins/mercadopago/test');
+        const response = await api.post('/plugins/mercadopago/test');
         if (response.data.success) {
           this.snackbar = { show: true, message: 'Conexion exitosa', color: 'success' };
         } else {

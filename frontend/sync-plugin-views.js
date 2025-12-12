@@ -37,6 +37,10 @@ paymentPlugins.forEach(pluginName => {
       // Leer contenido del backend
       let content = fs.readFileSync(sourceFile, 'utf8');
 
+      // TRANSFORMACIONES:
+      // 1. Reemplazar rutas /api/plugins/ con /plugins/ (el servicio api ya incluye /api/)
+      content = content.replace(/\/api\/plugins\//g, '/plugins/');
+
       // Escribir al frontend
       fs.writeFileSync(destFile, content, 'utf8');
 
