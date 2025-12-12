@@ -1,6 +1,13 @@
 // Sistema de carga dinamica de plugins desde el backend
-// Los archivos ConfigView.vue ahora están en el backend
 import api from '@/services/api';
+
+// Mapa de componentes personalizados para plugins de pago
+const customPluginComponents = {
+  'mercadopago': () => import('@/views/plugins/payment/MercadopagoConfig.vue'),
+  'openpay': () => import('@/views/plugins/payment/OpenpayConfig.vue'),
+  'paypal': () => import('@/views/plugins/payment/PaypalConfig.vue'),
+  'stripe': () => import('@/views/plugins/payment/StripeConfig.vue')
+};
 
 let pluginRoutesCache = [];
 
@@ -25,10 +32,15 @@ export async function loadPluginRoutes() {
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join('');
 
+      // Usar componente personalizado si existe, sino usar DynamicPluginConfig
+      const component = customPluginComponents[pluginName]
+        ? customPluginComponents[pluginName]
+        : () => import('@/views/plugins/DynamicPluginConfig.vue');
+
       return {
         path: `/plugins/${pluginName}/config`,
         name: `${componentName}Config`,
-        component: () => import('@/views/plugins/DynamicPluginConfig.vue'),
+        component: component,
         meta: {
           requiresAuth: true,
           title: `Configuracion ${componentName}`,
