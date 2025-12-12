@@ -412,7 +412,7 @@ exports.markAsPaid = async (req, res) => {
       paymentReference,
       paymentMethod = 'manual',
       notes,
-      gatewayId = 1, // Usar un ID de gateway por defecto si no se provee
+      gatewayId = null, // NULL para pagos manuales sin gateway
       amount,
       paymentDate
     } = req.body;
@@ -453,7 +453,7 @@ exports.markAsPaid = async (req, res) => {
       const payment = await Payment.create({
         invoiceId: invoice.id,
         clientId: invoice.clientId,
-        gatewayId: parseInt(gatewayId),
+        gatewayId: gatewayId ? parseInt(gatewayId) : null, // NULL para pagos manuales
         amount: amount ? parseFloat(amount) : invoice.totalAmount, // Usar monto del body o el total de la factura
         paymentMethod: paymentMethod,
         paymentReference: paymentReference || `MANUAL-PAY-${Date.now()}`,
