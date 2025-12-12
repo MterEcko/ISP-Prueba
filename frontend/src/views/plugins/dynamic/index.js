@@ -7,9 +7,6 @@ import MercadopagoConfig from './MercadopagoConfig.vue';
 import OpenpayConfig from './OpenpayConfig.vue';
 import PaypalConfig from './PaypalConfig.vue';
 import StripeConfig from './StripeConfig.vue';
-import TelegramConfig from './TelegramConfig.vue';
-import WhatsappMetaConfig from './WhatsappMetaConfig.vue';
-import WhatsappTwilioConfig from './WhatsappTwilioConfig.vue';
 
 export const pluginComponents = {
   'email': EmailConfig,
@@ -17,10 +14,7 @@ export const pluginComponents = {
   'mercadopago': MercadopagoConfig,
   'openpay': OpenpayConfig,
   'paypal': PaypalConfig,
-  'stripe': StripeConfig,
-  'telegram': TelegramConfig,
-  'whatsapp-meta': WhatsappMetaConfig,
-  'whatsapp-twilio': WhatsappTwilioConfig
+  'stripe': StripeConfig
 };
 
 export function hasPluginComponent(pluginName) {
