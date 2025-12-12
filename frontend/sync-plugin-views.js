@@ -79,6 +79,41 @@ discoveredPlugins.forEach(pluginName => {
   }
 });
 
+// Generar archivo index.js con todos los imports estáticos
+const indexContent = `// Auto-generado por sync-plugin-views.js - NO EDITAR MANUALMENTE
+// Este archivo mapea nombres de plugins a sus componentes Vue
+
+${discoveredPlugins.map(pluginName => {
+  const componentName = pluginName
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
+  return `import ${componentName}Config from './${componentName}Config.vue';`;
+}).join('\n')}
+
+export const pluginComponents = {
+${discoveredPlugins.map(pluginName => {
+  const componentName = pluginName
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
+  return `  '${pluginName}': ${componentName}Config`;
+}).join(',\n')}
+};
+
+export function hasPluginComponent(pluginName) {
+  return pluginName in pluginComponents;
+}
+
+export function getPluginComponent(pluginName) {
+  return pluginComponents[pluginName] || null;
+}
+`;
+
+const indexFile = path.join(frontendPluginsDir, 'index.js');
+fs.writeFileSync(indexFile, indexContent, 'utf8');
+console.log(`\n📦 Generado index.js con ${discoveredPlugins.length} componentes`);
+
 console.log(`\n📊 Resumen:`);
 console.log(`   ✅ Sincronizados: ${syncedCount}`);
 console.log(`   ❌ Errores: ${errorCount}`);

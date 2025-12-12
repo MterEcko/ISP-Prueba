@@ -1,17 +1,16 @@
 // Sistema de carga dinamica de plugins desde el backend
 import api from '@/services/api';
+import { getPluginComponent, hasPluginComponent } from '@/views/plugins/dynamic/index.js';
+import DynamicPluginConfig from '@/views/plugins/DynamicPluginConfig.vue';
 
-// Función para cargar componente personalizado dinámicamente
+// Función para obtener el componente del plugin
 function loadPluginComponent(pluginName) {
-  // Convertir nombre-con-guiones a NombreEnCamelCase para el nombre del archivo
-  const componentName = pluginName
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join('');
-
-  // Intentar cargar componente sincronizado, si falla usar DynamicPluginConfig
-  return () => import(`@/views/plugins/dynamic/${componentName}Config.vue`)
-    .catch(() => import('@/views/plugins/DynamicPluginConfig.vue'));
+  // Verificar si existe un componente sincronizado para este plugin
+  if (hasPluginComponent(pluginName)) {
+    return getPluginComponent(pluginName);
+  }
+  // Si no existe, usar DynamicPluginConfig
+  return DynamicPluginConfig;
 }
 
 let pluginRoutesCache = [];
