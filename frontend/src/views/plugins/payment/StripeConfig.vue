@@ -21,7 +21,7 @@
                 :rules="[rules.required]"
                 variant="outlined"
                 density="compact"
-                hint="Clave publica de Stripe"
+                hint="Clave publica de Stripe (pk_...)"
                 persistent-hint
                 class="mb-4"
               ></v-text-field>
@@ -33,7 +33,7 @@
                 variant="outlined"
                 density="compact"
                 type="password"
-                hint="Clave secreta de Stripe"
+                hint="Clave secreta de Stripe (sk_...)"
                 persistent-hint
                 class="mb-4"
               ></v-text-field>
@@ -86,13 +86,13 @@
                 variant="outlined"
                 density="compact"
                 type="password"
-                hint="Secret del webhook para verificar eventos"
+                hint="Secret del webhook para verificar eventos (whsec_...)"
                 persistent-hint
                 class="mb-4"
               ></v-text-field>
 
               <v-text-field
-                :model-value="webhookUrl"
+                v-model="config.webhookUrl"
                 label="URL de Webhook (informativa)"
                 variant="outlined"
                 density="compact"
@@ -159,6 +159,55 @@
             </v-alert>
           </v-card-text>
         </v-card>
+
+        <v-card class="mt-4">
+          <v-card-title>Metodos de Pago</v-card-title>
+          <v-card-text>
+            <v-list density="compact">
+              <v-list-item>
+                <v-icon start>mdi-credit-card</v-icon>
+                Tarjetas de Credito/Debito
+              </v-list-item>
+              <v-list-item>
+                <v-icon start>mdi-bank</v-icon>
+                Transferencias Bancarias
+              </v-list-item>
+              <v-list-item>
+                <v-icon start>mdi-wallet</v-icon>
+                Wallets Digitales
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
+
+        <v-card class="mt-4">
+          <v-card-title>Ayuda</v-card-title>
+          <v-card-text>
+            <v-list density="compact">
+              <v-list-item
+                href="https://stripe.com/docs"
+                target="_blank"
+              >
+                <v-icon start>mdi-book-open-variant</v-icon>
+                Documentacion de Stripe
+              </v-list-item>
+              <v-list-item
+                href="https://dashboard.stripe.com/apikeys"
+                target="_blank"
+              >
+                <v-icon start>mdi-key</v-icon>
+                Obtener API Keys
+              </v-list-item>
+              <v-list-item
+                href="https://dashboard.stripe.com/webhooks"
+                target="_blank"
+              >
+                <v-icon start>mdi-webhook</v-icon>
+                Configurar Webhooks
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
       </v-col>
     </v-row>
 
@@ -189,7 +238,7 @@ export default {
         companyName: '',
         capturePayments: true,
         webhookSecret: '',
-        webhookUrl: ''
+        webhookUrl: `${window.location.origin}/api/plugins/stripe/webhook`
       },
       currencies: [
         { title: 'USD - Dolar Estadounidense', value: 'USD' },
@@ -207,11 +256,6 @@ export default {
       snackbar: { show: false, message: '', color: 'success' }
     };
   },
-  computed: {
-    webhookUrl() {
-      return `${window.location.origin}/api/plugins/stripe/webhook`;
-    }
-  },
   mounted() {
     this.loadConfig();
     this.loadStatus();
@@ -219,9 +263,11 @@ export default {
   methods: {
     async loadConfig() {
       try {
-        const response = await api.get('/plugins/stripe/config');
+        const response = await api.get('/api/plugins/stripe/config');
         if (response.data.config) {
           this.config = { ...this.config, ...response.data.config };
+          // Actualizar webhookUrl con el origen actual
+          this.config.webhookUrl = `${window.location.origin}/api/plugins/stripe/webhook`;
         }
       } catch (error) {
         console.error(error);
@@ -229,7 +275,7 @@ export default {
     },
     async loadStatus() {
       try {
-        const response = await api.get('/plugins/stripe/status');
+        const response = await api.get('/api/plugins/stripe/status');
         this.status = response.data;
       } catch (error) {
         console.error(error);
@@ -241,8 +287,8 @@ export default {
 
       this.saving = true;
       try {
-        await api.post('/plugins/stripe/config', this.config);
-        this.snackbar = { show: true, message: 'Configuracion guardada correctamente', color: 'success' };
+        await api.post('/api/plugins/stripe/config', this.config);
+        this.snackbar = { show: true, message: 'Configuracion guardada', color: 'success' };
         await this.loadStatus();
       } catch (error) {
         this.snackbar = { show: true, message: 'Error guardando configuracion', color: 'error' };
@@ -253,9 +299,10 @@ export default {
     async testConnection() {
       this.testing = true;
       try {
-        const response = await api.post('/plugins/stripe/test');
+        const response = await api.post('/api/plugins/stripe/test');
         if (response.data.success) {
           this.snackbar = { show: true, message: 'Conexion exitosa con Stripe', color: 'success' };
+          // Recargar estado para mostrar info de la cuenta
           await this.loadStatus();
         } else {
           this.snackbar = { show: true, message: 'Error en la conexion', color: 'error' };

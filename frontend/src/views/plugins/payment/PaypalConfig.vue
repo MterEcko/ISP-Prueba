@@ -140,6 +140,28 @@
             </v-alert>
           </v-card-text>
         </v-card>
+
+        <v-card class="mt-4">
+          <v-card-title>Ayuda</v-card-title>
+          <v-card-text>
+            <v-list density="compact">
+              <v-list-item
+                href="https://developer.paypal.com/docs/"
+                target="_blank"
+              >
+                <v-icon start>mdi-book-open-variant</v-icon>
+                Documentacion de PayPal
+              </v-list-item>
+              <v-list-item
+                href="https://developer.paypal.com/developer/applications"
+                target="_blank"
+              >
+                <v-icon start>mdi-cog</v-icon>
+                Mis Aplicaciones
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
       </v-col>
     </v-row>
 
@@ -192,7 +214,7 @@ export default {
   methods: {
     async loadConfig() {
       try {
-        const response = await api.get('/plugins/paypal/config');
+        const response = await api.get('/api/plugins/paypal/config');
         if (response.data.config) this.config = { ...this.config, ...response.data.config };
       } catch (error) {
         console.error(error);
@@ -200,7 +222,7 @@ export default {
     },
     async loadStatus() {
       try {
-        const response = await api.get('/plugins/paypal/status');
+        const response = await api.get('/api/plugins/paypal/status');
         this.status = response.data;
       } catch (error) {
         console.error(error);
@@ -212,7 +234,7 @@ export default {
 
       this.saving = true;
       try {
-        await api.post('/plugins/paypal/config', this.config);
+        await api.post('/api/plugins/paypal/config', this.config);
         this.snackbar = { show: true, message: 'Configuracion guardada', color: 'success' };
         await this.loadStatus();
       } catch (error) {
@@ -224,7 +246,7 @@ export default {
     async testConnection() {
       this.testing = true;
       try {
-        const response = await api.post('/plugins/paypal/test');
+        const response = await api.post('/api/plugins/paypal/test');
         if (response.data.success) {
           this.snackbar = { show: true, message: 'Conexion exitosa', color: 'success' };
         } else {

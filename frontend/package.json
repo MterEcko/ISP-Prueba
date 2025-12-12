@@ -6,6 +6,8 @@
     "start": "vue-cli-service serve",
     "serve": "vue-cli-service serve",
     "dev": "vue-cli-service serve",
+    "sync-plugins": "node sync-plugin-views.js",
+    "prebuild": "npm run sync-plugins",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
   },

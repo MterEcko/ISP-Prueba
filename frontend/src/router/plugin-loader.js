@@ -1,12 +1,13 @@
 // Sistema de carga dinamica de plugins desde el backend
 import api from '@/services/api';
 
-// Mapa de componentes personalizados para plugins de pago
+// Mapa de componentes personalizados (sincronizados desde backend)
 const customPluginComponents = {
   'mercadopago': () => import('@/views/plugins/payment/MercadopagoConfig.vue'),
   'openpay': () => import('@/views/plugins/payment/OpenpayConfig.vue'),
   'paypal': () => import('@/views/plugins/payment/PaypalConfig.vue'),
-  'stripe': () => import('@/views/plugins/payment/StripeConfig.vue')
+  'stripe': () => import('@/views/plugins/payment/StripeConfig.vue'),
+  'email': () => import('@/views/plugins/payment/EmailConfig.vue')
 };
 
 let pluginRoutesCache = [];
