@@ -214,7 +214,7 @@ export default {
   methods: {
     async loadConfig() {
       try {
-        const response = await api.get('/api/plugins/paypal/config');
+        const response = await api.get('/plugins/paypal/config');
         if (response.data.config) this.config = { ...this.config, ...response.data.config };
       } catch (error) {
         console.error(error);
@@ -222,7 +222,7 @@ export default {
     },
     async loadStatus() {
       try {
-        const response = await api.get('/api/plugins/paypal/status');
+        const response = await api.get('/plugins/paypal/status');
         this.status = response.data;
       } catch (error) {
         console.error(error);
@@ -234,7 +234,7 @@ export default {
 
       this.saving = true;
       try {
-        await api.post('/api/plugins/paypal/config', this.config);
+        await api.post('/plugins/paypal/config', this.config);
         this.snackbar = { show: true, message: 'Configuracion guardada', color: 'success' };
         await this.loadStatus();
       } catch (error) {
@@ -246,7 +246,7 @@ export default {
     async testConnection() {
       this.testing = true;
       try {
-        const response = await api.post('/api/plugins/paypal/test');
+        const response = await api.post('/plugins/paypal/test');
         if (response.data.success) {
           this.snackbar = { show: true, message: 'Conexion exitosa', color: 'success' };
         } else {
