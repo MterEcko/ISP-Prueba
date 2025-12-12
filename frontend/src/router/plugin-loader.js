@@ -1,16 +1,18 @@
 // Sistema de carga dinamica de plugins desde el backend
 import api from '@/services/api';
 
-// Mapa de componentes personalizados (sincronizados desde backend)
-const customPluginComponents = {
-  'mercadopago': () => import('@/views/plugins/payment/MercadopagoConfig.vue'),
-  'openpay': () => import('@/views/plugins/payment/OpenpayConfig.vue'),
-  'paypal': () => import('@/views/plugins/payment/PaypalConfig.vue'),
-  'stripe': () => import('@/views/plugins/payment/StripeConfig.vue'),
-  'email': () => import('@/views/plugins/payment/EmailConfig.vue'),
-  'jellyfin': () => import('@/views/plugins/payment/JellyfinConfig.vue'),
-  'whatsapp-twilio': () => import('@/views/plugins/payment/WhatsappTwilioConfig.vue')
-};
+// Función para cargar componente personalizado dinámicamente
+function loadPluginComponent(pluginName) {
+  // Convertir nombre-con-guiones a NombreEnCamelCase para el nombre del archivo
+  const componentName = pluginName
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
+
+  // Intentar cargar componente sincronizado, si falla usar DynamicPluginConfig
+  return () => import(`@/views/plugins/dynamic/${componentName}Config.vue`)
+    .catch(() => import('@/views/plugins/DynamicPluginConfig.vue'));
+}
 
 let pluginRoutesCache = [];
 
@@ -35,10 +37,8 @@ export async function loadPluginRoutes() {
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join('');
 
-      // Usar componente personalizado si existe, sino usar DynamicPluginConfig
-      const component = customPluginComponents[pluginName]
-        ? customPluginComponents[pluginName]
-        : () => import('@/views/plugins/DynamicPluginConfig.vue');
+      // Cargar componente dinámicamente (intentará componente sincronizado, sino DynamicPluginConfig)
+      const component = loadPluginComponent(pluginName);
 
       return {
         path: `/plugins/${pluginName}/config`,
