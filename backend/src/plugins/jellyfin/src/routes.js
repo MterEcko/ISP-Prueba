@@ -24,7 +24,11 @@ module.exports = (router, ControllerClass, pluginInstance) => {
   };
 
   // 3. Definición de Rutas (Usando arrow functions para mantener el contexto 'this' del controlador)
-  
+
+  // Configuración del plugin
+  router.get('/config', auth, (req, res) => controller.getConfig(req, res));
+  router.post('/config', auth, (req, res) => controller.saveConfig(req, res));
+
   // Aprovisionamiento
   router.post('/provision-client', auth, (req, res) => controller.provisionClient(req, res));
 
