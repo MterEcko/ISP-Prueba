@@ -103,6 +103,20 @@ module.exports = (sequelize) => {
       foreignKey: 'pluginId',
       as: 'downloads'
     });
+
+    // Relación muchos a muchos con ServicePackages
+    Plugin.belongsToMany(models.ServicePackage, {
+      through: 'PluginPackages',
+      foreignKey: 'pluginId',
+      otherKey: 'servicePackageId',
+      as: 'packages'
+    });
+
+    // Relación directa con PluginPackage para acceso a configuración
+    Plugin.hasMany(models.PluginPackage, {
+      foreignKey: 'pluginId',
+      as: 'packageConfigs'
+    });
   };
 
   return Plugin;
