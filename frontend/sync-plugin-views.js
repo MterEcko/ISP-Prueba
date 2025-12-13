@@ -11,8 +11,6 @@ const frontendPluginsDir = path.join(__dirname, 'src', 'views', 'plugins', 'dyna
 // Escanear automáticamente todos los plugins que tengan ConfigView.vue
 function discoverPlugins() {
   const plugins = [];
-  // Plugins excluidos porque no tienen la estructura estándar de rutas /config
-  const excludedPlugins = ['telegram', 'whatsapp-meta', 'whatsapp-twilio'];
 
   if (!fs.existsSync(backendPluginsDir)) {
     console.error(`❌ Directorio de plugins no encontrado: ${backendPluginsDir}`);
@@ -22,7 +20,7 @@ function discoverPlugins() {
   const pluginDirs = fs.readdirSync(backendPluginsDir, { withFileTypes: true });
 
   for (const dir of pluginDirs) {
-    if (dir.isDirectory() && !excludedPlugins.includes(dir.name)) {
+    if (dir.isDirectory()) {
       const configViewPath = path.join(backendPluginsDir, dir.name, 'views', 'ConfigView.vue');
       if (fs.existsSync(configViewPath)) {
         plugins.push(dir.name);

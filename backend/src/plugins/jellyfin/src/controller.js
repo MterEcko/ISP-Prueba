@@ -166,10 +166,20 @@ class JellyfinController {
       const db = require('../../../models');
       const SystemPlugin = db.SystemPlugin;
 
-      const pluginRecord = await SystemPlugin.findOne({ where: { name: 'jellyfin' } });
+      // Buscar por múltiples nombres posibles
+      const pluginRecord = await SystemPlugin.findOne({
+        where: {
+          name: {
+            [db.Sequelize.Op.in]: ['jellyfin', 'jellyfin-media']
+          }
+        }
+      });
 
       if (pluginRecord) {
         await pluginRecord.update({ configuration: newConfig });
+        logger.info(`✅ Configuración guardada en BD para plugin: ${pluginRecord.name}`);
+      } else {
+        logger.warn('⚠️ Plugin Jellyfin no encontrado en BD, solo guardado en memoria');
       }
 
       logger.info('✅ Configuración de Jellyfin guardada exitosamente');
