@@ -1051,6 +1051,15 @@ try {
   console.error('❌ Error en pluginService.routes:', error.message);
 }
 
+// Client Services - CRUD de servicios de clientes
+try {
+  console.log('Registrando clientService.routes...');
+  require('./routes/clientService.routes')(app);
+  console.log('✅ clientService.routes registradas');
+} catch (error) {
+  console.error('❌ Error en clientService.routes:', error.message);
+}
+
 console.log('\n=== FIN REGISTRO DE RUTAS ===');
 console.log("Todas las rutas han sido procesadas");
 
