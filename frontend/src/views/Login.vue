@@ -7,7 +7,7 @@
         <div class="line" v-for="i in 15" :key="i" :style="getLineStyle(i)"></div>
       </div>
       <div class="data-particles">
-        <div class="particle" v-for="i in 30" :key="i" :style="getParticleStyle(i)"></div>
+        <div class="particle" v-for="i in 30" :key="i" :style="getParticleStyle()"></div>
       </div>
       <div class="grid-overlay"></div>
     </div>
@@ -122,7 +122,7 @@
         </div>
         <div class="stat">
           <span class="stat-icon">⚡</span>
-          <span class="stat-value">< 50ms</span>
+          <span class="stat-value">&lt; 50ms</span>
           <span class="stat-label">Latencia</span>
         </div>
         <div class="stat">
@@ -225,7 +225,7 @@ export default {
       };
     },
 
-    getParticleStyle(index) {
+    getParticleStyle() {
       const x = Math.random() * 100;
       const y = Math.random() * 100;
       const delay = Math.random() * 5;
