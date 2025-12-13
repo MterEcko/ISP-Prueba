@@ -2147,12 +2147,12 @@ async debugInvoiceGeneration() {
     },
 
     editService(service) {
-      this.$emit('show-notification', 'Función de editar servicio en desarrollo', 'info');
+      this.$emit('show-notification', `Editar servicio "${service.name}" - Función en desarrollo`, 'info');
       // TODO: Implement edit service modal
     },
 
     manageServiceConfig(service) {
-      this.$emit('show-notification', 'Configuración de servicio en desarrollo', 'info');
+      this.$emit('show-notification', `Configuración de "${service.name}" - Función en desarrollo`, 'info');
       // TODO: Implement service configuration modal
     },
 
