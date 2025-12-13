@@ -1042,6 +1042,15 @@ try {
   console.error('❌ Error en clientPortal.routes:', error.message);
 }
 
+// Plugin Services - Descubrimiento dinámico de servicios
+try {
+  console.log('Registrando pluginService.routes...');
+  app.use('/api/plugin-services', require('./routes/pluginService.routes'));
+  console.log('✅ pluginService.routes registradas');
+} catch (error) {
+  console.error('❌ Error en pluginService.routes:', error.message);
+}
+
 console.log('\n=== FIN REGISTRO DE RUTAS ===');
 console.log("Todas las rutas han sido procesadas");
 
