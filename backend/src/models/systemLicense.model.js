@@ -65,7 +65,8 @@ module.exports = (sequelize) => {
     }
   }, {
     tableName: 'SystemLicenses',
-    timestamps: true
+    timestamps: true,
+    underscored: true  // Usar snake_case en la base de datos (license_key, hardware_id, etc.)
   });
 
   return SystemLicense;

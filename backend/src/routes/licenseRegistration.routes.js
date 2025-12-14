@@ -6,12 +6,13 @@ const { authenticate } = require('../middleware/auth.middleware');
 
 // Rutas públicas (sin autenticación para permitir registro inicial)
 router.get('/system/hardware-info', licenseController.getHardwareInfo);
-router.post('/licenses/validate-key', licenseController.validateLicenseKey);
-router.post('/licenses/register-company', licenseController.registerCompanyAndLicense);
+router.post('/system-licenses/validate-key', licenseController.validateLicenseKey);
+router.post('/system-licenses/register-company', licenseController.registerCompanyAndLicense);
+router.post('/system-licenses/verify', licenseController.validateLicenseKey);  // Alias para verify
 
 // Rutas protegidas (requieren autenticación)
-router.get('/licenses/current', authenticate, licenseController.getCurrentLicense);
-router.post('/licenses/force-validation', authenticate, licenseController.forceValidation);
-router.post('/licenses/update-hardware', authenticate, licenseController.updateHardwareInfo);
+router.get('/system-licenses/current', authenticate, licenseController.getCurrentLicense);
+router.post('/system-licenses/force-validation', authenticate, licenseController.forceValidation);
+router.post('/system-licenses/update-hardware', authenticate, licenseController.updateHardwareInfo);
 
 module.exports = router;
