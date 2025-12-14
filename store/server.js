@@ -86,18 +86,23 @@ app.use(cors({
 
     // Verificar si el origin está en la lista permitida
     if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      // En desarrollo, permitir cualquier origin de localhost o IP local
-      if (process.env.NODE_ENV !== 'production') {
-        if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.match(/https?:\/\/10\.\d+\.\d+\.\d+/)) {
-          return callback(null, true);
-        }
-      }
-
-      console.warn(`⚠️ CORS bloqueó petición desde: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, true);
     }
+
+    // En desarrollo, permitir cualquier origin de localhost o IP local
+    if (process.env.NODE_ENV !== 'production') {
+      if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.match(/https?:\/\/10\.\d+\.\d+\.\d+/)) {
+        return callback(null, true);
+      }
+    }
+
+    // Permitir dominios de serviciosqbit.net (producción)
+    if (origin.includes('serviciosqbit.net')) {
+      return callback(null, true);
+    }
+
+    console.warn(`⚠️ CORS bloqueó petición desde: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

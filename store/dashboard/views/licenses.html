@@ -162,8 +162,8 @@
                 <td><span class="badge badge-${getStatusBadgeClass(lic.status)}">${getStatusText(lic.status)}</span></td>
                 <td>${lic.clientLimit ? `<strong>${lic.clientLimit}</strong> clientes` : '♾️ Ilimitado'}</td>
                 <td>
-                  ${lic.Installation ? `
-                    <strong>${lic.Installation.companyName}</strong><br>
+                  ${lic.installation ? `
+                    <strong>${lic.installation.companyName}</strong><br>
                     <small>${lic.boundToHardwareId ? lic.boundToHardwareId.substring(0, 16) + '...' : ''}</small>
                   ` : '<span style="color: #999;">No asignada</span>'}
                 </td>
@@ -297,7 +297,7 @@
       const searchTerm = e.target.value.toLowerCase();
       const filtered = allLicenses.filter(lic =>
         lic.licenseKey.toLowerCase().includes(searchTerm) ||
-        (lic.Installation && lic.Installation.companyName.toLowerCase().includes(searchTerm))
+        (lic.installation && lic.installation.companyName.toLowerCase().includes(searchTerm))
       );
       renderLicenses(filtered);
     });
