@@ -474,6 +474,9 @@
                 <td>
                   <div class="action-buttons">
                     ${!customer.licenseSentAt ? `<button class="action-btn btn-success" onclick="resendLicense('${customer.id}', '${customer.email}')">📧 Enviar</button>` : `<button class="action-btn btn-primary" onclick="resendLicense('${customer.id}', '${customer.email}')">🔄 Reenviar</button>`}
+                    ${customer.license && customer.license.status === 'active' ? `<button class="action-btn" style="background:#e74c3c;color:white" onclick="deactivateLicense('${customer.id}')">🚫 Desactivar</button>` : ''}
+                    ${customer.license ? `<button class="action-btn" style="background:#27ae60;color:white" onclick="renewLicense('${customer.id}')">🔄 Renovar</button>` : ''}
+                    <button class="action-btn" style="background:#9b59b6;color:white" onclick="createNewLicense('${customer.id}')">➕ Nueva</button>
                   </div>
                 </td>
               </tr>
@@ -554,6 +557,85 @@
         }
       } catch (error) {
         console.error('Error resending license:', error);
+        alert(`❌ Error: ${error.message}`);
+      }
+    }
+
+    // Deactivate license
+    async function deactivateLicense(customerId) {
+      if (!confirm('¿Desactivar la licencia de este cliente?\n\nEsta acción cambiará el estado de la licencia a "suspendida".')) return;
+
+      try {
+        const response = await fetch(`${API_URL}/customers/${customerId}/deactivate-license`, {
+          method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('✅ Licencia desactivada exitosamente');
+          loadCustomers();
+          loadStats();
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Error deactivating license:', error);
+        alert(`❌ Error: ${error.message}`);
+      }
+    }
+
+    // Renew license
+    async function renewLicense(customerId) {
+      const duration = prompt('¿Por cuánto tiempo renovar?\n\nEscribe: "monthly" o "yearly"\n(Dejar vacío usa el ciclo del paquete)');
+
+      if (duration === null) return; // Cancelado
+
+      try {
+        const response = await fetch(`${API_URL}/customers/${customerId}/renew-license`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ duration: duration || undefined })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          const expiresAt = new Date(result.data.expiresAt).toLocaleDateString('es-ES');
+          alert(`✅ Licencia renovada exitosamente\n\nNueva fecha de expiración: ${expiresAt}`);
+          loadCustomers();
+          loadStats();
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Error renewing license:', error);
+        alert(`❌ Error: ${error.message}`);
+      }
+    }
+
+    // Create new license
+    async function createNewLicense(customerId) {
+      if (!confirm('¿Crear nueva licencia para este cliente?\n\nEsto revocará la licencia actual (si existe) y generará una nueva clave.\nSe enviará automáticamente por email.')) return;
+
+      try {
+        const response = await fetch(`${API_URL}/customers/${customerId}/new-license`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert(`✅ Nueva licencia creada exitosamente\n\nClave: ${result.data.licenseKey}\n\nEmail enviado al cliente.`);
+          loadCustomers();
+          loadStats();
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Error creating new license:', error);
         alert(`❌ Error: ${error.message}`);
       }
     }
