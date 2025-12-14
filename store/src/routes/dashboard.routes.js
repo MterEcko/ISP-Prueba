@@ -31,4 +31,14 @@ router.get('/map', (req, res) => {
   res.sendFile(path.join(__dirname, '../../dashboard/views/map.html'));
 });
 
+// Clientes
+router.get('/customers', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../dashboard/views/customers.html'));
+});
+
+// Paquetes
+router.get('/packages', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../dashboard/views/packages.html'));
+});
+
 module.exports = router;
