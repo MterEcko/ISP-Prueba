@@ -62,6 +62,7 @@ exports.registerCustomer = async (req, res) => {
     // Crear la licencia en la tabla Licenses
     const license = await License.create({
       licenseKey,
+      servicePackageId: servicePackage.id,
       planType: servicePackage.metadata?.planType || 'basic',
       clientLimit: servicePackage.clientLimit,
       userLimit: servicePackage.userLimit,
@@ -375,6 +376,216 @@ exports.resendLicense = async (req, res) => {
     }
   } catch (error) {
     logger.error('Error reenviando licencia:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Desactivar licencia del cliente
+ */
+exports.deactivateLicense = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const customer = await Customer.findByPk(id, {
+      include: [{ model: License, as: 'license' }]
+    });
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cliente no encontrado'
+      });
+    }
+
+    if (!customer.license) {
+      return res.status(400).json({
+        success: false,
+        message: 'El cliente no tiene una licencia activa'
+      });
+    }
+
+    // Desactivar la licencia
+    await customer.license.update({
+      status: 'suspended'
+    });
+
+    logger.info(`Licencia desactivada para cliente: ${customer.email}`);
+
+    res.json({
+      success: true,
+      message: 'Licencia desactivada exitosamente'
+    });
+  } catch (error) {
+    logger.error('Error desactivando licencia:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Renovar licencia del cliente
+ */
+exports.renewLicense = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { duration } = req.body; // 'monthly' o 'yearly'
+
+    const customer = await Customer.findByPk(id, {
+      include: [
+        { model: License, as: 'license' },
+        { model: ServicePackage, as: 'package' }
+      ]
+    });
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cliente no encontrado'
+      });
+    }
+
+    if (!customer.license) {
+      return res.status(400).json({
+        success: false,
+        message: 'El cliente no tiene una licencia'
+      });
+    }
+
+    // Calcular nueva fecha de expiración
+    const billingCycle = duration || customer.package.billingCycle;
+    const newExpiresAt = calculateExpirationDate(billingCycle);
+
+    // Renovar la licencia
+    await customer.license.update({
+      status: 'active',
+      lastRenewalDate: new Date(),
+      nextRenewalDate: newExpiresAt,
+      expiresAt: newExpiresAt
+    });
+
+    // Actualizar fecha de último pago del cliente
+    await customer.update({
+      lastPaymentAt: new Date(),
+      nextBillingDate: newExpiresAt
+    });
+
+    logger.info(`Licencia renovada para cliente: ${customer.email}`);
+
+    res.json({
+      success: true,
+      message: 'Licencia renovada exitosamente',
+      data: {
+        expiresAt: newExpiresAt
+      }
+    });
+  } catch (error) {
+    logger.error('Error renovando licencia:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Crear nueva licencia para el cliente (desactiva la anterior)
+ */
+exports.createNewLicense = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { servicePackageId } = req.body;
+
+    const customer = await Customer.findByPk(id, {
+      include: [{ model: License, as: 'license' }]
+    });
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cliente no encontrado'
+      });
+    }
+
+    // Obtener información del nuevo paquete
+    const packageId = servicePackageId || customer.servicePackageId;
+    const servicePackage = await ServicePackage.findByPk(packageId);
+
+    if (!servicePackage) {
+      return res.status(404).json({
+        success: false,
+        message: 'Paquete no encontrado'
+      });
+    }
+
+    // Desactivar licencia anterior si existe
+    if (customer.license) {
+      await customer.license.update({
+        status: 'revoked',
+        notes: 'Licencia reemplazada por una nueva'
+      });
+      logger.info(`Licencia anterior revocada para cliente: ${customer.email}`);
+    }
+
+    // Generar nueva licencia
+    const licenseKey = generateLicenseKey();
+
+    const newLicense = await License.create({
+      licenseKey,
+      servicePackageId: servicePackage.id,
+      planType: servicePackage.metadata?.planType || 'basic',
+      clientLimit: servicePackage.clientLimit,
+      userLimit: servicePackage.userLimit,
+      branchLimit: servicePackage.branchLimit,
+      featuresEnabled: servicePackage.featuresEnabled || {},
+      expiresAt: servicePackage.billingCycle === 'one-time' ? null : calculateExpirationDate(servicePackage.billingCycle),
+      isRecurring: servicePackage.billingCycle !== 'one-time',
+      recurringInterval: servicePackage.billingCycle === 'monthly' || servicePackage.billingCycle === 'yearly' ? servicePackage.billingCycle : null,
+      price: servicePackage.price,
+      status: 'active'
+    });
+
+    // Actualizar cliente con la nueva licencia
+    await customer.update({
+      licenseKey: newLicense.licenseKey,
+      licenseId: newLicense.id,
+      servicePackageId: servicePackage.id
+    });
+
+    // Intentar enviar por email
+    try {
+      await emailService.sendLicenseEmail({
+        to: customer.email,
+        customerName: customer.name,
+        licenseKey: newLicense.licenseKey,
+        packageInfo: {
+          name: servicePackage.name,
+          description: servicePackage.description
+        }
+      });
+
+      await customer.update({ licenseSentAt: new Date() });
+    } catch (emailError) {
+      logger.warn(`No se pudo enviar email de nueva licencia: ${emailError.message}`);
+    }
+
+    logger.info(`Nueva licencia creada para cliente: ${customer.email}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Nueva licencia creada exitosamente',
+      data: {
+        licenseKey: newLicense.licenseKey,
+        expiresAt: newLicense.expiresAt
+      }
+    });
+  } catch (error) {
+    logger.error('Error creando nueva licencia:', error);
     res.status(500).json({
       success: false,
       message: error.message

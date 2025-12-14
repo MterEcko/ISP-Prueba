@@ -42,4 +42,24 @@ router.delete('/:id', customerController.deleteCustomer);
  */
 router.post('/:id/resend-license', customerController.resendLicense);
 
+/**
+ * @route POST /api/customers/:id/deactivate-license
+ * @desc Desactivar licencia del cliente
+ */
+router.post('/:id/deactivate-license', customerController.deactivateLicense);
+
+/**
+ * @route POST /api/customers/:id/renew-license
+ * @desc Renovar licencia del cliente
+ * @body { duration?: 'monthly' | 'yearly' } - Opcional, usa el del paquete si no se especifica
+ */
+router.post('/:id/renew-license', customerController.renewLicense);
+
+/**
+ * @route POST /api/customers/:id/new-license
+ * @desc Crear nueva licencia (desactiva la anterior)
+ * @body { servicePackageId?: uuid } - Opcional, usa el mismo paquete si no se especifica
+ */
+router.post('/:id/new-license', customerController.createNewLicense);
+
 module.exports = router;
