@@ -232,8 +232,8 @@ db.sequelize.authenticate()
 
     // Sincronizar modelos SIN borrar datos existentes
     // force: false = No borra tablas existentes
-    // alter: false = No modifica estructura (usar migrations en producción)
-    return db.sequelize.sync({ force: false, alter: false });
+    // alter: true = Modifica estructura para agregar columnas nuevas (servicePackageId)
+    return db.sequelize.sync({ force: false, alter: true });
   })
   .then(() => {
     logger.info('✅ Modelos de base de datos sincronizados');
