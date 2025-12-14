@@ -324,5 +324,3 @@ Si tienes alguna pregunta, no dudes en contactarnos.
 
 // Exportar instancia singleton
 module.exports = new EmailService();
-    `.trim();
-}
