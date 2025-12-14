@@ -139,6 +139,125 @@
         </div>
       </div>
 
+      <!-- Otros Servicios (Plugins) -->
+      <div class="section-card otros-servicios">
+        <div class="section-header">
+          <div class="section-title">
+            <div class="section-icon">⭐</div>
+            <h3>Otros Servicios</h3>
+            <span class="count-badge">{{ clientServices.length }}</span>
+          </div>
+          <div class="section-actions">
+            <button @click="openAddServiceModal" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              </svg>
+              Agregar Servicio
+            </button>
+          </div>
+        </div>
+
+        <div class="section-content">
+          <div v-if="loadingServices" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Cargando servicios...</p>
+          </div>
+
+          <div v-else-if="clientServices.length > 0" class="services-grid">
+            <div
+              v-for="service in clientServices"
+              :key="service.id"
+              class="service-card plugin-service-card"
+            >
+              <div class="service-header">
+                <div class="service-info">
+                  <div class="service-icon">{{ getServiceIcon(service.metadata?.icon) }}</div>
+                  <div>
+                    <h4>{{ service.name }}</h4>
+                    <div class="service-meta">
+                      <span class="service-plugin">{{ service.pluginName }}</span>
+                      <span :class="['status-indicator', 'status-' + service.status]">
+                        <span class="status-dot"></span>
+                        {{ formatServiceStatus(service.status) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="service-menu">
+                  <button @click="showServiceMenu(service)" class="btn-menu">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="service-details">
+                <div class="detail-grid">
+                  <div class="detail-item">
+                    <span class="detail-label">Tipo</span>
+                    <span class="detail-value">{{ service.type || 'Servicio' }}</span>
+                  </div>
+                  <div v-if="service.metadata?.price" class="detail-item">
+                    <span class="detail-label">Precio</span>
+                    <span class="detail-value price">${{ service.metadata.price }}</span>
+                  </div>
+                  <div v-if="service.metadata?.detail" class="detail-item full-width">
+                    <span class="detail-label">Detalles</span>
+                    <span class="detail-value">{{ service.metadata.detail }}</span>
+                  </div>
+                </div>
+
+                <div class="service-actions">
+                  <button @click="viewServiceDetails(service)" class="action-btn secondary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                    </svg>
+                    Ver Detalles
+                  </button>
+                  <button
+                    v-if="service.status === 'active'"
+                    @click="suspendService(service)"
+                    class="action-btn warning"
+                  >
+                    ⏸️ Suspender
+                  </button>
+                  <button
+                    v-if="service.status === 'suspended' || service.status === 'pending'"
+                    @click="activateService(service)"
+                    class="action-btn success"
+                  >
+                    ▶️ Activar
+                  </button>
+                </div>
+              </div>
+
+              <!-- Menú contextual -->
+              <div v-if="showServiceMenuId === service.id" class="service-menu-dropdown">
+                <button @click="editService(service)" class="menu-item">
+                  ✏️ Editar
+                </button>
+                <button @click="manageServiceConfig(service)" class="menu-item">
+                  ⚙️ Configuración
+                </button>
+                <button @click="removeService(service)" class="menu-item danger">
+                  ❌ Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="empty-state">
+            <div class="empty-icon">⭐</div>
+            <h4>Sin servicios adicionales</h4>
+            <p>Este cliente no tiene servicios adicionales contratados</p>
+            <button @click="openAddServiceModal" class="btn btn-primary">
+              Agregar Primer Servicio
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Equipos y Materiales (Combinados) -->
       <div class="section-card equipos-materiales">
         <div class="section-header">
@@ -857,10 +976,16 @@ export default {
       clientMaterials: [],
       billingInfo: null,
       clientInvoices: [],
-      
+
+      // Client Services (Plugins)
+      clientServices: [],
+      loadingServices: false,
+      showServiceMenuId: null,
+      showAddServiceModal: false,
+
       // Modal states
       showAssignEquipmentModal: false,
-      
+
       // Equipment assignment
       equipmentSearchTerm: '',
       equipmentSearchResults: [],
@@ -872,7 +997,7 @@ export default {
         location: '',
         notes: ''
       },
-      
+
       // Material assignment
       showAssignMaterialModal: false,
       materialSearchTerm: '',
@@ -889,6 +1014,7 @@ export default {
     this.loadClientDevicesAndMaterials();
     this.loadClientBilling();
     this.loadClientInvoices();
+    this.loadClientServices();
 
     document.addEventListener('click', this.closeMenusOnOutsideClick);    
     // Cerrar menús al hacer clic fuera
@@ -1031,6 +1157,32 @@ async loadClientInvoices() {
   } catch (error) {
     console.error('❌ Error cargando facturas del cliente:', error);
     this.clientInvoices = [];
+  }
+},
+
+async loadClientServices() {
+  try {
+    this.loadingServices = true;
+    const response = await fetch(`/api/client-services/client/${this.client.id}`, {
+      headers: {
+        'x-access-token': localStorage.getItem('token')
+      }
+    });
+
+    if (!response.ok) throw new Error('Error cargando servicios');
+
+    const data = await response.json();
+
+    if (data.success && data.data) {
+      // Filter only plugin services (not core internet services)
+      this.clientServices = data.data.filter(s => !s.isCore);
+      console.log('✅ Servicios de plugins cargados:', this.clientServices.length);
+    }
+  } catch (error) {
+    console.error('❌ Error cargando servicios del cliente:', error);
+    this.clientServices = [];
+  } finally {
+    this.loadingServices = false;
   }
 },
 
@@ -1908,6 +2060,125 @@ async debugInvoiceGeneration() {
         'pending': 'Pendiente'
       };
       return statusMap[status] || status;
+    },
+
+    // ===============================
+    // CLIENT SERVICES (PLUGINS)
+    // ===============================
+
+    formatServiceStatus(status) {
+      const statusMap = {
+        'active': 'Activo',
+        'suspended': 'Suspendido',
+        'cancelled': 'Cancelado',
+        'pending': 'Pendiente'
+      };
+      return statusMap[status] || status;
+    },
+
+    getServiceIcon(icon) {
+      return icon || '⚙️';
+    },
+
+    showServiceMenu(service) {
+      this.showServiceMenuId = this.showServiceMenuId === service.id ? null : service.id;
+    },
+
+    openAddServiceModal() {
+      this.$emit('show-notification', 'Función de agregar servicio en desarrollo', 'info');
+      // TODO: Implement add service modal
+    },
+
+    viewServiceDetails(service) {
+      this.$emit('show-notification', `Detalles de ${service.name}`, 'info');
+      // TODO: Implement service details view
+    },
+
+    async activateService(service) {
+      try {
+        const response = await fetch(`/api/client-services/${service.id}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-access-token': localStorage.getItem('token')
+          },
+          body: JSON.stringify({ status: 'active' })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          this.$emit('show-notification', 'Servicio activado correctamente', 'success');
+          await this.loadClientServices();
+        } else {
+          throw new Error(data.message);
+        }
+      } catch (error) {
+        console.error('Error activando servicio:', error);
+        this.$emit('show-notification', 'Error activando servicio', 'error');
+      }
+    },
+
+    async suspendService(service) {
+      if (!confirm(`¿Está seguro de suspender el servicio "${service.name}"?`)) return;
+
+      try {
+        const response = await fetch(`/api/client-services/${service.id}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-access-token': localStorage.getItem('token')
+          },
+          body: JSON.stringify({ status: 'suspended' })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          this.$emit('show-notification', 'Servicio suspendido correctamente', 'success');
+          await this.loadClientServices();
+        } else {
+          throw new Error(data.message);
+        }
+      } catch (error) {
+        console.error('Error suspendiendo servicio:', error);
+        this.$emit('show-notification', 'Error suspendiendo servicio', 'error');
+      }
+    },
+
+    editService(service) {
+      this.$emit('show-notification', `Editar servicio "${service.name}" - Función en desarrollo`, 'info');
+      // TODO: Implement edit service modal
+    },
+
+    manageServiceConfig(service) {
+      this.$emit('show-notification', `Configuración de "${service.name}" - Función en desarrollo`, 'info');
+      // TODO: Implement service configuration modal
+    },
+
+    async removeService(service) {
+      if (!confirm(`¿Está seguro de eliminar el servicio "${service.name}"?\n\nEsta acción no se puede deshacer.`)) return;
+
+      try {
+        const response = await fetch(`/api/client-services/${service.id}`, {
+          method: 'DELETE',
+          headers: {
+            'x-access-token': localStorage.getItem('token')
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          this.$emit('show-notification', 'Servicio eliminado correctamente', 'success');
+          await this.loadClientServices();
+        } else {
+          throw new Error(data.message);
+        }
+      } catch (error) {
+        console.error('Error eliminando servicio:', error);
+        this.$emit('show-notification', 'Error eliminando servicio', 'error');
+      }
     },
 
     formatInvoiceStatus(status) {

@@ -323,14 +323,14 @@ exports.getPackageClients = async (req, res) => {
     const clients = await db.ClientBilling.findAll({
       where: { servicePackageId: id },
       include: [
-        { 
+        {
           model: db.Client,
-          as: 'client', // ✅ AGREGAR ALIAS
+          as: 'client',
           attributes: ['id', 'firstName', 'lastName', 'email', 'phone']
         },
         {
           model: db.IpPool,
-          //as: 'currentPool', // ✅ AGREGAR ALIAS SI ES NECESARIO
+          as: 'currentIpPool',
           attributes: ['id', 'poolName', 'poolType']
         }
       ]

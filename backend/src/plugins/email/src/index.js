@@ -76,7 +76,7 @@ class EmailPlugin {
   }
 
   async _initializeSMTP() {
-    this.transporter = nodemailer.createTransporter({
+    this.transporter = nodemailer.createTransport({
       host: this.config.smtpHost,
       port: this.config.smtpPort,
       secure: this.config.smtpSecure || false,

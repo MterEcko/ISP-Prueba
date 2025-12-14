@@ -141,6 +141,54 @@ class JellyfinController {
       res.json(result);
     } catch (e) { res.status(500).json({ message: e.message }); }
   }
+
+  // --- CONFIGURACIÓN ---
+
+  async getConfig(req, res) {
+    try {
+      res.json({ success: true, config: this.plugin.config || {} });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+  }
+
+  async saveConfig(req, res) {
+    try {
+      const newConfig = req.body;
+
+      // Validar campos requeridos
+      if (!newConfig.serverUrl || !newConfig.apiKey) {
+        return res.status(400).json({ success: false, message: 'serverUrl y apiKey son requeridos' });
+      }
+
+      // Actualizar configuración del plugin en memoria
+      this.plugin.config = { ...this.plugin.config, ...newConfig };
+
+      // Guardar configuración en la base de datos usando el sistema centralizado
+      const db = require('../../../models');
+      const SystemPlugin = db.SystemPlugin;
+
+      // Buscar por múltiples nombres posibles
+      const pluginRecord = await SystemPlugin.findOne({
+        where: {
+          name: {
+            [db.Sequelize.Op.in]: ['jellyfin', 'jellyfin-media']
+          }
+        }
+      });
+
+      if (pluginRecord) {
+        await pluginRecord.update({ configuration: newConfig });
+        logger.info(`✅ Configuración guardada en BD para plugin: ${pluginRecord.name}`);
+      } else {
+        logger.warn('⚠️ Plugin Jellyfin no encontrado en BD, solo guardado en memoria');
+      }
+
+      logger.info('✅ Configuración de Jellyfin guardada exitosamente');
+      res.json({ success: true, message: 'Configuración guardada correctamente' });
+    } catch (e) {
+      logger.error('Error guardando configuración:', e);
+      res.status(500).json({ success: false, message: e.message });
+    }
+  }
 }
 
 module.exports = JellyfinController;

@@ -1158,6 +1158,66 @@ class SystemPluginController {
   };
 
   /**
+   * Obtener configuración de plugin por NOMBRE
+   * GET /api/system-plugins/name/:name/config
+   */
+  getPluginConfigByName = async (req, res) => {
+    try {
+      const { name } = req.params;
+
+      const plugin = await SystemPlugin.findOne({ where: { name } });
+
+      if (!plugin) {
+        return res.status(404).json({
+          success: false,
+          message: 'Plugin no encontrado'
+        });
+      }
+
+      // Reutilizar la lógica de getPluginConfig
+      req.params.id = plugin.id;
+      return this.getPluginConfig(req, res);
+
+    } catch (error) {
+      logger.error(`Error obteniendo configuración del plugin ${req.params.name}: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  };
+
+  /**
+   * Actualizar configuración de plugin por NOMBRE
+   * PUT /api/system-plugins/name/:name/config
+   */
+  updatePluginConfigByName = async (req, res) => {
+    try {
+      const { name } = req.params;
+
+      const plugin = await SystemPlugin.findOne({ where: { name } });
+
+      if (!plugin) {
+        return res.status(404).json({
+          success: false,
+          message: 'Plugin no encontrado'
+        });
+      }
+
+      // Reutilizar la lógica de updatePluginConfig
+      req.params.id = plugin.id;
+      return this.updatePluginConfig(req, res);
+
+    } catch (error) {
+      logger.error(`Error actualizando configuración del plugin ${req.params.name}: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  };
+
+  /**
    * Obtener vista de configuración de plugin
    * GET /api/system-plugins/:name/config-view
    */
@@ -1619,6 +1679,8 @@ module.exports = {
   // Métodos de configuración
   getPluginConfig: systemPluginController.getPluginConfig,
   updatePluginConfig: systemPluginController.updatePluginConfig,
+  getPluginConfigByName: systemPluginController.getPluginConfigByName,
+  updatePluginConfigByName: systemPluginController.updatePluginConfigByName,
   getPluginConfigView: systemPluginController.getPluginConfigView,
 
   // Métodos de gestión

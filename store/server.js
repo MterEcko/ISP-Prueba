@@ -168,6 +168,10 @@ app.use('/api/licenses', require('./src/routes/licenseStore.routes'));
 app.use('/api/companies', require('./src/routes/company.routes'));
 app.use('/api/cloudflare', require('./src/routes/cloudflare.routes'));
 
+// Rutas de gestión de clientes y paquetes
+app.use('/api/customers', require('./src/routes/customer.routes'));
+app.use('/api/service-packages', require('./src/routes/servicePackage.routes'));
+
 // Dashboard web de administración
 app.use('/dashboard', require('./src/routes/dashboard.routes'));
 

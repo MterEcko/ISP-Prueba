@@ -48,6 +48,12 @@ module.exports = (sequelize) => {
     active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
+    },
+    // ✅ Soporte para plugins de servicio adicionales
+    includedPlugins: {
+      type: DataTypes.JSON,
+      defaultValue: {},
+      comment: 'Configuración de plugins incluidos: { jellyfin: { maxDevices: 2, quality: "HD" }, ... }'
     }
     // ❌ REMOVIDO: hasJellyfin, jellyfinProfileId (van a plugin)
   }, {

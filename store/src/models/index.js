@@ -62,6 +62,11 @@ db.InstallationLocation = require('./installationLocation.model')(sequelize);
 db.RemoteCommand = require('./remoteCommand.model')(sequelize);
 db.SystemAlert = require('./systemAlert.model')(sequelize);
 
+// Nuevos modelos para gestión de clientes y paquetes
+db.ServicePackage = require('./servicePackage.model')(sequelize);
+db.Customer = require('./customer.model')(sequelize);
+db.PluginPackage = require('./pluginPackage.model')(sequelize);
+
 // Definir relaciones
 Object.keys(db).forEach(modelName => {
   if (db[modelName].associate) {

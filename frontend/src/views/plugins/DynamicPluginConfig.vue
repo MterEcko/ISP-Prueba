@@ -205,20 +205,14 @@ export default {
         });
 
         if (response.data.success) {
-          this.$notify({
-            title: 'Éxito',
-            message: 'Configuración guardada correctamente',
-            type: 'success'
-          });
+          alert('✅ Configuración guardada correctamente');
+          // Recargar configuración para reflejar cambios
+          await this.loadPluginData();
         }
 
       } catch (error) {
         console.error('Error saving configuration:', error);
-        this.$notify({
-          title: 'Error',
-          message: error.response?.data?.message || 'Error guardando configuración',
-          type: 'error'
-        });
+        alert('❌ Error: ' + (error.response?.data?.message || 'Error guardando configuración'));
       } finally {
         this.saving = false;
       }
