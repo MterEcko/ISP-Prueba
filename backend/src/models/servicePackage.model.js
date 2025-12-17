@@ -58,13 +58,12 @@ module.exports = (sequelize) => {
     // ✅ Configuración de suspensión de usuarios PPPoE
     suspensionAction: {
       type: DataTypes.ENUM('disable', 'move_pool'),
-      defaultValue: 'disable',
-      comment: 'Acción al suspender: disable = desactivar usuario, move_pool = mover a pool de suspendidos'
+      defaultValue: 'disable'
     },
-    suspendedPoolName: {
+    suspendedPoolId: {
       type: DataTypes.STRING,
       allowNull: true,
-      comment: 'Nombre del pool al que mover usuarios suspendidos (solo si suspensionAction = move_pool)'
+      comment: 'ID inmutable del pool de suspendidos (ej: *1, *2, *3) - ID de MikroTik'
     }
     // ❌ REMOVIDO: hasJellyfin, jellyfinProfileId (van a plugin)
   }, {

@@ -97,7 +97,7 @@ exports.createServicePackage = async (req, res) => {
       zoneId,
       active,
       suspensionAction,
-      suspendedPoolName,
+      suspendedPoolId,
       profileConfigurations = [] // ✅ NUEVO: Configuraciones de perfiles Mikrotik
     } = req.body;
 
@@ -109,10 +109,10 @@ exports.createServicePackage = async (req, res) => {
     }
 
     // Validar configuración de suspensión
-    if (suspensionAction === 'move_pool' && !suspendedPoolName) {
+    if (suspensionAction === 'move_pool' && !suspendedPoolId) {
       return res.status(400).json({
         success: false,
-        message: 'suspendedPoolName is required when suspensionAction is move_pool'
+        message: 'suspendedPoolId is required when suspensionAction is move_pool'
       });
     }
 
@@ -141,7 +141,7 @@ exports.createServicePackage = async (req, res) => {
         zoneId,
         active: active !== undefined ? active : true,
         suspensionAction: suspensionAction || 'disable',
-        suspendedPoolName: suspensionAction === 'move_pool' ? suspendedPoolName : null
+        suspendedPoolId: suspensionAction === 'move_pool' ? suspendedPoolId : null
       }, profileConfigurations);
 
       return res.status(201).json(result);
@@ -158,7 +158,7 @@ exports.createServicePackage = async (req, res) => {
         zoneId,
         active: active !== undefined ? active : true,
         suspensionAction: suspensionAction || 'disable',
-        suspendedPoolName: suspensionAction === 'move_pool' ? suspendedPoolName : null
+        suspendedPoolId: suspensionAction === 'move_pool' ? suspendedPoolId : null
       });
 
       return res.status(201).json({
@@ -192,7 +192,7 @@ exports.updateServicePackage = async (req, res) => {
       zoneId,
       active,
       suspensionAction,
-      suspendedPoolName
+      suspendedPoolId
     } = req.body;
 
     if (!id) {
@@ -203,10 +203,10 @@ exports.updateServicePackage = async (req, res) => {
     }
 
     // Validar configuración de suspensión
-    if (suspensionAction === 'move_pool' && !suspendedPoolName) {
+    if (suspensionAction === 'move_pool' && !suspendedPoolId) {
       return res.status(400).json({
         success: false,
-        message: 'suspendedPoolName is required when suspensionAction is move_pool'
+        message: 'suspendedPoolId is required when suspensionAction is move_pool'
       });
     }
 
@@ -247,8 +247,8 @@ exports.updateServicePackage = async (req, res) => {
       zoneId: zoneId || servicePackage.zoneId,
       active: active !== undefined ? active : servicePackage.active,
       suspensionAction: suspensionAction || servicePackage.suspensionAction,
-      suspendedPoolName: suspensionAction === 'move_pool'
-        ? (suspendedPoolName || servicePackage.suspendedPoolName)
+      suspendedPoolId: suspensionAction === 'move_pool'
+        ? (suspendedPoolId || servicePackage.suspendedPoolId)
         : null
     });
 

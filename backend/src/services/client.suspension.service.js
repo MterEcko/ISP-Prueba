@@ -74,11 +74,11 @@ const ClientSuspensionService = {
 
         logger.info(`Configuración de suspensión del paquete: ${suspensionAction}`);
 
-        if (suspensionAction === 'move_pool' && servicePackage?.suspendedPoolName) {
-          // Mover usuario a pool de suspendidos
-          mikrotikResult = await this.movePPPoEUserToPool(
+        if (suspensionAction === 'move_pool' && servicePackage?.suspendedPoolId) {
+          // Mover usuario a pool de suspendidos (usando ID inmutable del pool)
+          mikrotikResult = await this.movePPPoEUserToPoolById(
             client.network,
-            servicePackage.suspendedPoolName
+            servicePackage.suspendedPoolId
           );
         } else {
           // Desactivar usuario (comportamiento por defecto)
@@ -291,9 +291,9 @@ const ClientSuspensionService = {
   },
 
   /**
-   * Restaura usuario PPPoE a su pool original
+   * Restaura usuario PPPoE a su pool original usando el ID guardado
    */
-  async restorePPPoEUserPool(clientNetwork, originalPoolName) {
+  async restorePPPoEUserPool(clientNetwork, originalPoolId) {
     try {
       const router = await db.MikrotikRouter.findByPk(clientNetwork.routerId);
 
@@ -302,9 +302,9 @@ const ClientSuspensionService = {
         return null;
       }
 
-      logger.info(`Restaurando usuario PPPoE: ${clientNetwork.pppoeUsername} al pool original: ${originalPoolName} en ${router.ipAddress}`);
+      logger.info(`Restaurando usuario PPPoE: ${clientNetwork.pppoeUsername} al pool original ID: ${originalPoolId} en ${router.ipAddress}`);
 
-      // Actualizar usuario para restaurar pool original y habilitarlo
+      // Actualizar usuario para restaurar pool original y habilitarlo usando el ID inmutable
       const result = await mikrotikService.updatePPPoEUser(
         router.ipAddress,
         router.apiPort || 8728,
@@ -312,12 +312,12 @@ const ClientSuspensionService = {
         router.password,
         clientNetwork.pppoeUsername,
         {
-          remoteAddress: originalPoolName,  // Restaurar pool original
+          poolId: originalPoolId,  // Restaurar pool original usando ID
           disabled: false  // Habilitar usuario
         }
       );
 
-      logger.info(`Usuario PPPoE ${clientNetwork.pppoeUsername} restaurado al pool ${originalPoolName} y habilitado`);
+      logger.info(`Usuario PPPoE ${clientNetwork.pppoeUsername} restaurado al pool ID ${originalPoolId} y habilitado`);
 
       return result;
 
@@ -331,9 +331,9 @@ const ClientSuspensionService = {
   },
 
   /**
-   * Mueve usuario PPPoE a un pool específico (para suspendidos)
+   * Mueve usuario PPPoE a un pool específico usando el ID inmutable del pool
    */
-  async movePPPoEUserToPool(clientNetwork, poolName) {
+  async movePPPoEUserToPoolById(clientNetwork, poolId) {
     try {
       const router = await db.MikrotikRouter.findByPk(clientNetwork.routerId);
 
@@ -342,7 +342,7 @@ const ClientSuspensionService = {
         return null;
       }
 
-      logger.info(`Moviendo usuario PPPoE: ${clientNetwork.pppoeUsername} al pool: ${poolName} en ${router.ipAddress}`);
+      logger.info(`Moviendo usuario PPPoE: ${clientNetwork.pppoeUsername} al pool ID: ${poolId} en ${router.ipAddress}`);
 
       // Obtener información actual del usuario para guardar el pool original
       const currentUser = await mikrotikService.getPPPoEUserByUsername(
@@ -353,31 +353,31 @@ const ClientSuspensionService = {
         clientNetwork.pppoeUsername
       );
 
-      // Guardar pool original en ClientBilling para poder restaurarlo después
-      if (currentUser && currentUser.remoteAddress) {
+      // Guardar pool original (ID y nombre) en ClientBilling para poder restaurarlo después
+      if (currentUser && currentUser.poolId) {
         const clientBilling = await db.ClientBilling.findOne({
           where: { clientId: clientNetwork.clientId }
         });
 
         if (clientBilling) {
           await clientBilling.update({
-            originalPoolName: currentUser.remoteAddress
+            originalPoolName: currentUser.poolId  // Guardamos el ID inmutable, no el nombre
           });
-          logger.info(`Pool original guardado: ${currentUser.remoteAddress}`);
+          logger.info(`Pool original guardado (ID): ${currentUser.poolId}`);
         }
       }
 
-      // Actualizar usuario para mover a pool de suspendidos
+      // Actualizar usuario para mover a pool de suspendidos usando poolId
       const result = await mikrotikService.updatePPPoEUser(
         router.ipAddress,
         router.apiPort || 8728,
         router.username,
         router.password,
         clientNetwork.pppoeUsername,
-        { remoteAddress: poolName }  // Mover a pool de suspendidos
+        { poolId: poolId }  // Usar poolId en lugar de remoteAddress
       );
 
-      logger.info(`Usuario PPPoE ${clientNetwork.pppoeUsername} movido al pool ${poolName}`);
+      logger.info(`Usuario PPPoE ${clientNetwork.pppoeUsername} movido al pool ID ${poolId}`);
 
       return result;
 

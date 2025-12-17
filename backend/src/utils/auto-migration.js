@@ -258,9 +258,21 @@ function registerSystemMigrations(autoMigration) {
           : 'VARCHAR(20) DEFAULT \'disable\''
       );
 
+      // Eliminar suspendedPoolName si existe (migración antigua)
+      try {
+        const poolNameExists = await autoMigration.columnExists('ServicePackages', 'suspendedPoolName');
+        if (poolNameExists) {
+          await sequelize.query('ALTER TABLE "ServicePackages" DROP COLUMN "suspendedPoolName";');
+          logger.info('✅ Columna suspendedPoolName eliminada');
+        }
+      } catch (error) {
+        logger.warn(`suspendedPoolName: ${error.message}`);
+      }
+
+      // Agregar suspendedPoolId (ID inmutable del pool)
       await autoMigration.addColumnIfNotExists(
         'ServicePackages',
-        'suspendedPoolName',
+        'suspendedPoolId',
         'VARCHAR(255)'
       );
     }
