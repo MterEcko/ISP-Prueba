@@ -220,31 +220,44 @@
            </div>
          </div>
 
-         <!-- Campo para nombre del pool (solo visible si se selecciona move_pool) -->
+         <!-- Campo para seleccionar pool de suspendidos (solo visible si se selecciona move_pool) -->
          <div v-if="packageData.suspensionAction === 'move_pool'" class="form-group">
-           <label for="suspendedPoolName">Nombre del Pool de Suspendidos *</label>
-           <div class="input-with-button">
-             <input
-               type="text"
-               id="suspendedPoolName"
-               v-model="packageData.suspendedPoolName"
-               :required="packageData.suspensionAction === 'move_pool'"
-               placeholder="ej. pool-suspendidos"
-             />
-             <button
-               type="button"
-               @click="validatePoolName"
-               :disabled="!packageData.suspendedPoolName || validatingPool"
-               class="btn btn-small btn-outline"
-             >
-               {{ validatingPool ? '⏳ Validando...' : '✓ Validar Pool' }}
-             </button>
+           <label for="suspendedPoolId">Pool de Suspendidos *</label>
+
+           <div v-if="loadingPools" class="loading-state">
+             ⏳ Cargando pools desde routers MikroTik...
            </div>
-           <small class="form-help">
-             Este pool debe existir previamente en el MikroTik. Los usuarios suspendidos serán movidos a este pool.
-           </small>
-           <div v-if="poolValidationMessage" class="validation-message" :class="poolValidationStatus">
-             {{ poolValidationMessage }}
+
+           <div v-else>
+             <select
+               id="suspendedPoolId"
+               v-model="packageData.suspendedPoolId"
+               :required="packageData.suspensionAction === 'move_pool'"
+               @focus="loadPoolsFromRouters"
+             >
+               <option value="">Seleccionar pool</option>
+               <optgroup
+                 v-for="routerPools in groupedPools"
+                 :key="routerPools.routerName"
+                 :label="routerPools.routerName"
+               >
+                 <option
+                   v-for="pool in routerPools.pools"
+                   :key="pool.poolId"
+                   :value="pool.poolId"
+                 >
+                   ID: {{ pool.poolId }} - {{ pool.name }} ({{ pool.ranges }})
+                 </option>
+               </optgroup>
+             </select>
+
+             <small class="form-help">
+               Selecciona el pool al que serán movidos los usuarios suspendidos. Los pools se cargan de todos los routers MikroTik de esta zona.
+             </small>
+
+             <div v-if="availablePools.length === 0 && !loadingPools" class="validation-message warning">
+               ⚠️ No se encontraron pools. Asegúrate de que los routers tengan pools configurados.
+             </div>
            </div>
          </div>
        </div>
@@ -548,20 +561,19 @@ export default {
        active: true,
        zoneId: null,
        suspensionAction: 'disable',
-       suspendedPoolName: null
+       suspendedPoolId: null
      },
      availableZones: [],
      selectedZone: null,
      availableRouters: [],
+     availablePools: [],
      loadingZones: false,
      loadingRouters: false,
+     loadingPools: false,
      isEdit: false,
      saving: false,
      testingConnections: false,
      connectionResults: [],
-     validatingPool: false,
-     poolValidationMessage: '',
-     poolValidationStatus: '',
      errorMessage: '',
      successMessage: ''
    };
@@ -572,14 +584,31 @@ export default {
    },
    isFormValid() {
      if (!this.packageData) return false;
-     const hasBasicData = this.packageData.name && 
-                         this.packageData.price > 0 && 
-                         this.packageData.downloadSpeedMbps > 0 && 
+     const hasBasicData = this.packageData.name &&
+                         this.packageData.price > 0 &&
+                         this.packageData.downloadSpeedMbps > 0 &&
                          this.packageData.uploadSpeedMbps > 0;
-     
+
      const hasZone = this.packageData.zoneId || this.zoneIdFromUrl;
-     
+
      return hasBasicData && hasZone;
+   },
+   groupedPools() {
+     // Agrupar pools por router
+     const grouped = {};
+
+     for (const pool of this.availablePools) {
+       if (!grouped[pool.routerName]) {
+         grouped[pool.routerName] = {
+           routerName: pool.routerName,
+           routerId: pool.routerId,
+           pools: []
+         };
+       }
+       grouped[pool.routerName].pools.push(pool);
+     }
+
+     return Object.values(grouped);
    }
  },
  created() {
@@ -681,30 +710,30 @@ export default {
 
    async loadRoutersForZone() {
      if (!this.packageData.zoneId) return;
-     
+
      this.loadingRouters = true;
      try {
        console.log('Cargando routers para zona:', this.packageData.zoneId);
-       
-       const response = await DeviceService.getAllDevices({ 
-         brand: 'mikrotik', 
+
+       const response = await DeviceService.getAllDevices({
+         brand: 'mikrotik',
          type: 'router',
          active: true
        });
-       
+
        let allRouters = response.data?.devices || response.data || [];
        console.log('Todos los routers Mikrotik:', allRouters.length);
-       
+
        const routersWithNodes = allRouters.filter(router => router.nodeId);
        console.log('Routers con nodeId:', routersWithNodes.length);
-       
+
        const validRouters = [];
-       
+
        for (const router of routersWithNodes) {
          try {
            const nodeResponse = await NetworkService.getNode(router.nodeId);
            const node = nodeResponse.data || {};
-           
+
            if (node.zoneId && node.zoneId == this.packageData.zoneId) {
              validRouters.push({
                ...router,
@@ -715,9 +744,9 @@ export default {
            console.warn(`Error verificando nodo ${router.nodeId}:`, nodeError);
          }
        }
-       
+
        console.log('Routers válidos para la zona:', validRouters.length);
-       
+
        // Configurar routers con opciones por defecto
        this.availableRouters = validRouters.map(router => ({
          ...router,
@@ -728,18 +757,63 @@ export default {
          loadingProfiles: false,
          testingProfile: false
        }));
-       
+
        // Cargar perfiles automáticamente
        for (const router of this.availableRouters) {
          await this.loadRouterProfiles(router);
        }
-       
+
+       // Cargar pools automáticamente para configuración de suspensión
+       await this.loadPoolsFromRouters();
+
      } catch (error) {
        console.error('Error cargando routers de la zona:', error);
        this.errorMessage = `Error cargando routers de la zona: ${error.message}`;
        this.availableRouters = [];
      } finally {
        this.loadingRouters = false;
+     }
+   },
+
+   async loadPoolsFromRouters() {
+     if (!this.availableRouters || this.availableRouters.length === 0) {
+       console.log('No hay routers disponibles para cargar pools');
+       return;
+     }
+
+     this.loadingPools = true;
+     this.availablePools = [];
+
+     try {
+       console.log('Cargando pools de', this.availableRouters.length, 'routers');
+
+       for (const router of this.availableRouters) {
+         try {
+           const response = await MikrotikService.getIPPools(router.id);
+
+           if (response.data && response.data.pools) {
+             const pools = response.data.pools.map(pool => ({
+               poolId: pool['.id'], // ID inmutable de MikroTik (ej: *1, *2, *3)
+               name: pool.name,
+               ranges: pool.ranges || 'N/A',
+               routerId: router.id,
+               routerName: router.name
+             }));
+
+             this.availablePools.push(...pools);
+             console.log(`✅ Cargados ${pools.length} pools de ${router.name}`);
+           }
+         } catch (error) {
+           console.warn(`Error cargando pools de ${router.name}:`, error);
+         }
+       }
+
+       console.log(`Total de pools cargados: ${this.availablePools.length}`);
+     } catch (error) {
+       console.error('Error cargando pools:', error);
+       this.errorMessage = 'Error cargando pools de los routers';
+     } finally {
+       this.loadingPools = false;
      }
    },
 
@@ -767,7 +841,7 @@ async loadPackage(id) {
         active: packageData.active,
         zoneId: packageData.zoneId,
         suspensionAction: packageData.suspensionAction || 'disable',
-        suspendedPoolName: packageData.suspendedPoolName || null
+        suspendedPoolId: packageData.suspendedPoolId || null
       };
       
       console.log('Paquete cargado:', this.packageData);
@@ -1124,7 +1198,7 @@ async savePackage() {
       active: Boolean(this.packageData.active),
       zoneId: finalZoneId,
       suspensionAction: this.packageData.suspensionAction || 'disable',
-      suspendedPoolName: this.packageData.suspensionAction === 'move_pool' ? this.packageData.suspendedPoolName?.trim() : null
+      suspendedPoolId: this.packageData.suspensionAction === 'move_pool' ? this.packageData.suspendedPoolId : null
     };
     
     console.log('📦 Datos del paquete a guardar:', packageDataToSend);
@@ -1274,60 +1348,6 @@ async processProfilesForPackage(packageId, activeRouters) {
        maintenance: 'Mantenimiento'
      };
      return texts[status] || 'Desconocido';
-   },
-
-   async validatePoolName() {
-     if (!this.packageData.suspendedPoolName || !this.packageData.zoneId) {
-       return;
-     }
-
-     this.validatingPool = true;
-     this.poolValidationMessage = '';
-     this.poolValidationStatus = '';
-
-     try {
-       console.log('Validando pool:', this.packageData.suspendedPoolName, 'en zona:', this.packageData.zoneId);
-
-       // Validar en todos los routers de la zona
-       const poolName = this.packageData.suspendedPoolName.trim();
-       let poolFoundCount = 0;
-       let totalRouters = this.availableRouters.length;
-
-       for (const router of this.availableRouters) {
-         try {
-           const response = await MikrotikService.getIPPools(router.id);
-
-           if (response.data && response.data.pools) {
-             const poolExists = response.data.pools.some(pool =>
-               pool.name === poolName
-             );
-
-             if (poolExists) {
-               poolFoundCount++;
-             }
-           }
-         } catch (error) {
-           console.warn(`Error verificando pool en router ${router.name}:`, error);
-         }
-       }
-
-       if (poolFoundCount === 0) {
-         this.poolValidationStatus = 'error';
-         this.poolValidationMessage = `❌ El pool "${poolName}" no existe en ningún router de la zona`;
-       } else if (poolFoundCount < totalRouters) {
-         this.poolValidationStatus = 'warning';
-         this.poolValidationMessage = `⚠️ El pool existe en ${poolFoundCount} de ${totalRouters} routers`;
-       } else {
-         this.poolValidationStatus = 'success';
-         this.poolValidationMessage = `✅ El pool "${poolName}" existe en todos los routers (${totalRouters})`;
-       }
-     } catch (error) {
-       console.error('Error validando pool:', error);
-       this.poolValidationStatus = 'error';
-       this.poolValidationMessage = '❌ Error al validar el pool: ' + error.message;
-     } finally {
-       this.validatingPool = false;
-     }
    }
  }
 };
