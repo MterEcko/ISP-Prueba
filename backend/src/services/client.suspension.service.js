@@ -115,6 +115,7 @@ const ClientSuspensionService = {
    * Reactiva el servicio de un cliente
    * - Actualiza estado en BD
    * - Reactiva usuario PPPoE en MikroTik
+   * - Restaura pool original si fue movido durante la suspensión
    * - Crea notificación
    */
   async reactivateClient(clientId, paymentId = null) {
@@ -126,7 +127,13 @@ const ClientSuspensionService = {
         include: [
           {
             model: db.ClientBilling,
-            as: 'billing'
+            as: 'billing',
+            include: [
+              {
+                model: db.ServicePackage,
+                as: 'servicePackage'
+              }
+            ]
           },
           {
             model: db.ClientNetwork,
@@ -163,7 +170,25 @@ const ClientSuspensionService = {
       // 4. Reactivar usuario PPPoE en MikroTik (si existe)
       let mikrotikResult = null;
       if (client.network && client.network.pppoeUsername) {
-        mikrotikResult = await this.enablePPPoEUser(client.network);
+        const servicePackage = client.billing?.servicePackage;
+        const wasMovedToPool = servicePackage?.suspensionAction === 'move_pool' && client.billing?.originalPoolName;
+
+        if (wasMovedToPool) {
+          // Restaurar pool original
+          mikrotikResult = await this.restorePPPoEUserPool(
+            client.network,
+            client.billing.originalPoolName
+          );
+
+          // Limpiar el pool original después de restaurarlo
+          await db.ClientBilling.update(
+            { originalPoolName: null },
+            { where: { clientId } }
+          );
+        } else {
+          // Solo habilitar el usuario (comportamiento original)
+          mikrotikResult = await this.enablePPPoEUser(client.network);
+        }
       }
 
       // 5. Crear notificación
@@ -266,6 +291,46 @@ const ClientSuspensionService = {
   },
 
   /**
+   * Restaura usuario PPPoE a su pool original
+   */
+  async restorePPPoEUserPool(clientNetwork, originalPoolName) {
+    try {
+      const router = await db.MikrotikRouter.findByPk(clientNetwork.routerId);
+
+      if (!router) {
+        logger.warn('Router MikroTik no encontrado, saltando restauración de pool');
+        return null;
+      }
+
+      logger.info(`Restaurando usuario PPPoE: ${clientNetwork.pppoeUsername} al pool original: ${originalPoolName} en ${router.ipAddress}`);
+
+      // Actualizar usuario para restaurar pool original y habilitarlo
+      const result = await mikrotikService.updatePPPoEUser(
+        router.ipAddress,
+        router.apiPort || 8728,
+        router.username,
+        router.password,
+        clientNetwork.pppoeUsername,
+        {
+          remoteAddress: originalPoolName,  // Restaurar pool original
+          disabled: false  // Habilitar usuario
+        }
+      );
+
+      logger.info(`Usuario PPPoE ${clientNetwork.pppoeUsername} restaurado al pool ${originalPoolName} y habilitado`);
+
+      return result;
+
+    } catch (error) {
+      logger.error(`Error restaurando usuario PPPoE a pool original: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
+  /**
    * Mueve usuario PPPoE a un pool específico (para suspendidos)
    */
   async movePPPoEUserToPool(clientNetwork, poolName) {
@@ -278,6 +343,29 @@ const ClientSuspensionService = {
       }
 
       logger.info(`Moviendo usuario PPPoE: ${clientNetwork.pppoeUsername} al pool: ${poolName} en ${router.ipAddress}`);
+
+      // Obtener información actual del usuario para guardar el pool original
+      const currentUser = await mikrotikService.getPPPoEUserByUsername(
+        router.ipAddress,
+        router.apiPort || 8728,
+        router.username,
+        router.password,
+        clientNetwork.pppoeUsername
+      );
+
+      // Guardar pool original en ClientBilling para poder restaurarlo después
+      if (currentUser && currentUser.remoteAddress) {
+        const clientBilling = await db.ClientBilling.findOne({
+          where: { clientId: clientNetwork.clientId }
+        });
+
+        if (clientBilling) {
+          await clientBilling.update({
+            originalPoolName: currentUser.remoteAddress
+          });
+          logger.info(`Pool original guardado: ${currentUser.remoteAddress}`);
+        }
+      }
 
       // Actualizar usuario para mover a pool de suspendidos
       const result = await mikrotikService.updatePPPoEUser(

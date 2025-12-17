@@ -267,6 +267,21 @@ function registerSystemMigrations(autoMigration) {
 
     return true;
   });
+
+  // Migración 6: Agregar originalPoolName a ClientBilling para restaurar pool al reactivar
+  autoMigration.register('client-billing-original-pool', async (sequelize) => {
+    const tableExists = await autoMigration.tableExists('ClientBilling');
+
+    if (tableExists) {
+      await autoMigration.addColumnIfNotExists(
+        'ClientBilling',
+        'originalPoolName',
+        'VARCHAR(255)'
+      );
+    }
+
+    return true;
+  });
 }
 
 module.exports = {

@@ -96,6 +96,11 @@ module.exports = (sequelize) => {
     reactivationDate: {
       type: DataTypes.DATE,
       comment: 'Fecha de reactivación del servicio'
+    },
+    originalPoolName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Pool original del usuario antes de ser suspendido (para restaurar al reactivar)'
     }
   }, {
     tableName: 'ClientBilling',

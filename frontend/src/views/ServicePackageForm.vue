@@ -223,16 +223,29 @@
          <!-- Campo para nombre del pool (solo visible si se selecciona move_pool) -->
          <div v-if="packageData.suspensionAction === 'move_pool'" class="form-group">
            <label for="suspendedPoolName">Nombre del Pool de Suspendidos *</label>
-           <input
-             type="text"
-             id="suspendedPoolName"
-             v-model="packageData.suspendedPoolName"
-             :required="packageData.suspensionAction === 'move_pool'"
-             placeholder="ej. pool-suspendidos"
-           />
+           <div class="input-with-button">
+             <input
+               type="text"
+               id="suspendedPoolName"
+               v-model="packageData.suspendedPoolName"
+               :required="packageData.suspensionAction === 'move_pool'"
+               placeholder="ej. pool-suspendidos"
+             />
+             <button
+               type="button"
+               @click="validatePoolName"
+               :disabled="!packageData.suspendedPoolName || validatingPool"
+               class="btn btn-small btn-outline"
+             >
+               {{ validatingPool ? '⏳ Validando...' : '✓ Validar Pool' }}
+             </button>
+           </div>
            <small class="form-help">
              Este pool debe existir previamente en el MikroTik. Los usuarios suspendidos serán movidos a este pool.
            </small>
+           <div v-if="poolValidationMessage" class="validation-message" :class="poolValidationStatus">
+             {{ poolValidationMessage }}
+           </div>
          </div>
        </div>
 
@@ -546,6 +559,9 @@ export default {
      saving: false,
      testingConnections: false,
      connectionResults: [],
+     validatingPool: false,
+     poolValidationMessage: '',
+     poolValidationStatus: '',
      errorMessage: '',
      successMessage: ''
    };
@@ -1253,11 +1269,65 @@ async processProfilesForPackage(packageId, activeRouters) {
    getStatusText(status) {
      const texts = {
        online: 'Online',
-       offline: 'Offline', 
+       offline: 'Offline',
        unknown: 'Desconocido',
        maintenance: 'Mantenimiento'
      };
      return texts[status] || 'Desconocido';
+   },
+
+   async validatePoolName() {
+     if (!this.packageData.suspendedPoolName || !this.packageData.zoneId) {
+       return;
+     }
+
+     this.validatingPool = true;
+     this.poolValidationMessage = '';
+     this.poolValidationStatus = '';
+
+     try {
+       console.log('Validando pool:', this.packageData.suspendedPoolName, 'en zona:', this.packageData.zoneId);
+
+       // Validar en todos los routers de la zona
+       const poolName = this.packageData.suspendedPoolName.trim();
+       let poolFoundCount = 0;
+       let totalRouters = this.availableRouters.length;
+
+       for (const router of this.availableRouters) {
+         try {
+           const response = await MikrotikService.getIPPools(router.id);
+
+           if (response.data && response.data.pools) {
+             const poolExists = response.data.pools.some(pool =>
+               pool.name === poolName
+             );
+
+             if (poolExists) {
+               poolFoundCount++;
+             }
+           }
+         } catch (error) {
+           console.warn(`Error verificando pool en router ${router.name}:`, error);
+         }
+       }
+
+       if (poolFoundCount === 0) {
+         this.poolValidationStatus = 'error';
+         this.poolValidationMessage = `❌ El pool "${poolName}" no existe en ningún router de la zona`;
+       } else if (poolFoundCount < totalRouters) {
+         this.poolValidationStatus = 'warning';
+         this.poolValidationMessage = `⚠️ El pool existe en ${poolFoundCount} de ${totalRouters} routers`;
+       } else {
+         this.poolValidationStatus = 'success';
+         this.poolValidationMessage = `✅ El pool "${poolName}" existe en todos los routers (${totalRouters})`;
+       }
+     } catch (error) {
+       console.error('Error validando pool:', error);
+       this.poolValidationStatus = 'error';
+       this.poolValidationMessage = '❌ Error al validar el pool: ' + error.message;
+     } finally {
+       this.validatingPool = false;
+     }
    }
  }
 };
@@ -2061,6 +2131,43 @@ async processProfilesForPackage(packageId, activeRouters) {
   color: #666;
   font-size: 0.85rem;
   line-height: 1.4;
+}
+
+/* Estilos para input con botón */
+.input-with-button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.input-with-button input {
+  flex: 1;
+}
+
+.validation-message {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.validation-message.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.validation-message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.validation-message.warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
 }
 
 </style>
