@@ -29,8 +29,11 @@ class BillingService {
       
       // 3. Generar facturas automáticas (5 días antes)
       await this.generateAutomaticInvoices();
-      
-      // 4. Suspender servicios vencidos
+
+      // 4. Marcar facturas vencidas como 'overdue' (NO cancelled)
+      await this.markOverdueInvoices();
+
+      // 5. Suspender servicios vencidos
       await this.suspendOverdueServices();
       
       // 5. Enviar recordatorios de pago
@@ -328,10 +331,13 @@ async generateMissingCurrentPeriodInvoices() {
       console.log(`Cliente ${clientBilling.clientId} no tiene subscription activa - NO se crea factura`);
       return null;
     }
-    
-    const dueDate = new Date(periodEnd);
+
+    // CORREGIDO: Para sistema prepago, la fecha de vencimiento es:
+    // billingDay + graceDays (no periodEnd + graceDays)
+    // Ejemplo: si billingDay es 1 y graceDays es 5, vence el día 6 del mes
+    const dueDate = new Date(periodStart);
     dueDate.setDate(dueDate.getDate() + clientBilling.graceDays);
-    
+
     const invoiceNumber = this.generateInvoiceNumber(clientBilling.clientId);
     
     const today = new Date();
@@ -492,6 +498,59 @@ async generateMissingCurrentPeriodInvoices() {
       } catch (error) {
         console.error(`Error suspendiendo cliente ${clientBilling.clientId}:`, error.message);
       }
+    }
+  }
+
+  /**
+   * Marca facturas vencidas como 'overdue' (NO 'cancelled')
+   * IMPORTANTE: 'cancelled' solo debe usarse para cancelaciones manuales
+   */
+  async markOverdueInvoices() {
+    console.log('Marcando facturas vencidas como overdue...');
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    try {
+      // Buscar facturas pendientes cuya fecha de vencimiento ya pasó
+      const overdueInvoices = await Invoice.findAll({
+        where: {
+          status: 'pending',
+          dueDate: {
+            [Op.lt]: today
+          }
+        }
+      });
+
+      console.log(`🔍 Encontradas ${overdueInvoices.length} facturas vencidas para marcar como overdue`);
+
+      let marked = 0;
+      for (const invoice of overdueInvoices) {
+        try {
+          await invoice.update({
+            status: 'overdue'
+          });
+
+          console.log(`📋 Factura #${invoice.invoiceNumber} marcada como overdue (vencida el ${invoice.dueDate})`);
+          marked++;
+
+          // El hook del modelo se encargará de cortar el servicio automáticamente
+        } catch (error) {
+          console.error(`❌ Error marcando factura ${invoice.invoiceNumber} como overdue:`, error.message);
+        }
+      }
+
+      console.log(`✅ ${marked} de ${overdueInvoices.length} facturas marcadas como overdue`);
+
+      return {
+        total: overdueInvoices.length,
+        marked: marked,
+        failed: overdueInvoices.length - marked
+      };
+
+    } catch (error) {
+      console.error('❌ Error en proceso de marcar facturas vencidas:', error);
+      throw error;
     }
   }
 

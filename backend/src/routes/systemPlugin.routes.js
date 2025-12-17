@@ -156,18 +156,46 @@ module.exports = function(app) {
 
   // ==================== CONFIGURACIÓN DE PLUGINS ====================
 
-  // Obtener configuración de plugin
+  // Obtener configuración de plugin por ID
   app.get(
     "/api/system-plugins/:id/config",
     [authJwt.verifyToken],
     systemPluginController.getPluginConfig
   );
 
-  // Actualizar configuración de plugin
+  // Actualizar configuración de plugin por ID
   app.put(
     "/api/system-plugins/:id/config",
     [authJwt.verifyToken, authJwt.isAdminOrManager],
     systemPluginController.updatePluginConfig
+  );
+
+  // Obtener configuración de plugin por NOMBRE
+  app.get(
+    "/api/system-plugins/name/:name/config",
+    [authJwt.verifyToken],
+    systemPluginController.getPluginConfigByName
+  );
+
+  // Actualizar configuración de plugin por NOMBRE
+  app.put(
+    "/api/system-plugins/name/:name/config",
+    [authJwt.verifyToken, authJwt.isAdminOrManager],
+    systemPluginController.updatePluginConfigByName
+  );
+
+  // Obtener vista de configuración de plugin
+  app.get(
+    "/api/system-plugins/:name/config-view",
+    [authJwt.verifyToken],
+    systemPluginController.getPluginConfigView
+  );
+
+  // Obtener plugin por nombre
+  app.get(
+    "/api/system-plugins/name/:name",
+    [authJwt.verifyToken],
+    systemPluginController.getPluginByName
   );
 
 

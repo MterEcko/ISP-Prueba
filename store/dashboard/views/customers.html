@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clientes - ISP-Prueba Store</title>
+  <link rel="stylesheet" href="/dashboard/static/css/dashboard.css">
+  <style>
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      color: #2c3e50;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      color: #999;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      line-height: 1;
+    }
+
+    .close-btn:hover {
+      color: #333;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #34495e;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #3498db;
+    }
+
+    .form-group small {
+      display: block;
+      margin-top: 5px;
+      color: #7f8c8d;
+      font-size: 12px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background-color: #3498db;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #2980b9;
+    }
+
+    .btn-secondary {
+      background-color: #95a5a6;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background-color: #7f8c8d;
+    }
+
+    .btn-success {
+      background-color: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background-color: #229954;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 5px;
+    }
+
+    .action-btn {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      opacity: 0.8;
+    }
+
+    .alert {
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+
+    .alert-success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .alert-error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>ISP-Prueba Store</h1>
+        <p>Panel de Administración</p>
+      </div>
+      <ul class="sidebar-menu">
+        <li><a href="/dashboard">
+          <span class="icon">📊</span> Dashboard
+        </a></li>
+        <li><a href="/dashboard/installations">
+          <span class="icon">💻</span> Instalaciones
+        </a></li>
+        <li><a href="/dashboard/licenses">
+          <span class="icon">🔑</span> Licencias
+        </a></li>
+        <li><a href="/dashboard/plugins">
+          <span class="icon">🧩</span> Plugins
+        </a></li>
+        <li><a href="/dashboard/packages">
+          <span class="icon">📦</span> Paquetes
+        </a></li>
+        <li><a href="/dashboard/customers" class="active">
+          <span class="icon">👥</span> Clientes
+        </a></li>
+        <li><a href="/dashboard/map">
+          <span class="icon">🗺️</span> Mapa
+        </a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <h2>Gestión de Clientes</h2>
+          <p>Registra y administra clientes del store</p>
+        </div>
+        <button class="btn btn-primary" onclick="openRegisterModal()">
+          ➕ Registrar Cliente
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Cargando estadísticas...</p>
+        </div>
+      </div>
+
+      <!-- Customers Table -->
+      <div class="data-table">
+        <div class="table-header">
+          <h3>Lista de Clientes</h3>
+          <div style="display: flex; gap: 10px;">
+            <select id="statusFilter" onchange="loadCustomers()">
+              <option value="">Todos los estados</option>
+              <option value="active">Activos</option>
+              <option value="pending">Pendientes</option>
+              <option value="suspended">Suspendidos</option>
+              <option value="cancelled">Cancelados</option>
+            </select>
+          </div>
+        </div>
+        <div id="customersTable">
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>Cargando clientes...</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Register Customer Modal -->
+  <div id="registerModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Registrar Nuevo Cliente</h3>
+        <button class="close-btn" onclick="closeRegisterModal()">&times;</button>
+      </div>
+
+      <div id="modalAlert"></div>
+
+      <form id="registerForm" onsubmit="registerCustomer(event)">
+        <div class="form-group">
+          <label for="name">Nombre Completo *</label>
+          <input type="text" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email *</label>
+          <input type="email" id="email" name="email" required>
+          <small>La licencia será enviada a este email</small>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Teléfono</label>
+          <input type="tel" id="phone" name="phone">
+        </div>
+
+        <div class="form-group">
+          <label for="companyName">Nombre de la Empresa</label>
+          <input type="text" id="companyName" name="companyName">
+        </div>
+
+        <div class="form-group">
+          <label for="servicePackageId">Paquete *</label>
+          <select id="servicePackageId" name="servicePackageId" required>
+            <option value="">Seleccione un paquete...</option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeRegisterModal()">Cancelar</button>
+          <button type="submit" class="btn btn-success">Registrar y Enviar Licencia</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = window.location.origin + '/api';
+    let packages = [];
+    let customers = [];
+
+    // Load initial data
+    async function init() {
+      await loadPackages();
+      await loadCustomers();
+      await loadStats();
+    }
+
+    // Load packages for dropdown
+    async function loadPackages() {
+      try {
+        const response = await fetch(`${API_URL}/service-packages?status=active`);
+        const data = await response.json();
+
+        if (data.success) {
+          packages = data.data;
+          const select = document.getElementById('servicePackageId');
+          select.innerHTML = '<option value="">Seleccione un paquete...</option>';
+
+          packages.forEach(pkg => {
+            const option = document.createElement('option');
+            option.value = pkg.id;
+            option.textContent = `${pkg.name} - $${pkg.price} ${pkg.currency} ${pkg.isFree ? '(Gratis)' : ''}`;
+            select.appendChild(option);
+          });
+        }
+      } catch (error) {
+        console.error('Error loading packages:', error);
+      }
+    }
+
+    // Load customers
+    async function loadCustomers() {
+      try {
+        const statusFilter = document.getElementById('statusFilter').value;
+        const url = statusFilter
+          ? `${API_URL}/customers?status=${statusFilter}`
+          : `${API_URL}/customers`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+          customers = data.data;
+          renderCustomersTable(customers);
+        }
+      } catch (error) {
+        console.error('Error loading customers:', error);
+        document.getElementById('customersTable').innerHTML = `
+          <div class="loading">
+            <p style="color: #e74c3c;">❌ Error al cargar los clientes</p>
+          </div>
+        `;
+      }
+    }
+
+    // Load stats
+    async function loadStats() {
+      try {
+        const response = await fetch(`${API_URL}/customers`);
+        const data = await response.json();
+
+        if (data.success) {
+          const customers = data.data;
+          const stats = {
+            total: customers.length,
+            active: customers.filter(c => c.status === 'active').length,
+            pending: customers.filter(c => c.status === 'pending').length,
+            suspended: customers.filter(c => c.status === 'suspended').length
+          };
+          renderStats(stats);
+        }
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+    }
+
+    function renderStats(stats) {
+      const statsGrid = document.getElementById('statsGrid');
+      statsGrid.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Total Clientes</span>
+            <div class="stat-card-icon" style="background: #e3f2fd; color: #2196f3;">👥</div>
+          </div>
+          <div class="stat-card-value">${stats.total}</div>
+          <div class="stat-card-change">${stats.active} activos</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Clientes Activos</span>
+            <div class="stat-card-icon" style="background: #e8f5e9; color: #4caf50;">✅</div>
+          </div>
+          <div class="stat-card-value">${stats.active}</div>
+          <div class="stat-card-change">Con licencia activa</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Pendientes</span>
+            <div class="stat-card-icon" style="background: #fff3e0; color: #ff9800;">⏳</div>
+          </div>
+          <div class="stat-card-value">${stats.pending}</div>
+          <div class="stat-card-change">En proceso</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="stat-card-title">Suspendidos</span>
+            <div class="stat-card-icon" style="background: #ffebee; color: #f44336;">🚫</div>
+          </div>
+          <div class="stat-card-value">${stats.suspended}</div>
+          <div class="stat-card-change">Requieren atención</div>
+        </div>
+      `;
+    }
+
+    function renderCustomersTable(customers) {
+      const tableDiv = document.getElementById('customersTable');
+
+      if (!customers || customers.length === 0) {
+        tableDiv.innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">No hay clientes registrados</p>';
+        return;
+      }
+
+      tableDiv.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Email</th>
+              <th>Paquete</th>
+              <th>Licencia</th>
+              <th>Estado</th>
+              <th>Registrado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${customers.map(customer => `
+              <tr>
+                <td>
+                  <strong>${customer.name}</strong>
+                  ${customer.companyName ? `<br><small style="color: #7f8c8d;">${customer.companyName}</small>` : ''}
+                </td>
+                <td>${customer.email}</td>
+                <td>
+                  ${customer.package ? customer.package.name : 'N/A'}
+                  ${customer.package ? `<br><small style="color: #7f8c8d;">$${customer.package.price} ${customer.package.currency}</small>` : ''}
+                </td>
+                <td>
+                  <code style="font-size: 11px; background: #f8f9fa; padding: 4px 8px; border-radius: 3px; display: inline-block; max-width: 150px; overflow: hidden; text-overflow: ellipsis;">
+                    ${customer.licenseKey ? customer.licenseKey.substring(0, 20) + '...' : 'N/A'}
+                  </code>
+                  ${customer.licenseSentAt ? '<br><small style="color: #27ae60;">✅ Enviada</small>' : '<br><small style="color: #e67e22;">⏳ Pendiente</small>'}
+                </td>
+                <td>
+                  <span class="badge badge-${getBadgeClass(customer.status)}">${getStatusText(customer.status)}</span>
+                </td>
+                <td>${formatDate(customer.registeredAt)}</td>
+                <td>
+                  <div class="action-buttons">
+                    ${!customer.licenseSentAt ? `<button class="action-btn btn-success" onclick="resendLicense('${customer.id}', '${customer.email}')">📧 Enviar</button>` : `<button class="action-btn btn-primary" onclick="resendLicense('${customer.id}', '${customer.email}')">🔄 Reenviar</button>`}
+                    ${customer.license && customer.license.status === 'active' ? `<button class="action-btn" style="background:#e74c3c;color:white" onclick="deactivateLicense('${customer.id}')">🚫 Desactivar</button>` : ''}
+                    ${customer.license ? `<button class="action-btn" style="background:#27ae60;color:white" onclick="renewLicense('${customer.id}')">🔄 Renovar</button>` : ''}
+                    <button class="action-btn" style="background:#9b59b6;color:white" onclick="createNewLicense('${customer.id}')">➕ Nueva</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // Modal functions
+    function openRegisterModal() {
+      document.getElementById('registerModal').classList.add('active');
+      document.getElementById('registerForm').reset();
+      document.getElementById('modalAlert').innerHTML = '';
+    }
+
+    function closeRegisterModal() {
+      document.getElementById('registerModal').classList.remove('active');
+    }
+
+    // Register customer
+    async function registerCustomer(event) {
+      event.preventDefault();
+
+      const formData = new FormData(event.target);
+      const data = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        phone: formData.get('phone'),
+        companyName: formData.get('companyName'),
+        servicePackageId: formData.get('servicePackageId')
+      };
+
+      try {
+        const response = await fetch(`${API_URL}/customers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showModalAlert('success', `✅ Cliente registrado exitosamente!<br>Licencia: <code>${result.data.licenseKey}</code><br>${result.emailSent ? '📧 Email enviado correctamente' : '⚠️ Email no enviado: ' + (result.emailError || 'Servicio no configurado')}`);
+
+          setTimeout(() => {
+            closeRegisterModal();
+            loadCustomers();
+            loadStats();
+          }, 3000);
+        } else {
+          showModalAlert('error', `❌ Error: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Error registering customer:', error);
+        showModalAlert('error', `❌ Error al registrar cliente: ${error.message}`);
+      }
+    }
+
+    // Resend license
+    async function resendLicense(customerId, email) {
+      if (!confirm(`¿Reenviar licencia a ${email}?`)) return;
+
+      try {
+        const response = await fetch(`${API_URL}/customers/${customerId}/resend-license`, {
+          method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('✅ Licencia reenviada exitosamente');
+          loadCustomers();
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Error resending license:', error);
+        alert(`❌ Error: ${error.message}`);
+      }
+    }
+
+    // Deactivate license
+    async function deactivateLicense(customerId) {
+      if (!confirm('¿Desactivar la licencia de este cliente?\n\nEsta acción cambiará el estado de la licencia a "suspendida".')) return;
+
+      try {
+        const response = await fetch(`${API_URL}/customers/${customerId}/deactivate-license`, {
+          method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('✅ Licencia desactivada exitosamente');
+          loadCustomers();
+          loadStats();
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Error deactivating license:', error);
+        alert(`❌ Error: ${error.message}`);
+      }
+    }
+
+    // Renew license
+    async function renewLicense(customerId) {
+      const duration = prompt('¿Por cuánto tiempo renovar?\n\nEscribe: "monthly" o "yearly"\n(Dejar vacío usa el ciclo del paquete)');
+
+      if (duration === null) return; // Cancelado
+
+      try {
+        const response = await fetch(`${API_URL}/customers/${customerId}/renew-license`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ duration: duration || undefined })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          const expiresAt = new Date(result.data.expiresAt).toLocaleDateString('es-ES');
+          alert(`✅ Licencia renovada exitosamente\n\nNueva fecha de expiración: ${expiresAt}`);
+          loadCustomers();
+          loadStats();
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Error renewing license:', error);
+        alert(`❌ Error: ${error.message}`);
+      }
+    }
+
+    // Create new license
+    async function createNewLicense(customerId) {
+      if (!confirm('¿Crear nueva licencia para este cliente?\n\nEsto revocará la licencia actual (si existe) y generará una nueva clave.\nSe enviará automáticamente por email.')) return;
+
+      try {
+        const response = await fetch(`${API_URL}/customers/${customerId}/new-license`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert(`✅ Nueva licencia creada exitosamente\n\nClave: ${result.data.licenseKey}\n\nEmail enviado al cliente.`);
+          loadCustomers();
+          loadStats();
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Error creating new license:', error);
+        alert(`❌ Error: ${error.message}`);
+      }
+    }
+
+    function showModalAlert(type, message) {
+      const alertDiv = document.getElementById('modalAlert');
+      alertDiv.innerHTML = `
+        <div class="alert alert-${type === 'success' ? 'success' : 'error'}">
+          ${message}
+        </div>
+      `;
+    }
+
+    function getBadgeClass(status) {
+      const classes = {
+        active: 'success',
+        pending: 'warning',
+        suspended: 'danger',
+        cancelled: 'info'
+      };
+      return classes[status] || 'info';
+    }
+
+    function getStatusText(status) {
+      const texts = {
+        active: 'Activo',
+        pending: 'Pendiente',
+        suspended: 'Suspendido',
+        cancelled: 'Cancelado'
+      };
+      return texts[status] || status;
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+
+    // Initialize
+    init();
+
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+      loadCustomers();
+      loadStats();
+    }, 30000);
+  </script>
+</body>
+</html>

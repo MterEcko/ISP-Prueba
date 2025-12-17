@@ -100,6 +100,9 @@ console.log('Frontend path:', frontendPath);
 // Base de datos - IMPORTAR LA INSTANCIA CORRECTA
 const db = require('./models');
 
+// Auto-migración del sistema
+const { AutoMigration, registerSystemMigrations } = require('./utils/auto-migration');
+
 // Función para sincronizar modelos en orden
 async function synchronizeDatabase() {
   try {
@@ -112,17 +115,279 @@ async function synchronizeDatabase() {
       alter: false   // NO modificar estructura automáticamente (usar migraciones para eso)
     });
 
+    // Ejecutar auto-migraciones después del sync
+    const autoMigration = new AutoMigration(db.sequelize);
+
+    // Registrar migraciones del sistema
+    registerSystemMigrations(autoMigration);
+
+    // ============================================
+    // AUTO-MIGRACIONES DE PLUGINS INSTALADOS
+    // ============================================
+    try {
+      const activePlugins = await db.SystemPlugin.findAll({
+        where: { active: true }
+      });
+
+      for (const pluginRecord of activePlugins) {
+        try {
+          const pluginPath = path.join(__dirname, 'plugins', pluginRecord.name, 'src', 'index.js');
+
+          if (fs.existsSync(pluginPath)) {
+            const plugin = require(pluginPath);
+
+            // Si el plugin tiene función de auto-migración, ejecutarla
+            if (typeof plugin.autoMigration === 'function') {
+              console.log(`📦 Registrando migraciones del plugin: ${pluginRecord.displayName || pluginRecord.name}`);
+              plugin.autoMigration(autoMigration);
+            }
+          }
+        } catch (error) {
+          console.warn(`⚠️  No se pudieron cargar migraciones del plugin ${pluginRecord.name}:`, error.message);
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️  Error cargando migraciones de plugins:', error.message);
+    }
+
+    // Ejecutar todas las migraciones (sistema + plugins)
+    await autoMigration.runAll();
+
     console.log("Conexión a la base de datos establecida y modelos sincronizados desde src/index.");
-    
+
+    // ==================== MIGRACIÓN: AGREGAR COLUMNAS A SYSTEMPLUGINS ====================
+    try {
+      console.log('\n=== VERIFICANDO COLUMNAS DE SYSTEMPLUGINS ===');
+      const queryInterface = db.sequelize.getQueryInterface();
+      const tableDescription = await queryInterface.describeTable('SystemPlugins');
+
+      // Agregar displayName si no existe
+      if (!tableDescription.displayName) {
+        await queryInterface.addColumn('SystemPlugins', 'displayName', {
+          type: db.Sequelize.STRING,
+          allowNull: true
+        });
+        console.log('✅ Columna displayName agregada');
+      }
+
+      // Agregar description si no existe
+      if (!tableDescription.description) {
+        await queryInterface.addColumn('SystemPlugins', 'description', {
+          type: db.Sequelize.TEXT,
+          allowNull: true
+        });
+        console.log('✅ Columna description agregada');
+      }
+
+      // Agregar category si no existe
+      if (!tableDescription.category) {
+        await queryInterface.addColumn('SystemPlugins', 'category', {
+          type: db.Sequelize.STRING,
+          allowNull: true,
+          defaultValue: 'other'
+        });
+        console.log('✅ Columna category agregada');
+
+        // Actualizar categorías de plugins existentes
+        await db.sequelize.query(`UPDATE "SystemPlugins" SET category = 'payment' WHERE name IN ('mercadopago', 'openpay', 'paypal', 'stripe');`);
+        await db.sequelize.query(`UPDATE "SystemPlugins" SET category = 'communication' WHERE name IN ('email', 'telegram', 'whatsapp');`);
+        await db.sequelize.query(`UPDATE "SystemPlugins" SET category = 'automation' WHERE name = 'n8n';`);
+        await db.sequelize.query(`UPDATE "SystemPlugins" SET category = 'other' WHERE category IS NULL;`);
+        console.log('✅ Categorías de plugins actualizadas');
+      } else {
+        console.log('ℹ️  Columnas ya existen');
+      }
+
+      console.log('=== FIN VERIFICACIÓN DE COLUMNAS ===\n');
+    } catch (error) {
+      console.error('❌ Error verificando columnas de SystemPlugins:', error.message);
+    }
+    // ==================== FIN MIGRACIÓN ====================
+
+    // ==================== MIGRACIÓN: AGREGAR COLUMNAS A SYSTEMLICENSES ====================
+    try {
+      console.log('\n=== VERIFICANDO COLUMNAS DE SYSTEMLICENSES ===');
+      const queryInterface = db.sequelize.getQueryInterface();
+
+      // Verificar si la tabla existe
+      const tables = await queryInterface.showAllTables();
+      if (tables.includes('SystemLicenses')) {
+        const licenseDescription = await queryInterface.describeTable('SystemLicenses');
+
+        // Agregar hardwareId
+        if (!licenseDescription.hardwareId) {
+          await queryInterface.addColumn('SystemLicenses', 'hardwareId', {
+            type: db.Sequelize.STRING(64),
+            allowNull: true
+          });
+          console.log('✅ Columna hardwareId agregada');
+        }
+
+        // Agregar userLimit
+        if (!licenseDescription.userLimit) {
+          await queryInterface.addColumn('SystemLicenses', 'userLimit', {
+            type: db.Sequelize.INTEGER,
+            defaultValue: 5
+          });
+          console.log('✅ Columna userLimit agregada');
+        }
+
+        // Agregar pluginLimit
+        if (!licenseDescription.pluginLimit) {
+          await queryInterface.addColumn('SystemLicenses', 'pluginLimit', {
+            type: db.Sequelize.INTEGER,
+            defaultValue: 3
+          });
+          console.log('✅ Columna pluginLimit agregada');
+        }
+
+        // Agregar includedPlugins
+        if (!licenseDescription.includedPlugins) {
+          await queryInterface.addColumn('SystemLicenses', 'includedPlugins', {
+            type: db.Sequelize.JSON,
+            defaultValue: []
+          });
+          console.log('✅ Columna includedPlugins agregada');
+        }
+
+        // Agregar activatedAt
+        if (!licenseDescription.activatedAt) {
+          await queryInterface.addColumn('SystemLicenses', 'activatedAt', {
+            type: db.Sequelize.DATE,
+            allowNull: true
+          });
+          console.log('✅ Columna activatedAt agregada');
+        }
+
+        // Agregar lastValidated
+        if (!licenseDescription.lastValidated) {
+          await queryInterface.addColumn('SystemLicenses', 'lastValidated', {
+            type: db.Sequelize.DATE,
+            allowNull: true
+          });
+          console.log('✅ Columna lastValidated agregada');
+        }
+
+        console.log('ℹ️  Todas las columnas de licencias verificadas');
+      } else {
+        console.log('ℹ️  Tabla SystemLicenses no existe aún');
+      }
+
+      console.log('=== FIN VERIFICACIÓN DE LICENCIAS ===\n');
+    } catch (error) {
+      console.error('❌ Error verificando columnas de SystemLicenses:', error.message);
+    }
+    // ==================== FIN MIGRACIÓN DE LICENCIAS ====================
+
+    // ==================== AUTO-REGISTRAR PLUGINS DEL FILESYSTEM ====================
+    try {
+      console.log('\n=== AUTO-REGISTRANDO PLUGINS DEL FILESYSTEM ===');
+      const fs = require('fs');
+      const path = require('path');
+      const pluginsPath = path.join(__dirname, 'plugins');
+
+      if (fs.existsSync(pluginsPath)) {
+        const pluginFolders = fs.readdirSync(pluginsPath, { withFileTypes: true })
+          .filter(dirent => dirent.isDirectory())
+          .map(dirent => dirent.name);
+
+        let registered = 0;
+        let alreadyExists = 0;
+
+        for (const pluginName of pluginFolders) {
+          try {
+            // Verificar si ya existe en BD
+            const existingPlugin = await db.SystemPlugin.findOne({
+              where: { name: pluginName }
+            });
+
+            if (existingPlugin) {
+              alreadyExists++;
+              continue;
+            }
+
+            // Leer manifest.json para obtener información
+            const manifestPath = path.join(pluginsPath, pluginName, 'manifest.json');
+            let version = '1.0.0';
+            let category = 'general';
+            let displayName = pluginName;
+
+            if (fs.existsSync(manifestPath)) {
+              try {
+                const manifestContent = fs.readFileSync(manifestPath, 'utf8');
+                const manifest = JSON.parse(manifestContent);
+                version = manifest.version || '1.0.0';
+                category = manifest.category || 'general';
+                displayName = manifest.displayName || manifest.name || pluginName;
+              } catch (error) {
+                console.warn(`⚠️  No se pudo leer manifest de ${pluginName}: ${error.message}`);
+              }
+            }
+
+            // Registrar plugin en BD
+            await db.SystemPlugin.create({
+              name: pluginName,
+              displayName: displayName,
+              version: version,
+              category: category,
+              active: true, // Activar por defecto
+              configuration: {},
+              pluginTables: [],
+              pluginRoutes: []
+            });
+
+            registered++;
+            console.log(`✅ Plugin auto-registrado: ${pluginName}`);
+
+          } catch (error) {
+            console.error(`❌ Error registrando plugin ${pluginName}: ${error.message}`);
+          }
+        }
+
+        console.log(`📦 Plugins encontrados: ${pluginFolders.length}`);
+        console.log(`✅ Nuevos registrados: ${registered}`);
+        console.log(`ℹ️  Ya existían: ${alreadyExists}`);
+      }
+      console.log('=== FIN AUTO-REGISTRO DE PLUGINS ===\n');
+    } catch (error) {
+      console.error('❌ Error en auto-registro de plugins:', error.message);
+    }
+    // ==================== FIN AUTO-REGISTRO ====================
+
+    // ==================== CARGAR MODELOS DE PLUGINS ====================
+    try {
+      console.log('\n=== CARGANDO MODELOS DE PLUGINS ===');
+      const pluginModelsService = require('./services/pluginModels.service');
+
+      // Obtener plugins activos
+      const activePlugins = await db.SystemPlugin.findAll({ where: { active: true } });
+      const activePluginNames = activePlugins.map(p => p.name);
+
+      // Cargar modelos de plugins
+      await pluginModelsService.loadPluginModels(db.sequelize, db, activePluginNames);
+
+      // Sincronizar tablas de plugins
+      await pluginModelsService.syncPluginModels(db.sequelize, { force: false, alter: false });
+
+      // Mostrar estadísticas
+      const stats = pluginModelsService.getStats();
+      console.log(`✅ Modelos de plugins cargados: ${stats.totalModels}`);
+      console.log('=== FIN CARGA DE MODELOS DE PLUGINS ===\n');
+    } catch (error) {
+      console.error('❌ Error cargando modelos de plugins:', error.message);
+      console.warn('⚠️ El sistema continuará pero las tablas de plugins no estarán disponibles');
+    }
+    // ==================== FIN CARGA DE MODELOS ====================
+
     // ==================== AGREGAR ESTE BLOQUE AQUÍ ====================
     try {
       console.log('\n=== INICIALIZANDO SISTEMA DE CONFIGURACIONES ===');
       configHelper.init(db);
       console.log('✅ ConfigHelper inicializado con instancia de DB');
-      
+
       await configHelper.loadAllConfigs();
       console.log('✅ Configuraciones cargadas en caché');
-      
+
       // Mostrar configuración de email actual
       const emailConfig = await configHelper.getEmailConfig();
       console.log('📧 Configuración de Email:');
@@ -136,7 +401,75 @@ async function synchronizeDatabase() {
       console.warn('⚠️ El sistema continuará pero las configuraciones dinámicas no estarán disponibles');
     }
     // ==================== FIN DEL BLOQUE ====================
-    
+
+    // ==================== INICIALIZAR PLUGINS ACTIVOS ====================
+    try {
+      console.log('\n=== INICIALIZANDO PLUGINS ACTIVOS ===');
+      const systemPluginController = require('./controllers/systemPlugin.controller').instance;
+
+      // Obtener plugins activos de la base de datos
+      const activePlugins = await db.SystemPlugin.findAll({
+        where: { active: true },
+        order: [['name', 'ASC']]
+      });
+
+      console.log(`📦 Encontrados ${activePlugins.length} plugin(s) activo(s)`);
+
+      let successCount = 0;
+      let errorCount = 0;
+      const errors = [];
+
+      // Inicializar cada plugin activo
+      for (const plugin of activePlugins) {
+        try {
+          console.log(`🔌 Inicializando plugin: ${plugin.name}...`);
+          await systemPluginController._activatePlugin(plugin);
+          successCount++;
+          console.log(`   ✅ ${plugin.name} inicializado correctamente`);
+        } catch (error) {
+          errorCount++;
+          const errorMsg = `Error inicializando ${plugin.name}: ${error.message}`;
+          console.error(`   ❌ ${errorMsg}`);
+          errors.push({ plugin: plugin.name, error: error.message });
+
+          // Marcar el plugin como inactivo si falla la inicialización
+          try {
+            await plugin.update({
+              active: false,
+              configuration: {
+                ...plugin.configuration,
+                lastError: error.message,
+                lastErrorAt: new Date().toISOString(),
+                deactivatedAt: new Date().toISOString(),
+                deactivationReason: 'Failed to initialize on server startup'
+              }
+            });
+            console.warn(`   ⚠️  Plugin ${plugin.name} marcado como inactivo debido al error`);
+          } catch (updateError) {
+            console.error(`   ❌ No se pudo actualizar estado de ${plugin.name}:`, updateError.message);
+          }
+        }
+      }
+
+      console.log('\n📊 Resumen de inicialización de plugins:');
+      console.log(`   ✅ Exitosos: ${successCount}`);
+      console.log(`   ❌ Errores:  ${errorCount}`);
+
+      if (errors.length > 0) {
+        console.log('\n⚠️  Plugins con errores:');
+        errors.forEach(({ plugin, error }) => {
+          console.log(`   - ${plugin}: ${error}`);
+        });
+      }
+
+      console.log('=== FIN INICIALIZACIÓN DE PLUGINS ===\n');
+
+    } catch (error) {
+      console.error('❌ Error general inicializando plugins:', error.message);
+      console.warn('⚠️ El sistema continuará pero los plugins no estarán activos');
+    }
+    // ==================== FIN INICIALIZACIÓN DE PLUGINS ====================
+
     await initial(); // Esta línea ya debe existir en tu código
     
   } catch (error) {
@@ -162,6 +495,16 @@ synchronizeDatabase().then(() => {
     console.log(`   - WebSocket: ws://localhost:${PORT}`);
     console.log(`\n🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
     console.log(`💾 Base de datos: ${process.env.DB_DIALECT || 'sqlite'}`);
+
+    // ==================== INICIALIZAR JOBS DE LICENCIAS ====================
+    try {
+      const LicenseValidationJob = require('./jobs/license-validation.job');
+      LicenseValidationJob.initializeJobs();
+      console.log('🔐 Jobs de validación de licencias inicializados');
+    } catch (error) {
+      console.error('❌ Error inicializando jobs de licencias:', error.message);
+    }
+    // ==================== FIN JOBS DE LICENCIAS ====================
   });
 });
 
@@ -282,6 +625,14 @@ try {
   console.log('✅ systemLicense.routes registradas');
 } catch (error) {
   console.error('❌ Error en systemLicense.routes:', error.message);
+}
+
+try {
+  console.log('Registrando licenseRegistration.routes...');
+  app.use('/api', require('./routes/licenseRegistration.routes'));
+  console.log('✅ licenseRegistration.routes registradas');
+} catch (error) {
+  console.error('❌ Error en licenseRegistration.routes:', error.message);
 }
 
 try {
@@ -759,6 +1110,24 @@ try {
   console.error('❌ Error en clientPortal.routes:', error.message);
 }
 
+// Plugin Services - Descubrimiento dinámico de servicios
+try {
+  console.log('Registrando pluginService.routes...');
+  app.use('/api/plugin-services', require('./routes/pluginService.routes'));
+  console.log('✅ pluginService.routes registradas');
+} catch (error) {
+  console.error('❌ Error en pluginService.routes:', error.message);
+}
+
+// Client Services - CRUD de servicios de clientes
+try {
+  console.log('Registrando clientService.routes...');
+  require('./routes/clientService.routes')(app);
+  console.log('✅ clientService.routes registradas');
+} catch (error) {
+  console.error('❌ Error en clientService.routes:', error.message);
+}
+
 console.log('\n=== FIN REGISTRO DE RUTAS ===');
 console.log("Todas las rutas han sido procesadas");
 
@@ -971,13 +1340,24 @@ async function initial() {
     }
 
     // ==================== CREAR PLANTILLAS POR DEFECTO ====================
-    
+
     const MessageTemplate = db.MessageTemplate;
     const templateCount = await MessageTemplate.count();
-    
+
     if (templateCount === 0) {
+      const emailChannel = await CommunicationChannel.findOne({
+        where: { channelType: "email" }
+      });
+
+      if (!emailChannel) {
+        console.log("No se encontró canal de email, creando plantillas sin canal asociado");
+      }
+
+      const channelId = emailChannel ? emailChannel.id : null;
+
       await MessageTemplate.bulkCreate([
         {
+          channelId,
           name: "Recordatorio de Pago",
           templateType: "paymentReminder",
           subject: "Recordatorio de Pago - {firstName}",
@@ -994,6 +1374,7 @@ Gracias por su preferencia.`,
           active: true
         },
         {
+          channelId,
           name: "Bienvenida Nuevo Cliente",
           templateType: "welcome",
           subject: "¡Bienvenido a nuestros servicios!",
@@ -1010,6 +1391,7 @@ Si tiene alguna pregunta, no dude en contactarnos.
           active: true
         },
         {
+          channelId,
           name: "Suspensión de Servicio",
           templateType: "suspension",
           subject: "Suspensión de Servicio - {firstName}",
@@ -1027,6 +1409,7 @@ Equipo de Soporte`,
           active: true
         },
         {
+          channelId,
           name: "Reactivación de Servicio",
           templateType: "reactivation",
           subject: "¡Servicio Reactivado! - {firstName}",

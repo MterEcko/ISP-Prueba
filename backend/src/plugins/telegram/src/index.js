@@ -79,10 +79,10 @@ class TelegramPlugin {
     }
   }
 
-  registerRoutes(app) {
+  registerRoutes(router) {
     const routes = require('./routes');
-    app.use('/api/plugins/telegram', routes);
     logger.info('Rutas de Telegram Bot registradas');
+    return routes;
   }
 
   validateConfig(config) {

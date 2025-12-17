@@ -1,15 +1,20 @@
 {
   "id": "jellyfin-media",
   "name": "Jellyfin Media Server",
+  "displayName": "Jellyfin Streaming",
   "slug": "jellyfin-media",
   "version": "1.0.0",
+  "type": "service_provider",
   "description": "Integracion con Jellyfin para provision automatica de usuarios y acceso a contenido multimedia",
   "longDescription": "Conecta tu ISP con Jellyfin Media Server para ofrecer streaming de contenido a tus clientes. Provision automatica de cuentas, asignacion de bibliotecas por plan y gestion centralizada.",
   "author": "ISP-Prueba Team",
-  "category": "integration",
+  "category": "streaming",
+  "icon": "mdi-multimedia",
   "price": 19.99,
   "isFree": false,
+  "apiIntegration": true,
   "tags": ["jellyfin", "streaming", "media", "video", "tv"],
+  "capabilities": ["service_provider"],
   "features": [
     "Creacion automatica de usuarios",
     "Asignacion de bibliotecas por plan",
@@ -74,5 +79,64 @@
     "manage_access",
     "view_statistics",
     "send_emails"
-  ]
+  ],
+  "tables": [
+    {
+      "name": "Plugin_JellyfinAccounts",
+      "model": "JellyfinAccount",
+      "file": "src/models/jellyfinAccount.model.js"
+    },
+    {
+      "name": "Plugin_JellyfinProfiles",
+      "model": "JellyfinProfile",
+      "file": "src/models/jellyfinProfile.model.js"
+    }
+  ],
+  "serviceConfig": {
+    "suggestedPrice": 99.00,
+    "fields": [
+      {
+        "name": "maxDevices",
+        "type": "number",
+        "label": "Dispositivos Simultáneos",
+        "default": 2,
+        "min": 1,
+        "max": 10,
+        "required": true,
+        "description": "Número máximo de dispositivos que pueden reproducir simultáneamente"
+      },
+      {
+        "name": "libraries",
+        "type": "multiselect",
+        "label": "Bibliotecas Disponibles",
+        "options": ["Películas", "Series", "Música", "Anime", "Documentales"],
+        "default": ["Películas", "Series"],
+        "description": "Bibliotecas de contenido disponibles para el usuario"
+      },
+      {
+        "name": "quality",
+        "type": "select",
+        "label": "Calidad Máxima de Streaming",
+        "options": [
+          { "value": "SD", "label": "SD (480p)" },
+          { "value": "HD", "label": "HD (720p)" },
+          { "value": "FHD", "label": "Full HD (1080p)" },
+          { "value": "4K", "label": "4K Ultra HD" }
+        ],
+        "default": "HD",
+        "required": true
+      },
+      {
+        "name": "downloadEnabled",
+        "type": "boolean",
+        "label": "Permitir Descargas",
+        "default": false,
+        "description": "Permite al usuario descargar contenido para ver sin conexión"
+      }
+    ],
+    "limits": {
+      "maxDevices": 10,
+      "maxLibraries": 10
+    }
+  }
 }

@@ -69,6 +69,16 @@ module.exports = (sequelize) => {
       }
     },
 
+    // Paquete de servicio asociado
+    servicePackageId: {
+      type: DataTypes.UUID,
+      references: {
+        model: 'ServicePackages',
+        key: 'id'
+      },
+      comment: 'Paquete de servicio al que pertenece esta licencia'
+    },
+
     // Hardware binding
     boundToHardwareId: {
       type: DataTypes.STRING,
@@ -131,6 +141,11 @@ module.exports = (sequelize) => {
     License.belongsTo(models.Installation, {
       foreignKey: 'installationId',
       as: 'installation'
+    });
+
+    License.belongsTo(models.ServicePackage, {
+      foreignKey: 'servicePackageId',
+      as: 'servicePackage'
     });
   };
 

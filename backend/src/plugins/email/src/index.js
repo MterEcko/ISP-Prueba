@@ -76,7 +76,7 @@ class EmailPlugin {
   }
 
   async _initializeSMTP() {
-    this.transporter = nodemailer.createTransporter({
+    this.transporter = nodemailer.createTransport({
       host: this.config.smtpHost,
       port: this.config.smtpPort,
       secure: this.config.smtpSecure || false,
@@ -271,4 +271,9 @@ class EmailPlugin {
   }
 }
 
+// Cargar función de auto-migración
+const { registerEmailMigrations } = require('./utils/auto-migration');
+
+// Exportar plugin con función de auto-migración
 module.exports = EmailPlugin;
+module.exports.autoMigration = registerEmailMigrations;

@@ -199,6 +199,16 @@
           </router-link>
         </li>
 
+        <!-- Plugins instalados -->
+        <template v-if="activePlugins.length > 0">
+          <li v-for="plugin in activePlugins" :key="plugin.name">
+            <router-link :to="`/plugins/${plugin.name}/config`">
+              <span class="icon">{{ getPluginIcon(plugin) }}</span>
+              <span class="text" v-if="!isCollapsed">{{ plugin.displayName || plugin.name }}</span>
+            </router-link>
+          </li>
+        </template>
+
         <!-- Sección de Administración -->
         <li class="menu-separator" v-if="!isCollapsed">
           <span class="text">ADMINISTRACIÓN</span>
@@ -219,6 +229,12 @@
           <router-link to="/license/management">
             <span class="icon">🔑</span>
             <span class="text" v-if="!isCollapsed">Licencias</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/license/register">
+            <span class="icon">📝</span>
+            <span class="text" v-if="!isCollapsed">Registrar Empresa</span>
           </router-link>
         </li>
         <li>
@@ -246,11 +262,14 @@
 </template>
 
 <script>
+import api from '@/services/api';
+
 export default {
   name: 'SidebarComponent',
   data() {
     return {
-      isCollapsed: false
+      isCollapsed: false,
+      activePlugins: []
     };
   },
   computed: {
@@ -258,7 +277,34 @@ export default {
       return this.$store.state.auth.user;
     }
   },
+  mounted() {
+    this.loadActivePlugins();
+  },
   methods: {
+    async loadActivePlugins() {
+      try {
+        const response = await api.get('/system-plugins/active');
+        if (response.data.success) {
+          this.activePlugins = response.data.data;
+        }
+      } catch (error) {
+        console.error('Error cargando plugins activos:', error);
+      }
+    },
+    getPluginIcon(plugin) {
+      const iconMap = {
+        'email': '📧',
+        'telegram': '✈️',
+        'whatsapp-meta': '💚',
+        'whatsapp-twilio': '💬',
+        'mercadopago': '💳',
+        'paypal': '🅿️',
+        'openpay': '💰',
+        'jellyfin': '📺',
+        'stripe': '💳'
+      };
+      return iconMap[plugin.name] || '🔌';
+    },
     toggleSidebar() {
       this.isCollapsed = !this.isCollapsed;
       // Emitir evento para que el layout principal se ajuste

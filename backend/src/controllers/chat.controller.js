@@ -144,21 +144,28 @@ exports.markAsRead = async (req, res) => {
     const conversationId = req.params.id || req.params.conversationId;
     const userId = req.user.id;
 
-    await db.ChatMessage.update(
-      {
-        readBy: db.sequelize.fn(
-          'array_append',
-          db.sequelize.col('readBy'),
-          { userId, readAt: new Date() }
-        )
-      },
-      {
-        where: {
-          conversationId,
-          senderId: { [Op.ne]: userId }
-        }
+    // Obtener mensajes no leídos por este usuario
+    const messages = await db.ChatMessage.findAll({
+      where: {
+        conversationId,
+        senderId: { [Op.ne]: userId }
       }
-    );
+    });
+
+    // Actualizar cada mensaje
+    const updatePromises = messages.map(async (message) => {
+      const readBy = message.readBy || [];
+
+      // Verificar si ya fue leído por este usuario
+      const alreadyRead = readBy.some(read => read.userId === userId);
+
+      if (!alreadyRead) {
+        readBy.push({ userId, readAt: new Date() });
+        await message.update({ readBy });
+      }
+    });
+
+    await Promise.all(updatePromises);
 
     res.json({ success: true, message: 'Mensajes marcados como leídos' });
   } catch (error) {

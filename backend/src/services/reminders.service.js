@@ -207,7 +207,7 @@ class RemindersService {
         sendViaWebSocket: true
       });
 
-      logger.info(` Recordatorio de pago enviado a cliente ${client.nombre} (Factura #${invoice.numero_factura})`);
+      logger.info(` Recordatorio de pago enviado a cliente ${client.firstName} (Factura #${invoice.numero_factura})`);
 
       return results;
 
@@ -267,7 +267,7 @@ class RemindersService {
         sendViaWebSocket: true
       });
 
-      logger.info(` Recordatorio de factura vencida enviado a cliente ${client.nombre}`);
+      logger.info(` Recordatorio de factura vencida enviado a cliente ${client.firstName}`);
 
       return results;
 
@@ -306,7 +306,7 @@ class RemindersService {
         sendViaWebSocket: true
       });
 
-      logger.info(` Recordatorio de renovación enviado a cliente ${client.nombre}`);
+      logger.info(` Recordatorio de renovación enviado a cliente ${client.firstName}`);
 
     } catch (error) {
       logger.error(`Error enviando recordatorio de renovación: ${error.message}`);
@@ -479,7 +479,7 @@ class RemindersService {
         : `vence en ${daysUntilDue} días`;
 
     return `
-Hola ${client.nombre} =K
+Hola ${client.firstName} =K
 
 Te recordamos que tu factura #${invoice.numero_factura} ${dueText}.
 
@@ -498,7 +498,7 @@ Para evitar suspensión del servicio, te pedimos realizar el pago lo antes posibl
    */
   _generateOverdueReminderMessage(client, invoice, daysOverdue) {
     return `
-Hola ${client.nombre} =K
+Hola ${client.firstName} =K
 
 Tu factura #${invoice.numero_factura} lleva ${daysOverdue} día${daysOverdue > 1 ? 's' : ''} de atraso.
 
@@ -525,7 +525,7 @@ Por favor, ponte al corriente lo antes posible.
         : `se renueva en ${daysUntilRenewal} días`;
 
     return `
-Hola ${client.nombre} =K
+Hola ${client.firstName} =K
 
 Tu servicio de ${subscription.ServicePackage?.nombre || 'Internet'} ${renewalText}.
 

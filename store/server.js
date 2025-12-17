@@ -86,18 +86,23 @@ app.use(cors({
 
     // Verificar si el origin está en la lista permitida
     if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      // En desarrollo, permitir cualquier origin de localhost o IP local
-      if (process.env.NODE_ENV !== 'production') {
-        if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.match(/https?:\/\/10\.\d+\.\d+\.\d+/)) {
-          return callback(null, true);
-        }
-      }
-
-      console.warn(`⚠️ CORS bloqueó petición desde: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, true);
     }
+
+    // En desarrollo, permitir cualquier origin de localhost o IP local
+    if (process.env.NODE_ENV !== 'production') {
+      if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.match(/https?:\/\/10\.\d+\.\d+\.\d+/)) {
+        return callback(null, true);
+      }
+    }
+
+    // Permitir dominios de serviciosqbit.net (producción)
+    if (origin.includes('serviciosqbit.net')) {
+      return callback(null, true);
+    }
+
+    console.warn(`⚠️ CORS bloqueó petición desde: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -158,10 +163,19 @@ app.get('/health', (req, res) => {
 app.use('/api/licenses', require('./src/routes/license.routes'));
 app.use('/api/installations', require('./src/routes/installation.routes'));
 app.use('/api/plugins', require('./src/routes/plugin.routes'));
-app.use('/api/marketplace', require('./src/routes/plugin.routes')); // Marketplace es un alias
+app.use('./api/marketplace', require('./src/routes/plugin.routes')); // Marketplace es un alias
 app.use('/api/telemetry', require('./src/routes/telemetry.routes'));
 app.use('/api/remote-control', require('./src/routes/remoteControl.routes'));
 app.use('/api/analytics', require('./src/routes/analytics.routes'));
+
+// Nuevas rutas de Store API para integración con ISP backend
+app.use('/api/licenses', require('./src/routes/licenseStore.routes'));
+app.use('/api/companies', require('./src/routes/company.routes'));
+app.use('/api/cloudflare', require('./src/routes/cloudflare.routes'));
+
+// Rutas de gestión de clientes y paquetes
+app.use('/api/customers', require('./src/routes/customer.routes'));
+app.use('/api/service-packages', require('./src/routes/servicePackage.routes'));
 
 // Dashboard web de administración
 app.use('/dashboard', require('./src/routes/dashboard.routes'));
@@ -223,8 +237,8 @@ db.sequelize.authenticate()
 
     // Sincronizar modelos SIN borrar datos existentes
     // force: false = No borra tablas existentes
-    // alter: false = No modifica estructura (usar migrations en producción)
-    return db.sequelize.sync({ force: false, alter: false });
+    // alter: true = Modifica estructura para agregar columnas nuevas (servicePackageId)
+    return db.sequelize.sync({ force: false, alter: true });
   })
   .then(() => {
     logger.info('✅ Modelos de base de datos sincronizados');

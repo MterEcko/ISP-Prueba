@@ -84,10 +84,10 @@ class WhatsAppTwilioPlugin {
   /**
    * Registrar rutas del plugin
    */
-  registerRoutes(app) {
+  registerRoutes(router) {
     const routes = require('./routes');
-    app.use('/api/plugins/whatsapp-twilio', routes);
-    logger.info('🛣️  Rutas de WhatsApp Twilio registradas');
+    logger.info('Rutas de WhatsApp Twilio registradas');
+    return routes;
   }
 
   /**

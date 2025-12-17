@@ -27,6 +27,12 @@
         <li><a href="/dashboard/plugins">
           <span class="icon">🧩</span> Plugins
         </a></li>
+        <li><a href="/dashboard/packages">
+          <span class="icon">📦</span> Paquetes
+        </a></li>
+        <li><a href="/dashboard/customers">
+          <span class="icon">👥</span> Clientes
+        </a></li>
         <li><a href="/dashboard/map">
           <span class="icon">🗺️</span> Mapa
         </a></li>
@@ -132,7 +138,7 @@
           <thead>
             <tr>
               <th>Clave de Licencia</th>
-              <th>Tipo de Plan</th>
+              <th>Paquete</th>
               <th>Estado</th>
               <th>Límite de Clientes</th>
               <th>Asignada a</th>
@@ -147,12 +153,17 @@
                   <code style="font-size: 12px;">${lic.licenseKey}</code>
                   ${lic.isMasterLicense ? '<br><span class="badge badge-danger">⭐ MASTER</span>' : ''}
                 </td>
-                <td><span class="badge badge-info">${getPlanText(lic.planType)}</span></td>
+                <td>
+                  ${lic.servicePackage ?
+                    `<span class="badge badge-info">${lic.servicePackage.name}</span>` :
+                    `<span class="badge" style="background:#999;color:white">${getPlanText(lic.planType)}</span>`
+                  }
+                </td>
                 <td><span class="badge badge-${getStatusBadgeClass(lic.status)}">${getStatusText(lic.status)}</span></td>
                 <td>${lic.clientLimit ? `<strong>${lic.clientLimit}</strong> clientes` : '♾️ Ilimitado'}</td>
                 <td>
-                  ${lic.Installation ? `
-                    <strong>${lic.Installation.companyName}</strong><br>
+                  ${lic.installation ? `
+                    <strong>${lic.installation.companyName}</strong><br>
                     <small>${lic.boundToHardwareId ? lic.boundToHardwareId.substring(0, 16) + '...' : ''}</small>
                   ` : '<span style="color: #999;">No asignada</span>'}
                 </td>
@@ -286,7 +297,7 @@
       const searchTerm = e.target.value.toLowerCase();
       const filtered = allLicenses.filter(lic =>
         lic.licenseKey.toLowerCase().includes(searchTerm) ||
-        (lic.Installation && lic.Installation.companyName.toLowerCase().includes(searchTerm))
+        (lic.installation && lic.installation.companyName.toLowerCase().includes(searchTerm))
       );
       renderLicenses(filtered);
     });

@@ -6,11 +6,14 @@
     "start": "vue-cli-service serve",
     "serve": "vue-cli-service serve",
     "dev": "vue-cli-service serve",
+    "sync-plugins": "node sync-plugin-views.js",
+    "prebuild": "npm run sync-plugins",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.1.0",
+    "@mdi/font": "^7.4.47",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "axios": "^1.9.0",
     "chart.js": "^4.5.1",

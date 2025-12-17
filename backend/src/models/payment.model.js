@@ -26,7 +26,7 @@ module.exports = (sequelize) => {
     },
     gatewayId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true, // Permitir NULL para pagos manuales/efectivo
       references: {
         model: 'PaymentGateways',
         key: 'id'
@@ -34,15 +34,15 @@ module.exports = (sequelize) => {
     },
     paymentReference: {
       type: DataTypes.STRING,
-      allowNull: false,
-      comment: 'Referencia única del gateway'
+      allowNull: true, // Permitir NULL para pagos manuales
+      comment: 'Referencia única del gateway (NULL para pagos manuales)'
     },
     amount: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
     paymentMethod: {
-      type: DataTypes.ENUM('card', 'cash', 'transfer', 'oxxo', 'spei'),
+      type: DataTypes.ENUM('card', 'cash', 'transfer', 'oxxo', 'spei', 'online', 'mercadopago', 'openpay', 'paypal', 'stripe'),
       allowNull: false
     },
     status: {

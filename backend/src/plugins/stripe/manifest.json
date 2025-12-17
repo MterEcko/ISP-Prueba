@@ -9,7 +9,13 @@
   "capabilities": ["process_payment", "refund", "webhook", "payment_status", "subscriptions"],
   "providers": ["stripe"],
   "countries": ["US", "CA", "MX", "BR", "AR", "CL", "CO", "PE", "UY", "GB", "EU"],
-  "tables": [],
+  "tables": [
+    {
+      "name": "Plugin_StripeTransactions",
+      "model": "StripeTransaction",
+      "file": "src/models/stripeTransaction.model.js"
+    }
+  ],
   "routes": [
     {
       "path": "/webhook/stripe",

@@ -69,7 +69,32 @@
         >
           {{ plugin.rating.toFixed(1) }}
         </v-chip>
+        <!-- Indicador de licencia requerida -->
+        <v-chip
+          v-if="plugin.requiresUpgrade"
+          size="small"
+          color="warning"
+          variant="flat"
+          prepend-icon="mdi-lock"
+        >
+          Requiere {{ licenseLabel(plugin.requirements?.requiredLicense) }}
+        </v-chip>
       </div>
+
+      <!-- Alert si requiere upgrade -->
+      <v-alert
+        v-if="plugin.requiresUpgrade && !isInstalled"
+        type="warning"
+        density="compact"
+        variant="tonal"
+        class="mb-3"
+      >
+        <div class="text-caption">
+          <strong>🔒 Licencia insuficiente</strong><br>
+          Tu licencia: <strong>{{ licenseLabel(plugin.userLicenseType) }}</strong><br>
+          Se requiere: <strong>{{ licenseLabel(plugin.requirements?.requiredLicense) }}</strong>
+        </div>
+      </v-alert>
 
       <!-- Características del plugin -->
       <div v-if="plugin.features && plugin.features.length > 0" class="mb-2">
@@ -152,7 +177,20 @@
 
       <!-- Para plugins del marketplace -->
       <template v-else>
+        <!-- Botón de instalar o upgrade -->
         <v-btn
+          v-if="plugin.requiresUpgrade"
+          color="warning"
+          variant="flat"
+          size="small"
+          @click="$emit('install', plugin)"
+          :loading="installing"
+        >
+          <v-icon start>mdi-lock-open-variant</v-icon>
+          Actualizar Licencia
+        </v-btn>
+        <v-btn
+          v-else
           color="primary"
           variant="flat"
           size="small"
@@ -170,7 +208,7 @@
           Más Info
         </v-btn>
         <v-spacer></v-spacer>
-        <span class="text-h6 text-primary" v-if="plugin.price">
+        <span class="text-h6 text-primary" v-if="plugin.price && plugin.price > 0">
           ${{ plugin.price }}
         </span>
         <v-chip v-else color="success" size="small" variant="flat">
@@ -276,6 +314,15 @@ export default {
       if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
       if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
       return num.toString();
+    },
+    licenseLabel(licenseType) {
+      const labels = {
+        basic: 'Básica',
+        medium: 'Media',
+        advanced: 'Avanzada',
+        enterprise: 'Empresarial'
+      };
+      return labels[licenseType] || licenseType || 'Básica';
     }
   }
 };

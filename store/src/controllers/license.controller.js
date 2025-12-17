@@ -1,7 +1,7 @@
 const db = require('../models');
 const crypto = require('crypto');
 const logger = require('../config/logger');
-const { License, Installation } = db;
+const { License, Installation, ServicePackage } = db;
 
 // Generar clave de licencia
 function generateLicenseKey() {
@@ -229,7 +229,10 @@ exports.revokeLicense = async (req, res) => {
 exports.getAllLicenses = async (req, res) => {
   try {
     const licenses = await License.findAll({
-      include: [{ model: Installation, as: 'installation' }],
+      include: [
+        { model: Installation, as: 'installation' },
+        { model: ServicePackage, as: 'servicePackage' }
+      ],
       order: [['createdAt', 'DESC']]
     });
 

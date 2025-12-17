@@ -65,10 +65,10 @@ class WhatsAppMetaPlugin {
     }
   }
 
-  registerRoutes(app) {
+  registerRoutes(router) {
     const routes = require('./routes');
-    app.use('/api/plugins/whatsapp-meta', routes);
     logger.info('Rutas de WhatsApp Meta registradas');
+    return routes;
   }
 
   validateConfig(config) {

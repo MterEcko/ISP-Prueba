@@ -112,6 +112,114 @@ class SystemPluginController {
   };
 
   /**
+   * Obtener plugin por nombre
+   * GET /api/system-plugins/name/:name
+   */
+  getPluginByName = async (req, res) => {
+    try {
+      const { name } = req.params;
+
+      if (!name) {
+        return res.status(400).json({
+          success: false,
+          message: 'Plugin name es requerido'
+        });
+      }
+
+      let plugin = await SystemPlugin.findOne({
+        where: { name }
+      });
+
+      logger.info(`🔍 Buscando plugin '${name}' en BD: ${plugin ? 'ENCONTRADO' : 'NO ENCONTRADO'}`);
+
+      // AUTO-REGISTRO: Si el plugin no existe en BD pero existe en filesystem, registrarlo
+      if (!plugin) {
+        const pluginPath = path.join(this.pluginsPath, name);
+        const manifestPath = path.join(pluginPath, 'manifest.json');
+
+        logger.info(`📁 Verificando filesystem: ${manifestPath}`);
+        logger.info(`📁 Existe manifest: ${fs.existsSync(manifestPath)}`);
+
+        if (fs.existsSync(manifestPath)) {
+          try {
+            logger.info(`🔄 Auto-registrando plugin: ${name}`);
+            const manifestContent = fs.readFileSync(manifestPath, 'utf8');
+            const manifest = JSON.parse(manifestContent);
+
+            logger.info(`📋 Manifest leído:`, {
+              name: manifest.name,
+              version: manifest.version,
+              category: manifest.category
+            });
+
+            plugin = await SystemPlugin.create({
+              name: name,
+              version: manifest.version || '1.0.0',
+              displayName: manifest.displayName || name,
+              description: manifest.description || '',
+              category: manifest.category || 'other',
+              active: false,
+              configuration: manifest.configuration || {},
+              pluginTables: manifest.tables || [],
+              pluginRoutes: manifest.routes || []
+            });
+
+            logger.info(`✅ Plugin ${name} registrado automáticamente`);
+          } catch (error) {
+            logger.error(`Error auto-registrando plugin ${name}:`, error);
+            return res.status(500).json({
+              success: false,
+              message: `No se pudo auto-registrar el plugin: ${error.message}`,
+              error: error.message
+            });
+          }
+        } else {
+          return res.status(404).json({
+            success: false,
+            message: 'Plugin no encontrado'
+          });
+        }
+      }
+
+      // Leer manifest.json para obtener configuración
+      const manifestPath = path.join(this.pluginsPath, name, 'manifest.json');
+      let manifest = {};
+
+      if (fs.existsSync(manifestPath)) {
+        try {
+          const manifestContent = fs.readFileSync(manifestPath, 'utf8');
+          manifest = JSON.parse(manifestContent);
+        } catch (error) {
+          logger.error(`Error leyendo manifest de ${name}: ${error.message}`);
+        }
+      }
+
+      // Agregar información adicional si el plugin está cargado
+      const loadedInfo = this.loadedPlugins.get(plugin.name);
+      const pluginData = {
+        ...plugin.toJSON(),
+        ...manifest,
+        loaded: !!loadedInfo,
+        loadedInfo: loadedInfo || null,
+        statistics: await this._getPluginStatistics(plugin)
+      };
+
+      return res.status(200).json({
+        success: true,
+        data: pluginData,
+        message: 'Plugin obtenido exitosamente'
+      });
+
+    } catch (error) {
+      logger.error(`Error obteniendo plugin ${req.params.name}: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  };
+
+  /**
    * Obtener plugins activos
    * GET /api/system-plugins/active
    */
@@ -409,6 +517,36 @@ class SystemPluginController {
       logger.info(`📁 Creando directorio del plugin: ${pluginDir}`);
       await fsPromises.mkdir(pluginDir, { recursive: true });
 
+      // VALIDACIÓN DE LICENCIA antes de instalar
+      try {
+        const licenseClient = require('../services/licenseClient');
+        const canInstall = await licenseClient.canInstallPlugin(manifest.name);
+
+        if (!canInstall.allowed) {
+          // Limpiar archivos temporales
+          if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+          if (fs.existsSync(pluginDir)) fs.rmSync(pluginDir, { recursive: true });
+
+          let message = 'No tienes permiso para instalar este plugin';
+          if (canInstall.reason === 'Plugin limit reached') {
+            message = `Límite de plugins alcanzado (${canInstall.current}/${canInstall.max})`;
+          } else if (canInstall.reason === 'Plugin not included in plan') {
+            message = `El plugin "${manifest.name}" no está incluido en tu licencia`;
+          }
+
+          logger.warn(`Instalación de plugin ${manifest.name} denegada: ${canInstall.reason}`);
+          return res.status(403).json({
+            success: false,
+            message,
+            reason: canInstall.reason,
+            requiresUpgrade: canInstall.requiresPurchase || false
+          });
+        }
+      } catch (licenseError) {
+        logger.warn(`Error validando licencia: ${licenseError.message}`);
+        // Continuar sin validación en caso de error
+      }
+
       // Extraer contenido del ZIP
       logger.info(`📂 Extrayendo archivos del plugin...`);
       zip.extractAllTo(pluginDir, true);
@@ -590,6 +728,34 @@ class SystemPluginController {
           success: false,
           message: `Plugin ${plugin.name} no encontrado en el sistema de archivos`
         });
+      }
+
+      // VALIDACIÓN DE LICENCIA
+      try {
+        const licenseClient = require('../services/licenseClient');
+        const canInstall = await licenseClient.canInstallPlugin(plugin.name);
+
+        if (!canInstall.allowed) {
+          let message = 'No tienes permiso para activar este plugin';
+          if (canInstall.reason === 'Plugin limit reached') {
+            message = `Límite de plugins alcanzado (${canInstall.current}/${canInstall.max}). Actualiza tu licencia para activar más plugins.`;
+          } else if (canInstall.reason === 'Plugin not included in plan') {
+            message = `El plugin "${plugin.name}" no está incluido en tu plan de licencia actual. Actualiza tu licencia para acceder a este plugin.`;
+          } else if (canInstall.reason === 'Invalid license') {
+            message = 'Tu licencia no es válida. Por favor, verifica tu licencia en la sección de configuración.';
+          }
+
+          logger.warn(`Intento de activar plugin ${plugin.name} denegado: ${canInstall.reason}`);
+          return res.status(403).json({
+            success: false,
+            message,
+            reason: canInstall.reason,
+            requiresUpgrade: canInstall.requiresPurchase || false
+          });
+        }
+      } catch (licenseError) {
+        logger.warn(`Error validando licencia para plugin ${plugin.name}: ${licenseError.message}`);
+        // Continuar sin validación de licencia en caso de error
       }
 
       // Activar plugin (medir tiempo)
@@ -992,6 +1158,110 @@ class SystemPluginController {
   };
 
   /**
+   * Obtener configuración de plugin por NOMBRE
+   * GET /api/system-plugins/name/:name/config
+   */
+  getPluginConfigByName = async (req, res) => {
+    try {
+      const { name } = req.params;
+
+      const plugin = await SystemPlugin.findOne({ where: { name } });
+
+      if (!plugin) {
+        return res.status(404).json({
+          success: false,
+          message: 'Plugin no encontrado'
+        });
+      }
+
+      // Reutilizar la lógica de getPluginConfig
+      req.params.id = plugin.id;
+      return this.getPluginConfig(req, res);
+
+    } catch (error) {
+      logger.error(`Error obteniendo configuración del plugin ${req.params.name}: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  };
+
+  /**
+   * Actualizar configuración de plugin por NOMBRE
+   * PUT /api/system-plugins/name/:name/config
+   */
+  updatePluginConfigByName = async (req, res) => {
+    try {
+      const { name } = req.params;
+
+      const plugin = await SystemPlugin.findOne({ where: { name } });
+
+      if (!plugin) {
+        return res.status(404).json({
+          success: false,
+          message: 'Plugin no encontrado'
+        });
+      }
+
+      // Reutilizar la lógica de updatePluginConfig
+      req.params.id = plugin.id;
+      return this.updatePluginConfig(req, res);
+
+    } catch (error) {
+      logger.error(`Error actualizando configuración del plugin ${req.params.name}: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  };
+
+  /**
+   * Obtener vista de configuración de plugin
+   * GET /api/system-plugins/:name/config-view
+   */
+  getPluginConfigView = async (req, res) => {
+    try {
+      const { name } = req.params;
+
+      if (!name) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nombre de plugin es requerido'
+        });
+      }
+
+      const configViewPath = path.join(this.pluginsPath, name, 'views', 'ConfigView.vue');
+
+      if (!fs.existsSync(configViewPath)) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vista de configuración no encontrada'
+        });
+      }
+
+      const vueContent = fs.readFileSync(configViewPath, 'utf8');
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          pluginName: name,
+          content: vueContent
+        },
+        message: 'Vista obtenida exitosamente'
+      });
+
+    } catch (error) {
+      logger.error(`Error obteniendo vista de configuración: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  };
+
+  /**
    * Inicializar todos los plugins activos
    * POST /api/system-plugins/initialize
    */
@@ -1196,6 +1466,22 @@ class SystemPluginController {
       // Almacenar plugin activo
       this.activePlugins.set(plugin.name, pluginController);
 
+      // Cargar modelos del plugin si los tiene
+      try {
+        const pluginModelsService = require('../services/pluginModels.service');
+        const db = require('../models');
+
+        await pluginModelsService.loadPluginModels(db.sequelize, db, [plugin.name]);
+        await pluginModelsService.syncPluginModels(db.sequelize, { force: false, alter: false });
+
+        const models = pluginModelsService.getPluginModels(plugin.name);
+        if (models.length > 0) {
+          logger.info(`✅ Modelos del plugin ${plugin.name} cargados: ${models.length} tabla(s)`);
+        }
+      } catch (modelError) {
+        logger.warn(`⚠️ No se pudieron cargar modelos del plugin ${plugin.name}: ${modelError.message}`);
+      }
+
       logger.info(`Plugin ${plugin.name} activado exitosamente`);
 
     } catch (error) {
@@ -1211,7 +1497,7 @@ class SystemPluginController {
   async _deactivatePlugin(plugin) {
     try {
       const activePlugin = this.activePlugins.get(plugin.name);
-      
+
       if (activePlugin) {
         // Llamar método de limpieza si existe
         if (activePlugin.cleanup && typeof activePlugin.cleanup === 'function') {
@@ -1221,7 +1507,20 @@ class SystemPluginController {
         // Remover de plugins activos
         this.activePlugins.delete(plugin.name);
       }
-      
+
+      // Descargar modelos del plugin
+      try {
+        const pluginModelsService = require('../services/pluginModels.service');
+        const db = require('../models');
+
+        const result = await pluginModelsService.unloadPluginModels(plugin.name, db);
+        if (result.unloaded > 0) {
+          logger.info(`✅ Modelos del plugin ${plugin.name} descargados: ${result.unloaded} modelo(s)`);
+        }
+      } catch (modelError) {
+        logger.warn(`⚠️ No se pudieron descargar modelos del plugin ${plugin.name}: ${modelError.message}`);
+      }
+
       logger.info(`Plugin ${plugin.name} desactivado exitosamente`);
 
     } catch (error) {
@@ -1366,6 +1665,7 @@ module.exports = {
   // Métodos principales
   getAllPlugins: systemPluginController.getAllPlugins,
   getPluginById: systemPluginController.getPluginById,
+  getPluginByName: systemPluginController.getPluginByName,  // AÑADIDO: Obtener plugin por nombre
   getActivePlugins: systemPluginController.getActivePlugins,
   getAvailablePlugins: systemPluginController.getAvailablePlugins,
   createPlugin: systemPluginController.createPlugin,
@@ -1379,6 +1679,9 @@ module.exports = {
   // Métodos de configuración
   getPluginConfig: systemPluginController.getPluginConfig,
   updatePluginConfig: systemPluginController.updatePluginConfig,
+  getPluginConfigByName: systemPluginController.getPluginConfigByName,
+  updatePluginConfigByName: systemPluginController.updatePluginConfigByName,
+  getPluginConfigView: systemPluginController.getPluginConfigView,
 
   // Métodos de gestión
   initializeAllPlugins: systemPluginController.initializeAllPlugins,

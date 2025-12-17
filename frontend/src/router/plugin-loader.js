@@ -1,51 +1,64 @@
-// Sistema de carga dinamica de plugins
-// Escanea la carpeta de plugins y registra rutas automaticamente
+// Sistema de carga dinamica de plugins desde el backend
+import api from '@/services/api';
+import { getPluginComponent, hasPluginComponent } from '@/views/plugins/dynamic/index.js';
+import DynamicPluginConfig from '@/views/plugins/DynamicPluginConfig.vue';
 
-export function loadPluginRoutes() {
-  const pluginRoutes = [];
+// Función para obtener el componente del plugin
+function loadPluginComponent(pluginName) {
+  // Verificar si existe un componente sincronizado para este plugin
+  if (hasPluginComponent(pluginName)) {
+    return getPluginComponent(pluginName);
+  }
+  // Si no existe, usar DynamicPluginConfig
+  return DynamicPluginConfig;
+}
 
-  // Usar require.context para obtener todos los ConfigView.vue
+let pluginRoutesCache = [];
+
+export async function loadPluginRoutes() {
   try {
-    const pluginContext = require.context(
-      '../views/plugins',
-      true,
-      /ConfigView\.vue$/
-    );
+    // Obtener lista de plugins activos desde la API
+    const response = await api.get('/system-plugins/active');
 
-    pluginContext.keys().forEach(key => {
-      // Extraer nombre del plugin de la ruta
-      // Ejemplo: ./whatsapp-twilio/ConfigView.vue -> whatsapp-twilio
-      const match = key.match(/\.\/([^/]+)\/ConfigView\.vue$/);
+    if (!response.data.success) {
+      console.error('Error obteniendo plugins activos:', response.data.message);
+      return [];
+    }
 
-      if (match) {
-        const pluginName = match[1];
+    const plugins = response.data.data || [];
 
-        // Convertir nombre-con-guiones a NombreEnCamelCase
-        const componentName = pluginName
-          .split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join('');
+    const pluginRoutes = plugins.map(plugin => {
+      const pluginName = plugin.name;
 
-        // Crear ruta dinamica
-        pluginRoutes.push({
-          path: `/plugins/${pluginName}/config`,
-          name: `${componentName}Config`,
-          component: () => import(`../views/plugins/${pluginName}/ConfigView.vue`),
-          meta: {
-            requiresAuth: true,
-            title: `Configuracion ${componentName}`,
-            pluginName: pluginName
-          }
-        });
+      // Convertir nombre-con-guiones a NombreEnCamelCase
+      const componentName = pluginName
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join('');
 
-        console.log(`✅ Plugin route registered: /plugins/${pluginName}/config`);
-      }
+      // Cargar componente dinámicamente (intentará componente sincronizado, sino DynamicPluginConfig)
+      const component = loadPluginComponent(pluginName);
+
+      return {
+        path: `/plugins/${pluginName}/config`,
+        name: `${componentName}Config`,
+        component: component,
+        meta: {
+          requiresAuth: true,
+          title: `Configuracion ${componentName}`,
+          pluginName: pluginName
+        }
+      };
     });
 
+    pluginRoutesCache = pluginRoutes;
     console.log(`✅ Total ${pluginRoutes.length} plugin routes loaded dynamically`);
+
+    return pluginRoutes;
+
   } catch (error) {
     console.error('Error loading plugin routes:', error);
+    // Retornar cache si hay error
+    return pluginRoutesCache;
   }
-
-  return pluginRoutes;
 }

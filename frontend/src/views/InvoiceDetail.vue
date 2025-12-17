@@ -595,33 +595,29 @@ export default {
         console.log('📡 Cargando pasarelas de pago...');
         const response = await PaymentService.getAllPaymentGateways({ active: true });
         console.log('✅ Respuesta de gateways:', response);
-        
+
         this.paymentGateways = response.data.data || response.data || [];
-        
-        // Si no hay gateways en BD, usar valores por defecto
+
+        // Si no hay gateways en BD, usar opción "Pago Manual" sin ID
         if (!this.paymentGateways || this.paymentGateways.length === 0) {
-          console.log('⚠️ No hay gateways en BD, usando valores por defecto');
+          console.log('⚠️ No hay gateways en BD, usando opción manual');
           this.paymentGateways = [
-            { id: 1, name: 'Efectivo', gatewayType: 'cash' },
-            { id: 2, name: 'Transferencia Bancaria', gatewayType: 'transfer' },
-            { id: 3, name: 'Mercado Pago', gatewayType: 'mercadopago' },
-            { id: 4, name: 'PayPal', gatewayType: 'paypal' }
+            { id: null, name: 'Pago Manual (sin pasarela)', gatewayType: 'manual' }
           ];
         }
-        
-        // Seleccionar gateway por defecto (efectivo)
-        this.defaultGateway = this.paymentGateways.find(g => 
-          g.gatewayType === 'cash'
+
+        // Seleccionar gateway por defecto (efectivo o el primero)
+        this.defaultGateway = this.paymentGateways.find(g =>
+          g.gatewayType === 'cash' || g.gatewayType === 'manual'
         ) || this.paymentGateways[0];
-        
+
         console.log('✅ Gateways cargados:', this.paymentGateways);
         console.log('✅ Gateway por defecto:', this.defaultGateway);
       } catch (error) {
         console.error('❌ Error cargando gateways:', error);
-        // Gateways por defecto en caso de error
+        // Gateway manual en caso de error (sin ID para evitar foreign key)
         this.paymentGateways = [
-          { id: 1, name: 'Efectivo', gatewayType: 'cash' },
-          { id: 2, name: 'Transferencia Bancaria', gatewayType: 'transfer' }
+          { id: null, name: 'Pago Manual (sin pasarela)', gatewayType: 'manual' }
         ];
         this.defaultGateway = this.paymentGateways[0];
       }
@@ -756,8 +752,8 @@ export default {
 
     // ✅ Marcar como pagada
     markAsPaid() {
-      this.selectedGatewayId = this.defaultGateway?.id || 1;
-      this.selectedGatewayType = this.defaultGateway?.gatewayType || 'cash';
+      this.selectedGatewayId = this.defaultGateway?.id || null;
+      this.selectedGatewayType = this.defaultGateway?.gatewayType || 'manual';
   
       // 🟢 CAMBIO PRINCIPAL: Lógica robusta para definir el monto
       let montoAPagar = this.pendingAmount;

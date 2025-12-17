@@ -231,7 +231,7 @@ export default {
     async loadChannels() {
       try {
         const response = await CommunicationService.getAllChannels();
-        this.channels = response.data;
+        this.channels = response.data.data || response.data;
         this.activeChannelsCount = this.channels.filter(c => c.active).length;
       } catch (error) {
         console.error('Error cargando canales:', error);
@@ -241,7 +241,7 @@ export default {
     async loadTemplates() {
       try {
         const response = await CommunicationService.getAllTemplates();
-        this.templates = response.data;
+        this.templates = response.data.data || response.data;
       } catch (error) {
         console.error('Error cargando plantillas:', error);
       }

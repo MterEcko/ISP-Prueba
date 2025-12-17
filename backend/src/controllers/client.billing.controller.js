@@ -49,7 +49,7 @@ exports.getClientBillingById = async (req, res) => {
       include: [
         { model: Client, as: 'client' },
         { model: ServicePackage, as: 'ServicePackage' },
-        { model: IpPool, as: 'IpPool' }
+        { model: IpPool, as: 'currentIpPool' }
       ]
     });
     
@@ -91,7 +91,7 @@ exports.getClientBillingByClientId = async (req, res) => {
       include: [
         { model: Client, as: 'client' },
         { model: ServicePackage, as: 'ServicePackage' },
-        { model: IpPool, as: 'IpPool' }
+        { model: IpPool, as: 'currentIpPool' }
       ]
     });
     
