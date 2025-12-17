@@ -225,6 +225,48 @@ function registerSystemMigrations(autoMigration) {
 
     return true;
   });
+
+  // Migración 5: Agregar configuración de suspensión a ServicePackages
+  autoMigration.register('service-package-suspension-config', async (sequelize) => {
+    const dialect = sequelize.getDialect();
+    const tableExists = await autoMigration.tableExists('ServicePackages');
+
+    if (tableExists) {
+      // Crear enum para suspensionAction si no existe
+      if (dialect === 'postgres') {
+        try {
+          await sequelize.query(`
+            DO $$
+            BEGIN
+              IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_ServicePackages_suspensionAction') THEN
+                CREATE TYPE "enum_ServicePackages_suspensionAction" AS ENUM('disable', 'move_pool');
+              END IF;
+            END$$;
+          `);
+          logger.info('✅ Enum suspensionAction creado o ya existe');
+        } catch (error) {
+          logger.warn(`Enum suspensionAction: ${error.message}`);
+        }
+      }
+
+      // Agregar columnas
+      await autoMigration.addColumnIfNotExists(
+        'ServicePackages',
+        'suspensionAction',
+        dialect === 'postgres'
+          ? '"enum_ServicePackages_suspensionAction" DEFAULT \'disable\''
+          : 'VARCHAR(20) DEFAULT \'disable\''
+      );
+
+      await autoMigration.addColumnIfNotExists(
+        'ServicePackages',
+        'suspendedPoolName',
+        'VARCHAR(255)'
+      );
+    }
+
+    return true;
+  });
 }
 
 module.exports = {

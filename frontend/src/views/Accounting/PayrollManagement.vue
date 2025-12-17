@@ -881,7 +881,7 @@ export default {
                              `Comisiones: ${this.formatCurrency(this.createForm.commissions)}`;
         }
 
-        const response = await axios.post(`${API_URL}payroll`, payrollData, {
+        await axios.post(`${API_URL}payroll`, payrollData, {
           headers: { 'x-access-token': localStorage.getItem('token') }
         });
 
@@ -910,11 +910,6 @@ export default {
         this.pagination.page = page;
         this.loadPayrolls();
       }
-    },
-    getTotalIncome(payroll) {
-      return parseFloat(payroll.baseSalary) +
-             parseFloat(payroll.overtimeAmount) +
-             parseFloat(payroll.bonus);
     },
     formatCurrency(amount) {
       return new Intl.NumberFormat('es-MX', {

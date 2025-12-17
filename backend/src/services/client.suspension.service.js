@@ -14,7 +14,7 @@ const ClientSuspensionService = {
   /**
    * Suspende el servicio de un cliente
    * - Actualiza estado en BD
-   * - Desactiva usuario PPPoE en MikroTik
+   * - Desactiva usuario PPPoE en MikroTik o lo mueve de pool según configuración del paquete
    * - Crea notificación
    * - Registra en historial
    */
@@ -22,12 +22,18 @@ const ClientSuspensionService = {
     logger.info(`Iniciando suspensión de cliente ${clientId}. Razón: ${reason}`);
 
     try {
-      // 1. Obtener información del cliente
+      // 1. Obtener información del cliente con su paquete de servicio
       const client = await db.Client.findByPk(clientId, {
         include: [
           {
             model: db.ClientBilling,
-            as: 'billing'
+            as: 'billing',
+            include: [
+              {
+                model: db.ServicePackage,
+                as: 'servicePackage'
+              }
+            ]
           },
           {
             model: db.ClientNetwork,
@@ -60,10 +66,24 @@ const ClientSuspensionService = {
         { where: { clientId } }
       );
 
-      // 4. Desactivar usuario PPPoE en MikroTik (si existe)
+      // 4. Aplicar acción de suspensión en MikroTik según configuración del paquete
       let mikrotikResult = null;
       if (client.network && client.network.pppoeUsername) {
-        mikrotikResult = await this.disablePPPoEUser(client.network);
+        const servicePackage = client.billing?.servicePackage;
+        const suspensionAction = servicePackage?.suspensionAction || 'disable';
+
+        logger.info(`Configuración de suspensión del paquete: ${suspensionAction}`);
+
+        if (suspensionAction === 'move_pool' && servicePackage?.suspendedPoolName) {
+          // Mover usuario a pool de suspendidos
+          mikrotikResult = await this.movePPPoEUserToPool(
+            client.network,
+            servicePackage.suspendedPoolName
+          );
+        } else {
+          // Desactivar usuario (comportamiento por defecto)
+          mikrotikResult = await this.disablePPPoEUser(client.network);
+        }
       }
 
       // 5. Crear notificación
@@ -238,6 +258,44 @@ const ClientSuspensionService = {
 
     } catch (error) {
       logger.error(`Error reactivando usuario PPPoE: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
+  /**
+   * Mueve usuario PPPoE a un pool específico (para suspendidos)
+   */
+  async movePPPoEUserToPool(clientNetwork, poolName) {
+    try {
+      const router = await db.MikrotikRouter.findByPk(clientNetwork.routerId);
+
+      if (!router) {
+        logger.warn('Router MikroTik no encontrado, saltando movimiento de pool');
+        return null;
+      }
+
+      logger.info(`Moviendo usuario PPPoE: ${clientNetwork.pppoeUsername} al pool: ${poolName} en ${router.ipAddress}`);
+
+      // Actualizar usuario para mover a pool de suspendidos
+      const result = await mikrotikService.updatePPPoEUser(
+        router.ipAddress,
+        router.apiPort || 8728,
+        router.username,
+        router.password,
+        clientNetwork.pppoeUsername,
+        { remoteAddress: poolName }  // Mover a pool de suspendidos
+      );
+
+      logger.info(`Usuario PPPoE ${clientNetwork.pppoeUsername} movido al pool ${poolName}`);
+
+      return result;
+
+    } catch (error) {
+      logger.error(`Error moviendo usuario PPPoE a pool: ${error.message}`);
+      // No lanzamos error para que la suspensión continúe aunque falle MikroTik
       return {
         success: false,
         error: error.message

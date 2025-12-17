@@ -54,6 +54,17 @@ module.exports = (sequelize) => {
       type: DataTypes.JSON,
       defaultValue: {},
       comment: 'Configuración de plugins incluidos: { jellyfin: { maxDevices: 2, quality: "HD" }, ... }'
+    },
+    // ✅ Configuración de suspensión de usuarios PPPoE
+    suspensionAction: {
+      type: DataTypes.ENUM('disable', 'move_pool'),
+      defaultValue: 'disable',
+      comment: 'Acción al suspender: disable = desactivar usuario, move_pool = mover a pool de suspendidos'
+    },
+    suspendedPoolName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Nombre del pool al que mover usuarios suspendidos (solo si suspensionAction = move_pool)'
     }
     // ❌ REMOVIDO: hasJellyfin, jellyfinProfileId (van a plugin)
   }, {

@@ -160,27 +160,79 @@
        <!-- Configuración Adicional -->
        <div class="form-section">
          <h3>Configuración Adicional</h3>
-         
+
          <div class="form-row">
            <div class="form-group">
              <label>
-               <input 
-                 type="checkbox" 
+               <input
+                 type="checkbox"
                  v-model="packageData.hasJellyfin"
                />
                Incluir acceso a Jellyfin (Streaming)
              </label>
            </div>
-           
+
            <div class="form-group">
              <label>
-               <input 
-                 type="checkbox" 
+               <input
+                 type="checkbox"
                  v-model="packageData.active"
                />
                Paquete activo
              </label>
            </div>
+         </div>
+       </div>
+
+       <!-- Configuración de Suspensión -->
+       <div class="form-section">
+         <h3>Configuración de Suspensión de Usuarios PPPoE</h3>
+         <p class="section-description">
+           Configura cómo se debe manejar el usuario PPPoE cuando un cliente es suspendido por falta de pago.
+         </p>
+
+         <div class="form-group">
+           <label>Acción al suspender usuario</label>
+           <div class="radio-group">
+             <label class="radio-option">
+               <input
+                 type="radio"
+                 v-model="packageData.suspensionAction"
+                 value="disable"
+               />
+               <div class="radio-content">
+                 <strong>Desactivar Usuario</strong>
+                 <small>El usuario PPPoE será deshabilitado (disabled) en MikroTik</small>
+               </div>
+             </label>
+
+             <label class="radio-option">
+               <input
+                 type="radio"
+                 v-model="packageData.suspensionAction"
+                 value="move_pool"
+               />
+               <div class="radio-content">
+                 <strong>Mover a Pool de Suspendidos</strong>
+                 <small>El usuario PPPoE será movido a un pool específico para suspendidos</small>
+               </div>
+             </label>
+           </div>
+         </div>
+
+         <!-- Campo para nombre del pool (solo visible si se selecciona move_pool) -->
+         <div v-if="packageData.suspensionAction === 'move_pool'" class="form-group">
+           <label for="suspendedPoolName">Nombre del Pool de Suspendidos *</label>
+           <input
+             type="text"
+             id="suspendedPoolName"
+             v-model="packageData.suspendedPoolName"
+             :required="packageData.suspensionAction === 'move_pool'"
+             placeholder="ej. pool-suspendidos"
+           />
+           <small class="form-help">
+             Este pool debe existir previamente en el MikroTik. Los usuarios suspendidos serán movidos a este pool.
+           </small>
          </div>
        </div>
 
@@ -481,7 +533,9 @@ export default {
        billingCycle: 'monthly',
        hasJellyfin: false,
        active: true,
-       zoneId: null
+       zoneId: null,
+       suspensionAction: 'disable',
+       suspendedPoolName: null
      },
      availableZones: [],
      selectedZone: null,
@@ -695,7 +749,9 @@ async loadPackage(id) {
         billingCycle: packageData.billingCycle,
         hasJellyfin: packageData.hasJellyfin || false,
         active: packageData.active,
-        zoneId: packageData.zoneId
+        zoneId: packageData.zoneId,
+        suspensionAction: packageData.suspensionAction || 'disable',
+        suspendedPoolName: packageData.suspendedPoolName || null
       };
       
       console.log('Paquete cargado:', this.packageData);
@@ -1050,7 +1106,9 @@ async savePackage() {
       billingCycle: this.packageData.billingCycle || 'monthly',
       hasJellyfin: Boolean(this.packageData.hasJellyfin),
       active: Boolean(this.packageData.active),
-      zoneId: finalZoneId
+      zoneId: finalZoneId,
+      suspensionAction: this.packageData.suspensionAction || 'disable',
+      suspendedPoolName: this.packageData.suspensionAction === 'move_pool' ? this.packageData.suspendedPoolName?.trim() : null
     };
     
     console.log('📦 Datos del paquete a guardar:', packageDataToSend);
@@ -1936,6 +1994,73 @@ async processProfilesForPackage(packageId, activeRouters) {
 .no-profiles small {
   color: #999;
   font-style: italic;
+}
+
+/* Estilos para configuración de suspensión */
+.section-description {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: flex-start;
+  padding: 15px;
+  border: 2px solid #e0e6ed;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: white;
+}
+
+.radio-option:hover {
+  border-color: #3498db;
+  background-color: #f8f9ff;
+}
+
+.radio-option input[type="radio"] {
+  margin-top: 3px;
+  margin-right: 12px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.radio-option input[type="radio"]:checked ~ .radio-content {
+  color: #3498db;
+}
+
+.radio-option:has(input[type="radio"]:checked) {
+  border-color: #3498db;
+  background-color: #f8f9ff;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.15);
+}
+
+.radio-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.radio-content strong {
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.radio-content small {
+  color: #666;
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 </style>
