@@ -240,6 +240,228 @@
       </div>
     </div>
 
+    <!-- Modal de crear nómina individual -->
+    <div v-if="showCreateModal" class="modal-overlay" @click.self="closeCreateModal">
+      <div class="modal modal-large">
+        <div class="modal-header">
+          <h2>Crear Nómina Individual</h2>
+          <button @click="closeCreateModal" class="close-btn">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-grid">
+            <!-- Información básica -->
+            <div class="form-section">
+              <h3>Información Básica</h3>
+
+              <div class="form-group">
+                <label>Empleado *</label>
+                <select v-model="createForm.userId" required @change="onEmployeeChange">
+                  <option value="">Seleccionar empleado</option>
+                  <option v-for="emp in employees" :key="emp.id" :value="emp.id">
+                    {{ emp.fullName }} - {{ emp.position }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Periodo (Mes/Año) *</label>
+                <input type="month" v-model="createForm.period" required />
+              </div>
+
+              <div class="form-group">
+                <label>Tipo de Pago *</label>
+                <select v-model="createForm.paymentType" required @change="onPaymentTypeChange">
+                  <option value="weekly">Semanal</option>
+                  <option value="biweekly">Quincenal</option>
+                  <option value="monthly">Mensual</option>
+                  <option value="bonus">Bono Especial</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Ingresos -->
+            <div class="form-section">
+              <h3>💰 Ingresos</h3>
+
+              <div class="form-group">
+                <label>Salario Base *</label>
+                <input
+                  type="number"
+                  v-model.number="createForm.baseSalary"
+                  step="0.01"
+                  @input="calculateTotals"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Horas Extras</label>
+                <div class="input-group">
+                  <input
+                    type="number"
+                    v-model.number="createForm.overtimeHours"
+                    placeholder="Horas"
+                    step="0.5"
+                    @input="calculateOvertimeAmount"
+                  />
+                  <span class="input-addon">hrs</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Pago por Horas Extras</label>
+                <input
+                  type="number"
+                  v-model.number="createForm.overtimeAmount"
+                  step="0.01"
+                  @input="calculateTotals"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>💼 Comisiones (Soportes, Instalaciones, Ventas)</label>
+                <input
+                  type="number"
+                  v-model.number="createForm.commissions"
+                  step="0.01"
+                  placeholder="Ej: 500.00"
+                  @input="calculateTotals"
+                />
+                <small class="help-text">Comisiones por trabajos realizados</small>
+              </div>
+
+              <div class="form-group">
+                <label>🎁 Bonos Adicionales</label>
+                <input
+                  type="number"
+                  v-model.number="createForm.bonus"
+                  step="0.01"
+                  placeholder="Ej: 1000.00"
+                  @input="calculateTotals"
+                />
+              </div>
+
+              <div class="total-box income">
+                <strong>Total Ingresos:</strong>
+                <span>{{ formatCurrency(getTotalIncome()) }}</span>
+              </div>
+            </div>
+
+            <!-- Deducciones -->
+            <div class="form-section">
+              <h3>📉 Deducciones</h3>
+
+              <div class="form-group">
+                <label>ISR (Impuesto Sobre la Renta)</label>
+                <div class="input-group">
+                  <input
+                    type="number"
+                    v-model.number="createForm.taxPercent"
+                    min="0"
+                    max="35"
+                    step="0.1"
+                    @input="calculateTaxes"
+                  />
+                  <span class="input-addon">%</span>
+                  <input
+                    type="number"
+                    v-model.number="createForm.taxDeduction"
+                    step="0.01"
+                    @input="calculateTotals"
+                    class="amount-input"
+                  />
+                </div>
+                <small class="help-text">Sugerido: 10-16% según salario</small>
+              </div>
+
+              <div class="form-group">
+                <label>IMSS (Seguro Social)</label>
+                <div class="input-group">
+                  <input
+                    type="number"
+                    v-model.number="createForm.socialSecurityPercent"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    @input="calculateSocialSecurity"
+                  />
+                  <span class="input-addon">%</span>
+                  <input
+                    type="number"
+                    v-model.number="createForm.socialSecurityDeduction"
+                    step="0.01"
+                    @input="calculateTotals"
+                    class="amount-input"
+                  />
+                </div>
+                <small class="help-text">Típico: 2.5-3%</small>
+              </div>
+
+              <div class="form-group">
+                <label>Otras Deducciones</label>
+                <input
+                  type="number"
+                  v-model.number="createForm.otherDeductions"
+                  step="0.01"
+                  placeholder="Préstamos, descuentos, etc."
+                  @input="calculateTotals"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Notas sobre Deducciones</label>
+                <textarea
+                  v-model="createForm.deductionNotes"
+                  rows="2"
+                  placeholder="Ej: Préstamo personal $500, Falta injustificada $200"
+                ></textarea>
+              </div>
+
+              <div class="total-box deduction">
+                <strong>Total Deducciones:</strong>
+                <span>{{ formatCurrency(getTotalDeductions()) }}</span>
+              </div>
+            </div>
+
+            <!-- Resumen y Notas -->
+            <div class="form-section full-width">
+              <div class="salary-summary">
+                <div class="summary-row">
+                  <span>Total Ingresos:</span>
+                  <span class="income-amount">{{ formatCurrency(getTotalIncome()) }}</span>
+                </div>
+                <div class="summary-row">
+                  <span>Total Deducciones:</span>
+                  <span class="deduction-amount">{{ formatCurrency(getTotalDeductions()) }}</span>
+                </div>
+                <div class="summary-row final">
+                  <strong>Salario Neto a Pagar:</strong>
+                  <strong class="net-amount">{{ formatCurrency(getNetSalary()) }}</strong>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Notas Generales</label>
+                <textarea
+                  v-model="createForm.notes"
+                  rows="3"
+                  placeholder="Notas adicionales sobre esta nómina..."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button @click="closeCreateModal" class="btn btn-secondary">Cancelar</button>
+          <button @click="createIndividualPayroll" class="btn btn-primary">
+            💾 Crear Nómina
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal de detalle de nómina -->
     <div v-if="showDetailModal" class="modal-overlay" @click.self="showDetailModal = false">
       <div class="modal">
@@ -342,6 +564,7 @@ export default {
       showGenerateModal: false,
       showPaymentModal: false,
       showDetailModal: false,
+      showCreateModal: false,
       selectedPayroll: null,
       generateForm: {
         monthYear: new Date().toISOString().substring(0, 7) // YYYY-MM
@@ -349,6 +572,23 @@ export default {
       paymentForm: {
         paymentMethod: 'transfer',
         paymentReference: '',
+        notes: ''
+      },
+      createForm: {
+        userId: '',
+        period: new Date().toISOString().substring(0, 7),
+        paymentType: 'monthly',
+        baseSalary: 0,
+        overtimeHours: 0,
+        overtimeAmount: 0,
+        commissions: 0,
+        bonus: 0,
+        taxPercent: 12,
+        taxDeduction: 0,
+        socialSecurityPercent: 3,
+        socialSecurityDeduction: 0,
+        otherDeductions: 0,
+        deductionNotes: '',
         notes: ''
       },
       filters: {
@@ -506,8 +746,154 @@ export default {
       }
     },
     openPayrollModal() {
-      // TODO: Implementar modal para crear nómina individual
-      this.$toast?.info('Funcionalidad en desarrollo');
+      this.resetCreateForm();
+      this.showCreateModal = true;
+    },
+    closeCreateModal() {
+      this.showCreateModal = false;
+      this.resetCreateForm();
+    },
+    resetCreateForm() {
+      this.createForm = {
+        userId: '',
+        period: new Date().toISOString().substring(0, 7),
+        paymentType: 'monthly',
+        baseSalary: 0,
+        overtimeHours: 0,
+        overtimeAmount: 0,
+        commissions: 0,
+        bonus: 0,
+        taxPercent: 12,
+        taxDeduction: 0,
+        socialSecurityPercent: 3,
+        socialSecurityDeduction: 0,
+        otherDeductions: 0,
+        deductionNotes: '',
+        notes: ''
+      };
+    },
+    onEmployeeChange() {
+      const employee = this.employees.find(e => e.id === this.createForm.userId);
+      if (employee && employee.salary) {
+        this.createForm.baseSalary = parseFloat(employee.salary);
+        this.calculateTotals();
+      }
+    },
+    onPaymentTypeChange() {
+      // Ajustar salario base según tipo de pago
+      const employee = this.employees.find(e => e.id === this.createForm.userId);
+      if (employee && employee.salary) {
+        const monthlySalary = parseFloat(employee.salary);
+
+        switch (this.createForm.paymentType) {
+          case 'weekly':
+            this.createForm.baseSalary = monthlySalary / 4;
+            break;
+          case 'biweekly':
+            this.createForm.baseSalary = monthlySalary / 2;
+            break;
+          case 'monthly':
+            this.createForm.baseSalary = monthlySalary;
+            break;
+          case 'bonus':
+            this.createForm.baseSalary = 0;
+            break;
+        }
+
+        this.calculateTotals();
+      }
+    },
+    calculateOvertimeAmount() {
+      const employee = this.employees.find(e => e.id === this.createForm.userId);
+      if (employee && employee.salary && this.createForm.overtimeHours > 0) {
+        const monthlySalary = parseFloat(employee.salary);
+        const hourlyRate = monthlySalary / 160; // 160 horas al mes aproximadamente
+        const overtimeRate = hourlyRate * 2; // Horas extras al doble
+        this.createForm.overtimeAmount = this.createForm.overtimeHours * overtimeRate;
+      }
+      this.calculateTotals();
+    },
+    calculateTaxes() {
+      const totalIncome = this.getTotalIncome();
+      this.createForm.taxDeduction = totalIncome * (this.createForm.taxPercent / 100);
+      this.calculateTotals();
+    },
+    calculateSocialSecurity() {
+      const baseSalary = parseFloat(this.createForm.baseSalary) || 0;
+      this.createForm.socialSecurityDeduction = baseSalary * (this.createForm.socialSecurityPercent / 100);
+      this.calculateTotals();
+    },
+    calculateTotals() {
+      // Calcular deducciones automáticas
+      const totalIncome = this.getTotalIncome();
+      const baseSalary = parseFloat(this.createForm.baseSalary) || 0;
+
+      // Auto-calcular ISR y IMSS si no se han modificado manualmente
+      this.createForm.taxDeduction = totalIncome * (this.createForm.taxPercent / 100);
+      this.createForm.socialSecurityDeduction = baseSalary * (this.createForm.socialSecurityPercent / 100);
+    },
+    getTotalIncome() {
+      return (parseFloat(this.createForm.baseSalary) || 0) +
+             (parseFloat(this.createForm.overtimeAmount) || 0) +
+             (parseFloat(this.createForm.commissions) || 0) +
+             (parseFloat(this.createForm.bonus) || 0);
+    },
+    getTotalDeductions() {
+      return (parseFloat(this.createForm.taxDeduction) || 0) +
+             (parseFloat(this.createForm.socialSecurityDeduction) || 0) +
+             (parseFloat(this.createForm.otherDeductions) || 0);
+    },
+    getNetSalary() {
+      return this.getTotalIncome() - this.getTotalDeductions();
+    },
+    async createIndividualPayroll() {
+      try {
+        if (!this.createForm.userId || !this.createForm.period) {
+          this.$toast?.error('Por favor complete los campos requeridos');
+          return;
+        }
+
+        if (this.getTotalIncome() <= 0) {
+          this.$toast?.error('El salario base debe ser mayor a cero');
+          return;
+        }
+
+        // Preparar datos para enviar al backend
+        const payrollData = {
+          userId: this.createForm.userId,
+          period: this.createForm.period,
+          paymentType: this.createForm.paymentType,
+          baseSalary: parseFloat(this.createForm.baseSalary) || 0,
+          overtimeHours: parseFloat(this.createForm.overtimeHours) || 0,
+          overtimeAmount: parseFloat(this.createForm.overtimeAmount) || 0,
+          // Combinar comisiones y bonos en el campo bonus
+          bonus: (parseFloat(this.createForm.commissions) || 0) + (parseFloat(this.createForm.bonus) || 0),
+          taxDeduction: parseFloat(this.createForm.taxDeduction) || 0,
+          socialSecurityDeduction: parseFloat(this.createForm.socialSecurityDeduction) || 0,
+          otherDeductions: parseFloat(this.createForm.otherDeductions) || 0,
+          deductionNotes: this.createForm.deductionNotes,
+          notes: this.createForm.notes
+        };
+
+        // Agregar nota sobre comisiones si existen
+        if (parseFloat(this.createForm.commissions) > 0) {
+          payrollData.notes = (payrollData.notes ? payrollData.notes + '\n' : '') +
+                             `Comisiones: ${this.formatCurrency(this.createForm.commissions)}`;
+        }
+
+        const response = await axios.post(`${API_URL}payroll`, payrollData, {
+          headers: { 'x-access-token': localStorage.getItem('token') }
+        });
+
+        this.$toast?.success('Nómina individual creada exitosamente');
+        this.closeCreateModal();
+        this.loadPayrolls();
+        this.loadSummary();
+      } catch (error) {
+        console.error('Error al crear nómina individual:', error);
+        const errorMsg = error.response?.data?.error || 'Error al crear nómina individual';
+        this.$toast?.error(errorMsg);
+      }
     },
     clearFilters() {
       this.filters = {
@@ -1037,5 +1423,140 @@ tr:hover {
   font-size: 32px;
   font-weight: bold;
   margin: 10px 0 0 0;
+}
+
+/* Modal de crear nómina individual */
+.modal-large {
+  max-width: 900px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.form-section {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.form-section.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-section h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #2c3e50;
+  border-bottom: 2px solid #dee2e6;
+  padding-bottom: 10px;
+}
+
+.input-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.input-addon {
+  background: #ecf0f1;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-weight: 500;
+  color: #7f8c8d;
+  min-width: 50px;
+  text-align: center;
+}
+
+.amount-input {
+  flex: 2;
+}
+
+.help-text {
+  display: block;
+  font-size: 11px;
+  color: #7f8c8d;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.total-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-radius: 6px;
+  margin-top: 15px;
+  font-size: 15px;
+}
+
+.total-box.income {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.total-box.deduction {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.salary-summary {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+}
+
+.summary-row.final {
+  border-top: 2px solid #27ae60;
+  padding-top: 15px;
+  margin-top: 10px;
+  font-size: 18px;
+}
+
+.income-amount {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.deduction-amount {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.summary-row.final .net-amount {
+  color: #27ae60;
+  font-size: 24px;
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-large {
+    width: 95%;
+    max-width: none;
+  }
+
+  .input-group {
+    flex-wrap: wrap;
+  }
 }
 </style>

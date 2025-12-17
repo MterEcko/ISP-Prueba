@@ -402,6 +402,74 @@ async function synchronizeDatabase() {
     }
     // ==================== FIN DEL BLOQUE ====================
 
+    // ==================== INICIALIZAR PLUGINS ACTIVOS ====================
+    try {
+      console.log('\n=== INICIALIZANDO PLUGINS ACTIVOS ===');
+      const systemPluginController = require('./controllers/systemPlugin.controller').instance;
+
+      // Obtener plugins activos de la base de datos
+      const activePlugins = await db.SystemPlugin.findAll({
+        where: { active: true },
+        order: [['name', 'ASC']]
+      });
+
+      console.log(`📦 Encontrados ${activePlugins.length} plugin(s) activo(s)`);
+
+      let successCount = 0;
+      let errorCount = 0;
+      const errors = [];
+
+      // Inicializar cada plugin activo
+      for (const plugin of activePlugins) {
+        try {
+          console.log(`🔌 Inicializando plugin: ${plugin.name}...`);
+          await systemPluginController._activatePlugin(plugin);
+          successCount++;
+          console.log(`   ✅ ${plugin.name} inicializado correctamente`);
+        } catch (error) {
+          errorCount++;
+          const errorMsg = `Error inicializando ${plugin.name}: ${error.message}`;
+          console.error(`   ❌ ${errorMsg}`);
+          errors.push({ plugin: plugin.name, error: error.message });
+
+          // Marcar el plugin como inactivo si falla la inicialización
+          try {
+            await plugin.update({
+              active: false,
+              configuration: {
+                ...plugin.configuration,
+                lastError: error.message,
+                lastErrorAt: new Date().toISOString(),
+                deactivatedAt: new Date().toISOString(),
+                deactivationReason: 'Failed to initialize on server startup'
+              }
+            });
+            console.warn(`   ⚠️  Plugin ${plugin.name} marcado como inactivo debido al error`);
+          } catch (updateError) {
+            console.error(`   ❌ No se pudo actualizar estado de ${plugin.name}:`, updateError.message);
+          }
+        }
+      }
+
+      console.log('\n📊 Resumen de inicialización de plugins:');
+      console.log(`   ✅ Exitosos: ${successCount}`);
+      console.log(`   ❌ Errores:  ${errorCount}`);
+
+      if (errors.length > 0) {
+        console.log('\n⚠️  Plugins con errores:');
+        errors.forEach(({ plugin, error }) => {
+          console.log(`   - ${plugin}: ${error}`);
+        });
+      }
+
+      console.log('=== FIN INICIALIZACIÓN DE PLUGINS ===\n');
+
+    } catch (error) {
+      console.error('❌ Error general inicializando plugins:', error.message);
+      console.warn('⚠️ El sistema continuará pero los plugins no estarán activos');
+    }
+    // ==================== FIN INICIALIZACIÓN DE PLUGINS ====================
+
     await initial(); // Esta línea ya debe existir en tu código
     
   } catch (error) {
