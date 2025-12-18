@@ -272,9 +272,11 @@
               <div class="form-group">
                 <label>Tipo de Pago *</label>
                 <select v-model="createForm.paymentType" required @change="onPaymentTypeChange">
-                  <option value="weekly">Semanal</option>
-                  <option value="biweekly">Quincenal</option>
-                  <option value="monthly">Mensual</option>
+                  <option value="weekly">Semanal (7 días)</option>
+                  <option value="cada10dias">Cada 10 Días</option>
+                  <option value="biweekly">Catorcenal (14 días)</option>
+                  <option value="quincenal">Quincenal (15 días)</option>
+                  <option value="monthly">Mensual (30 días)</option>
                   <option value="bonus">Bono Especial</option>
                 </select>
               </div>
@@ -552,6 +554,7 @@
 <script>
 import axios from 'axios';
 import { API_URL } from '../../services/frontend_apiConfig';
+import EmployeeConfigService from '../../services/employeeConfig.service';
 
 export default {
   name: 'PayrollManagement',
@@ -560,6 +563,7 @@ export default {
       loading: false,
       payrolls: [],
       employees: [],
+      employeeConfigs: {}, // Cache de configuraciones de empleados
       summary: null,
       showGenerateModal: false,
       showPaymentModal: false,
@@ -772,45 +776,104 @@ export default {
         notes: ''
       };
     },
-    onEmployeeChange() {
-      const employee = this.employees.find(e => e.id === this.createForm.userId);
-      if (employee && employee.salary) {
-        this.createForm.baseSalary = parseFloat(employee.salary);
-        this.calculateTotals();
+    async onEmployeeChange() {
+      if (!this.createForm.userId) return;
+
+      try {
+        // Cargar configuración del empleado
+        const response = await EmployeeConfigService.getEmployeeConfig(this.createForm.userId);
+
+        if (response.data.success) {
+          const config = response.data.data;
+
+          // Guardar configuración en cache
+          this.employeeConfigs[this.createForm.userId] = config;
+
+          // Calcular salario basado en configuración
+          this.calculateSalaryFromConfig(config);
+        }
+      } catch (error) {
+        // Si no tiene configuración, intentar usar el salario del usuario (fallback)
+        console.warn('No se encontró configuración de empleado, usando salario de usuario como fallback');
+        const employee = this.employees.find(e => e.id === this.createForm.userId);
+        if (employee && employee.salary) {
+          this.createForm.baseSalary = parseFloat(employee.salary);
+          this.calculateTotals();
+        }
       }
     },
-    onPaymentTypeChange() {
-      // Ajustar salario base según tipo de pago
-      const employee = this.employees.find(e => e.id === this.createForm.userId);
-      if (employee && employee.salary) {
-        const monthlySalary = parseFloat(employee.salary);
+    async onPaymentTypeChange() {
+      if (!this.createForm.userId) return;
 
-        switch (this.createForm.paymentType) {
-          case 'weekly':
-            this.createForm.baseSalary = monthlySalary / 4;
-            break;
-          case 'biweekly':
-            this.createForm.baseSalary = monthlySalary / 2;
-            break;
-          case 'monthly':
-            this.createForm.baseSalary = monthlySalary;
-            break;
-          case 'bonus':
-            this.createForm.baseSalary = 0;
-            break;
+      // Intentar obtener la configuración del cache o del servidor
+      let config = this.employeeConfigs[this.createForm.userId];
+
+      if (!config) {
+        try {
+          const response = await EmployeeConfigService.getEmployeeConfig(this.createForm.userId);
+          if (response.data.success) {
+            config = response.data.data;
+            this.employeeConfigs[this.createForm.userId] = config;
+          }
+        } catch (error) {
+          console.warn('No se pudo cargar configuración de empleado');
+          return;
         }
-
-        this.calculateTotals();
       }
+
+      // Calcular salario basado en configuración
+      this.calculateSalaryFromConfig(config);
+    },
+    calculateSalaryFromConfig(config) {
+      if (!config || !config.dailySalary) {
+        console.error('Configuración de empleado inválida');
+        return;
+      }
+
+      const dailySalary = parseFloat(config.dailySalary);
+
+      // Mapeo de días por tipo de pago
+      const daysMapping = {
+        'weekly': 7,
+        'biweekly': 14,
+        'catorcenal': 14,
+        'quincenal': 15,
+        'monthly': 30,
+        'cada10dias': 10,
+        'bonus': 0
+      };
+
+      const days = daysMapping[this.createForm.paymentType] || 30;
+      this.createForm.baseSalary = dailySalary * days;
+
+      this.calculateTotals();
     },
     calculateOvertimeAmount() {
-      const employee = this.employees.find(e => e.id === this.createForm.userId);
-      if (employee && employee.salary && this.createForm.overtimeHours > 0) {
-        const monthlySalary = parseFloat(employee.salary);
-        const hourlyRate = monthlySalary / 160; // 160 horas al mes aproximadamente
+      if (!this.createForm.userId || this.createForm.overtimeHours <= 0) {
+        this.createForm.overtimeAmount = 0;
+        this.calculateTotals();
+        return;
+      }
+
+      // Intentar obtener configuración del empleado
+      const config = this.employeeConfigs[this.createForm.userId];
+
+      if (config && config.dailySalary) {
+        const dailySalary = parseFloat(config.dailySalary);
+        const hourlyRate = dailySalary / 8; // 8 horas por día
         const overtimeRate = hourlyRate * 2; // Horas extras al doble
         this.createForm.overtimeAmount = this.createForm.overtimeHours * overtimeRate;
+      } else {
+        // Fallback: usar salario del usuario si no hay configuración
+        const employee = this.employees.find(e => e.id === this.createForm.userId);
+        if (employee && employee.salary) {
+          const monthlySalary = parseFloat(employee.salary);
+          const hourlyRate = monthlySalary / 160; // 160 horas al mes aproximadamente
+          const overtimeRate = hourlyRate * 2;
+          this.createForm.overtimeAmount = this.createForm.overtimeHours * overtimeRate;
+        }
       }
+
       this.calculateTotals();
     },
     calculateTaxes() {
