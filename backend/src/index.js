@@ -1085,6 +1085,14 @@ try {
 }
 
 try {
+  console.log('Registrando employeeConfig.routes...');
+  app.use('/api/employee-config', require('./routes/employeeConfig.routes'));
+  console.log('✅ employeeConfig.routes registradas');
+} catch (error) {
+  console.error('❌ Error en employeeConfig.routes:', error.message);
+}
+
+try {
   console.log('Registrando accounting.routes...');
   app.use('/api/accounting', require('./routes/accounting.routes'));
   console.log('✅ accounting.routes registradas');

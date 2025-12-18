@@ -294,6 +294,51 @@ function registerSystemMigrations(autoMigration) {
 
     return true;
   });
+
+  // Migración 7: Crear tabla EmployeeConfigs para configuración de empleados (salario diario)
+  autoMigration.register('employee-config-table', async (sequelize) => {
+    const dialect = sequelize.getDialect();
+    const tableExists = await autoMigration.tableExists('EmployeeConfigs');
+
+    if (!tableExists) {
+      // Crear enum para defaultPaymentType si no existe
+      if (dialect === 'postgres') {
+        try {
+          await sequelize.query(`
+            DO $$
+            BEGIN
+              IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_EmployeeConfigs_defaultPaymentType') THEN
+                CREATE TYPE "enum_EmployeeConfigs_defaultPaymentType" AS ENUM('weekly', 'biweekly', 'quincenal', 'catorcenal', 'monthly', 'cada10dias');
+              END IF;
+            END$$;
+          `);
+          logger.info('✅ Enum defaultPaymentType creado');
+        } catch (error) {
+          logger.warn(`Enum defaultPaymentType: ${error.message}`);
+        }
+      }
+
+      // Crear tabla
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS "EmployeeConfigs" (
+          "id" SERIAL PRIMARY KEY,
+          "employeeId" INTEGER NOT NULL UNIQUE REFERENCES "Users"("id") ON DELETE CASCADE,
+          "dailySalary" DECIMAL(10, 2) NOT NULL,
+          "defaultPaymentType" ${dialect === 'postgres' ? '"enum_EmployeeConfigs_defaultPaymentType"' : 'VARCHAR(20)'} DEFAULT 'monthly',
+          "position" VARCHAR(100),
+          "department" VARCHAR(100),
+          "hireDate" DATE,
+          "active" BOOLEAN DEFAULT true,
+          "notes" TEXT,
+          "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      logger.info('✅ Tabla EmployeeConfigs creada');
+    }
+
+    return true;
+  });
 }
 
 module.exports = {

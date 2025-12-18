@@ -179,6 +179,7 @@ db.EmployeeEmail = require('./employeeEmail.model')(sequelize, Sequelize);
 // ======================================
 db.ExpenseCategory = require('./expenseCategory.model')(sequelize, Sequelize);
 db.Expense = require('./expense.model')(sequelize, Sequelize);
+db.EmployeeConfig = require('./employeeConfig.model')(sequelize, Sequelize);
 db.Payroll = require('./payroll.model')(sequelize, Sequelize);
 db.PayrollPayment = require('./payrollPayment.model')(sequelize, Sequelize);
 
@@ -1381,6 +1382,17 @@ db.User.hasMany(db.EmployeeEmail, {
 db.EmployeeEmail.belongsTo(db.User, {
   foreignKey: 'userId',
   as: 'user'
+});
+
+// User - EmployeeConfig
+db.User.hasOne(db.EmployeeConfig, {
+  foreignKey: 'employeeId',
+  as: 'employeeConfig'
+});
+
+db.EmployeeConfig.belongsTo(db.User, {
+  foreignKey: 'employeeId',
+  as: 'employee'
 });
 
 // ======================================
