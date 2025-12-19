@@ -339,6 +339,40 @@ function registerSystemMigrations(autoMigration) {
 
     return true;
   });
+
+  // Migración 8: Agregar 'router' al enum de planType en SystemLicenses
+  autoMigration.register('system-license-router-plan', async (sequelize) => {
+    const dialect = sequelize.getDialect();
+
+    if (dialect === 'postgres') {
+      try {
+        // Verificar si el valor 'router' ya existe en el enum
+        const [results] = await sequelize.query(`
+          SELECT EXISTS (
+            SELECT 1 FROM pg_enum
+            WHERE enumtypid = (
+              SELECT oid FROM pg_type WHERE typname = 'enum_SystemLicenses_planType'
+            )
+            AND enumlabel = 'router'
+          ) as exists;
+        `);
+
+        if (!results[0].exists) {
+          // Agregar 'router' al enum existente
+          await sequelize.query(`
+            ALTER TYPE "enum_SystemLicenses_planType" ADD VALUE IF NOT EXISTS 'router';
+          `);
+          logger.info('✅ Valor "router" agregado al enum planType');
+        } else {
+          logger.info('ℹ️  Valor "router" ya existe en enum planType');
+        }
+      } catch (error) {
+        logger.warn(`Enum planType router: ${error.message}`);
+      }
+    }
+
+    return true;
+  });
 }
 
 module.exports = {
