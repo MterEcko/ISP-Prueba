@@ -155,8 +155,8 @@ const axios = require('axios');
 const response = await axios.post(
 ${process.env.STORE_API_URL}/licenses/hardware-change/request,
 {
-license_key: localLicense.key,
-new_hardware_id: licenseClient.hardwareId,
+licenseKey: localLicense.key,
+new_hardwareId: licenseClient.hardwareId,
 reason: reason || 'Hardware upgrade'
 }
 );
@@ -187,7 +187,7 @@ return res.status(200).json({
 success: true,
 licenses: licenses.map(l => ({
 pluginId: l.plugin_id,
-licenseKey: l.license_key.substring(0, 10) + '...',
+licenseKey: l.licenseKey.substring(0, 10) + '...',
 status: l.status,
 expiresAt: l.expires_at,
 daysRemaining: l.daysRemaining(),

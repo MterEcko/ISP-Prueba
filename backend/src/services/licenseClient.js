@@ -18,8 +18,8 @@ class LicenseClient {
   async activate(licenseKey) {
     try {
       const response = await axios.post(`${this.storeUrl}/licenses/activate`, {
-        license_key: licenseKey,
-        hardware_id: this.hardwareId,
+        licenseKey: licenseKey,
+        hardwareId: this.hardwareId,
         system_version: process.env.SYSTEM_VERSION,
         hostname: os.hostname()
       });
@@ -70,8 +70,8 @@ class LicenseClient {
 
       // Validar con el servidor
       const response = await axios.post(`${this.storeUrl}/licenses/validate`, {
-        license_key: localLicense.key,
-        hardware_id: this.hardwareId,
+        licenseKey: localLicense.key,
+        hardwareId: this.hardwareId,
         system_version: process.env.SYSTEM_VERSION,
         metrics: await this.collectMetrics()
       });

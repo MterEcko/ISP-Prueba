@@ -100,54 +100,54 @@ exports.getCurrentLicense = async (req, res) => {
 // Create a new system license
 exports.createLicense = async (req, res) => {
   try {
-    const { 
-      license_key, 
-      license_type, 
-      max_clients, 
-      max_devices, 
-      features, 
-      activation_date, 
-      expiration_date, 
-      customer_name, 
-      customer_email 
+    const {
+      licenseKey,
+      licenseType,
+      maxClients,
+      maxDevices,
+      features,
+      activationDate,
+      expirationDate,
+      customerName,
+      customerEmail
     } = req.body;
-    
-    if (!license_key || !license_type || !expiration_date) {
+
+    if (!licenseKey || !licenseType || !expirationDate) {
       return res.status(400).json({
         success: false,
         message: 'License key, type, and expiration date are required'
       });
     }
-    
+
     // Check if license key already exists
     const existingLicense = await SystemLicense.findOne({
-      where: { license_key }
+      where: { licenseKey }
     });
-    
+
     if (existingLicense) {
       return res.status(400).json({
         success: false,
         message: 'License key already exists'
       });
     }
-    
+
     // Generate hardware ID if not provided
-    const hardware_id = crypto.createHash('sha256').update(Date.now().toString()).digest('hex');
-    
+    const hardwareId = crypto.createHash('sha256').update(Date.now().toString()).digest('hex');
+
     const newLicense = await SystemLicense.create({
-      license_key,
-      license_type,
-      max_clients: max_clients || 100,
-      max_devices: max_devices || 50,
+      licenseKey,
+      licenseType,
+      maxClients: maxClients || 100,
+      maxDevices: maxDevices || 50,
       features: features || [],
-      activation_date: activation_date || new Date(),
-      expiration_date,
-      hardware_id,
+      activationDate: activationDate || new Date(),
+      expirationDate,
+      hardwareId,
       status: 'active',
-      customer_name,
-      customer_email
+      customerName,
+      customerEmail
     });
-    
+
     return res.status(201).json({
       success: true,
       data: newLicense,
@@ -167,14 +167,14 @@ exports.updateLicense = async (req, res) => {
   try {
     const { id } = req.params;
     const { 
-      license_type, 
-      max_clients, 
-      max_devices, 
+      licenseType, 
+      maxClients, 
+      maxDevices, 
       features, 
-      expiration_date, 
+      expirationDate, 
       status, 
-      customer_name, 
-      customer_email 
+      customerName, 
+      customerEmail 
     } = req.body;
     
     if (!id) {
@@ -194,14 +194,14 @@ exports.updateLicense = async (req, res) => {
     }
     
     await license.update({
-      license_type: license_type || license.license_type,
-      max_clients: max_clients !== undefined ? max_clients : license.max_clients,
-      max_devices: max_devices !== undefined ? max_devices : license.max_devices,
+      licenseType: licenseType || license.licenseType,
+      maxClients: maxClients !== undefined ? maxClients : license.maxClients,
+      maxDevices: maxDevices !== undefined ? maxDevices : license.maxDevices,
       features: features || license.features,
-      expiration_date: expiration_date || license.expiration_date,
+      expirationDate: expirationDate || license.expirationDate,
       status: status || license.status,
-      customer_name: customer_name || license.customer_name,
-      customer_email: customer_email || license.customer_email
+      customerName: customerName || license.customerName,
+      customerEmail: customerEmail || license.customerEmail
     });
     
     return res.status(200).json({
@@ -257,9 +257,9 @@ exports.deleteLicense = async (req, res) => {
 // Activate a system license
 exports.activateLicense = async (req, res) => {
   try {
-    const { license_key, hardware_id } = req.body;
+    const { licenseKey, hardwareId } = req.body;
     
-    if (!license_key) {
+    if (!licenseKey) {
       return res.status(400).json({
         success: false,
         message: 'License key is required'
@@ -267,7 +267,7 @@ exports.activateLicense = async (req, res) => {
     }
     
     const license = await SystemLicense.findOne({
-      where: { license_key }
+      where: { licenseKey }
     });
     
     if (!license) {
@@ -278,7 +278,7 @@ exports.activateLicense = async (req, res) => {
     }
     
     // Check if license is expired
-    if (new Date(license.expiration_date) < new Date()) {
+    if (new Date(license.expirationDate) < new Date()) {
       return res.status(400).json({
         success: false,
         message: 'License has expired'
@@ -286,13 +286,13 @@ exports.activateLicense = async (req, res) => {
     }
     
     // Update hardware ID if provided
-    if (hardware_id) {
-      license.hardware_id = hardware_id;
+    if (hardwareId) {
+      license.hardwareId = hardwareId;
     }
     
     // Set license as active
     license.status = 'active';
-    license.activation_date = new Date();
+    license.activationDate = new Date();
     await license.save();
     
     return res.status(200).json({
@@ -350,9 +350,9 @@ exports.deactivateLicense = async (req, res) => {
 // Verify license status
 exports.verifyLicense = async (req, res) => {
   try {
-    const { license_key, hardware_id } = req.body;
+    const { licenseKey, hardwareId } = req.body;
 
-    if (!license_key) {
+    if (!licenseKey) {
       return res.status(400).json({
         success: false,
         message: 'License key is required'
@@ -360,7 +360,7 @@ exports.verifyLicense = async (req, res) => {
     }
 
     // 🔑 Verificar primero contra licencia maestra
-    const masterValidation = validateAgainstMaster(license_key);
+    const masterValidation = validateAgainstMaster(licenseKey);
     if (masterValidation.valid) {
       return res.status(200).json({
         success: true,
@@ -381,7 +381,7 @@ exports.verifyLicense = async (req, res) => {
     }
 
     const license = await SystemLicense.findOne({
-      where: { license_key }
+      where: { licenseKey }
     });
 
     if (!license) {
@@ -392,11 +392,11 @@ exports.verifyLicense = async (req, res) => {
     }
     
     // Check if license is expired
-    const isExpired = new Date(license.expiration_date) < new Date();
+    const isExpired = new Date(license.expirationDate) < new Date();
     
     // Check if hardware ID matches (if provided and set)
     let hardwareMatches = true;
-    if (hardware_id && license.hardware_id && license.hardware_id !== hardware_id) {
+    if (hardwareId && license.hardwareId && license.hardwareId !== hardwareId) {
       hardwareMatches = false;
     }
     
@@ -404,7 +404,7 @@ exports.verifyLicense = async (req, res) => {
     const isActive = license.status === 'active';
     
     // Calculate days remaining
-    const daysRemaining = Math.ceil((new Date(license.expiration_date) - new Date()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.ceil((new Date(license.expirationDate) - new Date()) / (1000 * 60 * 60 * 24));
     
     return res.status(200).json({
       success: true,
@@ -433,7 +433,7 @@ exports.verifyLicense = async (req, res) => {
 exports.renewLicense = async (req, res) => {
   try {
     const { id } = req.params;
-    const { expiration_date } = req.body;
+    const { expirationDate } = req.body;
     
     if (!id) {
       return res.status(400).json({
@@ -442,7 +442,7 @@ exports.renewLicense = async (req, res) => {
       });
     }
     
-    if (!expiration_date) {
+    if (!expirationDate) {
       return res.status(400).json({
         success: false,
         message: 'New expiration date is required'
@@ -459,7 +459,7 @@ exports.renewLicense = async (req, res) => {
     }
     
     // Update expiration date and set status to active
-    license.expiration_date = expiration_date;
+    license.expirationDate = expirationDate;
     license.status = 'active';
     await license.save();
     
@@ -505,14 +505,14 @@ exports.getLicenseUsage = async (req, res) => {
     const deviceCount = await db.Device.count(); 
     
     // Calculate usage percentages
-    const clientUsagePercent = license.max_clients > 0 ? 
-      Math.round((clientCount / license.max_clients) * 100) : 0;
+    const clientUsagePercent = license.maxClients > 0 ? 
+      Math.round((clientCount / license.maxClients) * 100) : 0;
     
-    const deviceUsagePercent = license.max_devices > 0 ? 
-      Math.round((deviceCount / license.max_devices) * 100) : 0;
+    const deviceUsagePercent = license.maxDevices > 0 ? 
+      Math.round((deviceCount / license.maxDevices) * 100) : 0;
     
     // Calculate days remaining
-    const daysRemaining = Math.ceil((new Date(license.expiration_date) - new Date()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.ceil((new Date(license.expirationDate) - new Date()) / (1000 * 60 * 60 * 24));
     
     return res.status(200).json({
       success: true,
@@ -521,17 +521,17 @@ exports.getLicenseUsage = async (req, res) => {
         usage: {
           clients: {
             current: clientCount,
-            max: license.max_clients,
+            max: license.maxClients,
             percentage: clientUsagePercent
           },
           devices: {
             current: deviceCount,
-            max: license.max_devices,
+            max: license.maxDevices,
             percentage: deviceUsagePercent
           },
           daysRemaining: daysRemaining > 0 ? daysRemaining : 0,
           status: license.status,
-          isExpired: new Date(license.expiration_date) < new Date()
+          isExpired: new Date(license.expirationDate) < new Date()
         }
       },
       message: 'License usage statistics retrieved successfully'
