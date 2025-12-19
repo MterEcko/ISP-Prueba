@@ -340,34 +340,40 @@ function registerSystemMigrations(autoMigration) {
     return true;
   });
 
-  // Migración 8: Agregar 'router' al enum de planType en SystemLicenses
-  autoMigration.register('system-license-router-plan', async (sequelize) => {
+  // Migración 8: Convertir planType de ENUM a STRING (Store es la fuente de verdad)
+  autoMigration.register('system-license-plantype-to-string', async (sequelize) => {
     const dialect = sequelize.getDialect();
+    const tableExists = await autoMigration.tableExists('SystemLicenses');
 
-    if (dialect === 'postgres') {
+    if (tableExists && dialect === 'postgres') {
       try {
-        // Verificar si el valor 'router' ya existe en el enum
-        const [results] = await sequelize.query(`
-          SELECT EXISTS (
-            SELECT 1 FROM pg_enum
-            WHERE enumtypid = (
-              SELECT oid FROM pg_type WHERE typname = 'enum_SystemLicenses_planType'
-            )
-            AND enumlabel = 'router'
-          ) as exists;
+        // Verificar si planType es actualmente un ENUM
+        const [columnInfo] = await sequelize.query(`
+          SELECT data_type FROM information_schema.columns
+          WHERE table_name = 'SystemLicenses' AND column_name = 'planType';
         `);
 
-        if (!results[0].exists) {
-          // Agregar 'router' al enum existente
+        if (columnInfo.length > 0 && columnInfo[0].data_type === 'USER-DEFINED') {
+          // Convertir de ENUM a VARCHAR
           await sequelize.query(`
-            ALTER TYPE "enum_SystemLicenses_planType" ADD VALUE IF NOT EXISTS 'router';
+            ALTER TABLE "SystemLicenses"
+            ALTER COLUMN "planType" TYPE VARCHAR(50)
+            USING "planType"::text;
           `);
-          logger.info('✅ Valor "router" agregado al enum planType');
-        } else {
-          logger.info('ℹ️  Valor "router" ya existe en enum planType');
+          logger.info('Columna planType convertida de ENUM a VARCHAR(50)');
+
+          // Intentar eliminar el ENUM type si no se usa en otras tablas
+          try {
+            await sequelize.query(`
+              DROP TYPE IF EXISTS "enum_SystemLicenses_planType";
+            `);
+            logger.info('ENUM planType eliminado - Store es ahora la fuente de verdad para tipos de plan');
+          } catch (error) {
+            logger.warn(`No se pudo eliminar ENUM planType: ${error.message}`);
+          }
         }
       } catch (error) {
-        logger.warn(`Enum planType router: ${error.message}`);
+        logger.warn(`Conversion planType: ${error.message}`);
       }
     }
 

@@ -19,7 +19,7 @@ module.exports = (sequelize) => {
       comment: 'ID único del hardware donde está instalada la licencia'
     },
     planType: {
-      type: DataTypes.ENUM('freemium', 'basic', 'router', 'premium', 'enterprise', 'full_access'),
+      type: DataTypes.STRING(50),
       allowNull: false
     },
     clientLimit: {
