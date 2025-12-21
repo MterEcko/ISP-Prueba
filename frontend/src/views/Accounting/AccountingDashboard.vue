@@ -1,7 +1,23 @@
 <template>
   <div class="accounting-dashboard">
     <div class="header">
-      <h1>Dashboard Financiero</h1>
+      <div class="header-title">
+        <h1>Dashboard Financiero</h1>
+      </div>
+      <div class="header-actions">
+        <button @click="goToExpenses" class="btn btn-secondary">
+          <span class="icon">💸</span>
+          Gastos Fijos
+        </button>
+        <button @click="goToPayroll" class="btn btn-secondary">
+          <span class="icon">👥</span>
+          Nóminas
+        </button>
+        <button @click="goToReports" class="btn btn-secondary">
+          <span class="icon">📊</span>
+          Reportes
+        </button>
+      </div>
       <div class="period-selector">
         <select v-model="selectedMonth" @change="loadDashboard">
           <option value="1">Enero</option>
@@ -217,11 +233,49 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
-.header h1 {
+.header-title h1 {
   font-size: 28px;
   color: #2c3e50;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.header-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.header-actions .btn-secondary {
+  background: #ecf0f1;
+  color: #2c3e50;
+}
+
+.header-actions .btn-secondary:hover {
+  background: #3498db;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+.header-actions .btn .icon {
+  font-size: 16px;
 }
 
 .period-selector {
