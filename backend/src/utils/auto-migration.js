@@ -379,6 +379,41 @@ function registerSystemMigrations(autoMigration) {
 
     return true;
   });
+
+  // Migración 9: Agregar campos de autenticación a tabla Clients
+  autoMigration.register('client-portal-auth-fields', async (sequelize) => {
+    const tableExists = await autoMigration.tableExists('Clients');
+
+    if (tableExists) {
+      await autoMigration.addColumnIfNotExists(
+        'Clients',
+        'clientNumber',
+        'VARCHAR(10) UNIQUE'
+      );
+
+      await autoMigration.addColumnIfNotExists(
+        'Clients',
+        'password',
+        'VARCHAR(255)'
+      );
+
+      await autoMigration.addColumnIfNotExists(
+        'Clients',
+        'passwordChangedAt',
+        'TIMESTAMP'
+      );
+
+      await autoMigration.addColumnIfNotExists(
+        'Clients',
+        'lastLoginAt',
+        'TIMESTAMP'
+      );
+
+      logger.info('Campos de autenticación agregados a tabla Clients');
+    }
+
+    return true;
+  });
 }
 
 module.exports = {

@@ -1118,6 +1118,15 @@ try {
   console.error('❌ Error en clientPortal.routes:', error.message);
 }
 
+// Rutas de Autenticación de Clientes
+try {
+  console.log('Registrando clientAuth.routes...');
+  app.use('/api/client-auth', require('./routes/clientAuth.routes'));
+  console.log('✅ clientAuth.routes registradas');
+} catch (error) {
+  console.error('❌ Error en clientAuth.routes:', error.message);
+}
+
 // Plugin Services - Descubrimiento dinámico de servicios
 try {
   console.log('Registrando pluginService.routes...');

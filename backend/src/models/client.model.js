@@ -87,6 +87,25 @@ module.exports = (sequelize) => {
     serviceType: {
       type: DataTypes.ENUM('residential', 'business', 'enterprise'),
       defaultValue: 'residential'
+    },
+
+    // Portal del cliente - Autenticación
+    clientNumber: {
+      type: DataTypes.STRING(10),
+      unique: true,
+      allowNull: true // Se genera cuando se crea el servicio
+    },
+    password: {
+      type: DataTypes.STRING(255),
+      allowNull: true // Se genera cuando se crea el servicio
+    },
+    passwordChangedAt: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    lastLoginAt: {
+      type: DataTypes.DATE,
+      allowNull: true
     }
     // ❌ REMOVIDO: jellyfinUserId, jellyfinActive (van a plugin)
   }, {
