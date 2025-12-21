@@ -127,6 +127,11 @@ const routes = [
     component: Login
   },
   {
+    path: '/client-login',
+    name: 'ClientLogin',
+    component: () => import('../views/ClientLogin.vue')
+  },
+  {
     path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,
@@ -1624,21 +1629,44 @@ loadPluginRoutes()
 // ===============================
 
 router.beforeEach((to, from, next) => {
-  const publicPages = ['/', '/login', '/404'];
+  const publicPages = ['/', '/login', '/client-login', '/404'];
   const authRequired = !publicPages.includes(to.path);
   const loggedIn = localStorage.getItem('user');
-  
-  // Log b??sico de navegaci?3n
-  console.log('e?��- Navegando de', from.path, 'a', to.path);
+  const clientLoggedIn = localStorage.getItem('clientToken');
 
-  // Verificar autenticaci?3n
+  // Log basico de navegacion
+  console.log('Navegando de', from.path, 'a', to.path);
+
+  // Verificar si la ruta es del portal del cliente
+  const isClientPortalRoute = to.path.startsWith('/client-portal');
+
+  // Portal del cliente requiere autenticacion de cliente
+  if (isClientPortalRoute) {
+    if (!clientLoggedIn) {
+      console.log('Acceso denegado al portal - Cliente no autenticado');
+      next('/client-login');
+      return;
+    }
+    // Cliente autenticado, permitir acceso
+    next();
+    return;
+  }
+
+  // Rutas del sistema administrativo requieren autenticacion de usuario
   if (authRequired && !loggedIn) {
-    console.log('a??Acceso denegado - Usuario no autenticado');
+    // Si el cliente intenta acceder al sistema administrativo
+    if (clientLoggedIn) {
+      console.log('Acceso denegado - Cliente intentando acceder al sistema administrativo');
+      next('/client-portal/dashboard');
+      return;
+    }
+
+    console.log('Acceso denegado - Usuario no autenticado');
     next('/login');
     return;
   }
 
-  // Establecer t?-tulo de la p??gina
+  // Establecer titulo de la pagina
   if (to.meta?.title) {
     document.title = `${to.meta.title} - Sistema ISP`;
   } else {
@@ -1647,7 +1675,7 @@ router.beforeEach((to, from, next) => {
 
   // Log para operaciones peligrosas
   if (to.meta?.dangerous) {
-    console.warn('a? ??? NAVEGANDO A OPERACI?��N PELIGROSA:', {
+    console.warn('NAVEGANDO A OPERACION PELIGROSA:', {
       route: to.name,
       operationType: to.meta.operationType,
       params: to.params
