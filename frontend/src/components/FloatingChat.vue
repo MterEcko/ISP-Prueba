@@ -28,7 +28,7 @@
               <span>{{ currentConversation.name }}</span>
             </div>
           </div>
-          <div class="header-actions" v-if="currentConversation">
+          <div class="header-actions" v-if="currentConversation && !isClient">
             <button @click="startVoiceCall" class="btn-call" title="Llamada de voz">
               📞
             </button>
@@ -240,6 +240,13 @@ export default {
         if (this.selectedUsers.some(selected => selected.id === user.id)) return false;
         return true;
       });
+    },
+
+    isClient() {
+      // Verificar si es un cliente del portal
+      const clientToken = localStorage.getItem('clientToken');
+      const client = localStorage.getItem('client');
+      return !!(clientToken && client);
     }
   },
 
