@@ -254,14 +254,42 @@
             <div class="form-section">
               <h3>Información Básica</h3>
 
-              <div class="form-group">
+              <div class="form-group employee-search-group">
                 <label>Empleado *</label>
-                <select v-model="createForm.userId" required @change="onEmployeeChange">
-                  <option value="">Seleccionar empleado</option>
-                  <option v-for="emp in employees" :key="emp.id" :value="emp.id">
-                    {{ emp.fullName }} - {{ emp.position }}
-                  </option>
-                </select>
+                <div class="employee-autocomplete">
+                  <input
+                    type="text"
+                    v-model="employeeSearch"
+                    @input="filterEmployees"
+                    @focus="showEmployeeSuggestions = true"
+                    placeholder="Buscar empleado por nombre o puesto..."
+                    class="employee-search-input"
+                  />
+                  <div
+                    v-if="showEmployeeSuggestions && filteredEmployees.length > 0"
+                    class="employee-suggestions"
+                  >
+                    <div
+                      v-for="emp in filteredEmployees"
+                      :key="emp.id"
+                      @click="selectEmployee(emp)"
+                      class="employee-suggestion-item"
+                    >
+                      <div class="employee-name">{{ emp.fullName }}</div>
+                      <div class="employee-position">{{ emp.position || 'Sin puesto' }}</div>
+                    </div>
+                  </div>
+                  <div
+                    v-if="showEmployeeSuggestions && filteredEmployees.length === 0 && employeeSearch"
+                    class="no-suggestions"
+                  >
+                    No se encontraron empleados
+                  </div>
+                </div>
+                <div v-if="selectedEmployeeDisplay" class="selected-employee-badge">
+                  <span>{{ selectedEmployeeDisplay }}</span>
+                  <button @click="clearEmployeeSelection" type="button" class="clear-selection">✕</button>
+                </div>
               </div>
 
               <div class="form-group">
@@ -570,6 +598,11 @@ export default {
       showDetailModal: false,
       showCreateModal: false,
       selectedPayroll: null,
+      // Employee search autocomplete
+      employeeSearch: '',
+      filteredEmployees: [],
+      showEmployeeSuggestions: false,
+      selectedEmployeeDisplay: '',
       generateForm: {
         monthYear: new Date().toISOString().substring(0, 7) // YYYY-MM
       },
@@ -775,6 +808,38 @@ export default {
         deductionNotes: '',
         notes: ''
       };
+      this.employeeSearch = '';
+      this.selectedEmployeeDisplay = '';
+      this.filteredEmployees = [];
+      this.showEmployeeSuggestions = false;
+    },
+    filterEmployees() {
+      const search = this.employeeSearch.toLowerCase().trim();
+
+      if (!search) {
+        this.filteredEmployees = this.employees.slice(0, 10); // Mostrar primeros 10
+        return;
+      }
+
+      this.filteredEmployees = this.employees.filter(emp => {
+        const fullName = emp.fullName?.toLowerCase() || '';
+        const position = emp.position?.toLowerCase() || '';
+        return fullName.includes(search) || position.includes(search);
+      }).slice(0, 10); // Limitar a 10 resultados
+    },
+    selectEmployee(employee) {
+      this.createForm.userId = employee.id;
+      this.employeeSearch = employee.fullName;
+      this.selectedEmployeeDisplay = `${employee.fullName} - ${employee.position || 'Sin puesto'}`;
+      this.showEmployeeSuggestions = false;
+      this.onEmployeeChange();
+    },
+    clearEmployeeSelection() {
+      this.createForm.userId = '';
+      this.employeeSearch = '';
+      this.selectedEmployeeDisplay = '';
+      this.filteredEmployees = [];
+      this.createForm.baseSalary = 0;
     },
     async onEmployeeChange() {
       if (!this.createForm.userId) return;
@@ -1485,13 +1550,21 @@ tr:hover {
 
 /* Modal de crear nómina individual */
 .modal-large {
-  max-width: 900px;
+  width: 95%;
+  max-width: 1000px;
+  max-height: 95vh;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .form-section {
@@ -1601,6 +1674,105 @@ tr:hover {
 .summary-row.final .net-amount {
   color: #27ae60;
   font-size: 24px;
+}
+
+/* Employee autocomplete styles */
+.employee-search-group {
+  position: relative;
+}
+
+.employee-autocomplete {
+  position: relative;
+}
+
+.employee-search-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.employee-search-input:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+.employee-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.employee-suggestion-item {
+  padding: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f1f1;
+  transition: background-color 0.2s;
+}
+
+.employee-suggestion-item:hover {
+  background: #f8f9fa;
+}
+
+.employee-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.employee-name {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.employee-position {
+  font-size: 12px;
+  color: #7f8c8d;
+}
+
+.no-suggestions {
+  padding: 12px;
+  text-align: center;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+.selected-employee-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #e3f2fd;
+  border: 1px solid #2196f3;
+  border-radius: 6px;
+  color: #1976d2;
+  font-weight: 500;
+}
+
+.selected-employee-badge .clear-selection {
+  background: none;
+  border: none;
+  color: #1976d2;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  transition: color 0.2s;
+}
+
+.selected-employee-badge .clear-selection:hover {
+  color: #d32f2f;
 }
 
 @media (max-width: 768px) {

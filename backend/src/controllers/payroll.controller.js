@@ -379,7 +379,7 @@ exports.getEmployeePayrolls = async (req, res) => {
   }
 };
 
-// Generar nóminas mensuales automáticamente
+// Generar nóminas mensuales automáticamente basadas en EmployeeConfig
 exports.generateMonthlyPayrolls = async (req, res) => {
   try {
     const { month, year } = req.body;
@@ -389,50 +389,67 @@ exports.generateMonthlyPayrolls = async (req, res) => {
     }
 
     const period = `${year}-${String(month).padStart(2, '0')}`;
+    const EmployeeConfig = require('../models/employeeConfig.model');
 
-    // Obtener todos los empleados activos con salario
-    const employees = await User.findAll({
+    // Obtener todos los empleados activos con configuración
+    const employeeConfigs = await EmployeeConfig.findAll({
       where: {
-        active: true,
-        role: {
-          [Op.in]: ['employee', 'admin', 'technician']
-        }
-      }
+        active: true
+      },
+      include: [{
+        model: User,
+        as: 'employee',
+        where: { active: true }
+      }]
     });
 
     const created = [];
     const skipped = [];
 
-    for (const employee of employees) {
-      // Verificar si ya tiene nómina para este periodo
+    // Mapeo de días por tipo de pago
+    const daysMapping = {
+      'weekly': 7,
+      'biweekly': 14,
+      'catorcenal': 14,
+      'quincenal': 15,
+      'monthly': 30,
+      'cada10dias': 10
+    };
+
+    for (const config of employeeConfigs) {
+      const employee = config.employee;
+
+      if (!employee) {
+        continue;
+      }
+
+      // Usar el tipo de pago predeterminado del empleado
+      const paymentType = config.defaultPaymentType || 'monthly';
+
+      // Verificar si ya tiene nómina para este periodo y tipo de pago
       const existing = await Payroll.findOne({
         where: {
           userId: employee.id,
           period,
-          paymentType: 'monthly'
+          paymentType
         }
       });
 
       if (existing) {
         skipped.push({
           employee: employee.fullName,
-          reason: 'Ya existe nómina para este periodo'
+          reason: `Ya existe nómina ${paymentType} para este periodo`
         });
         continue;
       }
 
-      // Si el empleado no tiene salario configurado, saltar
-      if (!employee.salary || employee.salary <= 0) {
-        skipped.push({
-          employee: employee.fullName,
-          reason: 'No tiene salario configurado'
-        });
-        continue;
-      }
+      // Calcular salario base según días del período
+      const dailySalary = parseFloat(config.dailySalary);
+      const days = daysMapping[paymentType] || 30;
+      const baseSalary = dailySalary * days;
 
-      // Calcular deducciones básicas (ejemplo: 16% ISR, 3% IMSS)
-      const baseSalary = parseFloat(employee.salary);
-      const taxDeduction = baseSalary * 0.16; // 16% ISR
+      // Calcular deducciones básicas (12% ISR, 3% IMSS)
+      const taxDeduction = baseSalary * 0.12; // 12% ISR
       const socialSecurityDeduction = baseSalary * 0.03; // 3% IMSS
       const totalDeductions = taxDeduction + socialSecurityDeduction;
       const netSalary = baseSalary - totalDeductions;
@@ -440,11 +457,12 @@ exports.generateMonthlyPayrolls = async (req, res) => {
       const payroll = await Payroll.create({
         userId: employee.id,
         period,
-        paymentType: 'monthly',
+        paymentType,
         baseSalary,
         overtimeHours: 0,
         overtimeAmount: 0,
         bonus: 0,
+        commissions: 0,
         taxDeduction,
         socialSecurityDeduction,
         otherDeductions: 0,
@@ -452,18 +470,21 @@ exports.generateMonthlyPayrolls = async (req, res) => {
         netSalary,
         status: 'pending',
         createdBy: req.userId,
-        notes: 'Nómina generada automáticamente'
+        notes: `Prenómina generada automáticamente (${days} días × $${dailySalary.toFixed(2)} diarios)`
       });
 
       created.push({
         employee: employee.fullName,
+        position: config.position || 'Sin puesto',
         payrollId: payroll.id,
+        paymentType,
+        baseSalary,
         netSalary
       });
     }
 
     res.json({
-      message: `Generación de nóminas completada para ${period}`,
+      message: `Generación de prenóminas completada para ${period}`,
       created: created.length,
       skipped: skipped.length,
       details: {
@@ -472,8 +493,8 @@ exports.generateMonthlyPayrolls = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error al generar nóminas mensuales:', error);
-    res.status(500).json({ error: 'Error al generar nóminas mensuales' });
+    console.error('Error al generar prenóminas:', error);
+    res.status(500).json({ error: 'Error al generar prenóminas: ' + error.message });
   }
 };
 
