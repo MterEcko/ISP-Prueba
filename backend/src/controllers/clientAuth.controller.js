@@ -7,29 +7,12 @@ const crypto = require('crypto');
 const { Client } = db;
 
 /**
- * Generar número de cliente único con formato de 5 dígitos
- * 00001, 00030, 99999, 100000, etc.
+ * Generar número de cliente basado en el ID del cliente
+ * Formato de 5 dígitos mínimo: 00001, 00030, 99999, 100000, etc.
  */
-async function generateClientNumber() {
-  // Obtener el último cliente con clientNumber
-  const lastClient = await Client.findOne({
-    where: {
-      clientNumber: {
-        [db.Sequelize.Op.ne]: null
-      }
-    },
-    order: [['id', 'DESC']]
-  });
-
-  let nextNumber = 1;
-
-  if (lastClient && lastClient.clientNumber) {
-    const currentNumber = parseInt(lastClient.clientNumber);
-    nextNumber = currentNumber + 1;
-  }
-
-  // Formatear con ceros a la izquierda (mínimo 5 dígitos)
-  return nextNumber.toString().padStart(5, '0');
+function generateClientNumber(clientId) {
+  // Formatear ID con ceros a la izquierda (mínimo 5 dígitos)
+  return clientId.toString().padStart(5, '0');
 }
 
 /**
@@ -73,8 +56,8 @@ exports.generateClientCredentials = async (req, res) => {
       });
     }
 
-    // Generar número de cliente único
-    const clientNumber = await generateClientNumber();
+    // Generar número de cliente basado en el ID
+    const clientNumber = generateClientNumber(client.id);
 
     // Generar contraseña aleatoria
     const plainPassword = generateRandomPassword();

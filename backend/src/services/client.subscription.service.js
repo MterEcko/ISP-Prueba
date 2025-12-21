@@ -1,6 +1,8 @@
 // backend/src/services/client.subscription.service.js - VERSIÓN COMPLETA
 const db = require('../models');
 const logger = require('../utils/logger');
+const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 
 // Servicios existentes
 const ClientMikrotikService = require('./client.mikrotik.service');
@@ -180,14 +182,25 @@ class ClientSubscriptionService {
         }, transaction);
       }
 
+      // 12. Generar credenciales del portal del cliente (si no las tiene)
+      const credentialsGenerated = await this._generateClientPortalCredentials(client, transaction);
+
       await transaction.commit();
 
       logger.info(`Suscripción creada exitosamente - ID: ${subscription.id}, Usuario PPPoE: ${pppoeUsername}`);
 
-      // 12. Obtener datos completos para respuesta
+      // Log de credenciales del portal si fueron generadas
+      if (credentialsGenerated.generated) {
+        logger.info(`CREDENCIALES DEL PORTAL GENERADAS para Cliente ${clientId}:`);
+        logger.info(`  Usuario: ${credentialsGenerated.clientNumber}`);
+        logger.info(`  Contraseña temporal: ${credentialsGenerated.password}`);
+        logger.info(`  IMPORTANTE: Proporcionar estas credenciales al cliente`);
+      }
+
+      // 13. Obtener datos completos para respuesta
       try {
         const fullSubscription = await this.getSubscriptionDetails(subscription.id);
-        
+
         return {
           success: true,
           data: {
@@ -196,9 +209,17 @@ class ClientSubscriptionService {
             pppoeData: pppoeResult.data,
             ipAssigned: ipAssignment,
             billing: autoCreateBilling ? 'created' : 'skipped',
-            conflictResolution: conflictInfo || null
+            conflictResolution: conflictInfo || null,
+            clientPortalCredentials: credentialsGenerated.generated ? {
+              generated: true,
+              clientNumber: credentialsGenerated.clientNumber,
+              temporaryPassword: credentialsGenerated.password
+            } : {
+              generated: false,
+              clientNumber: client.clientNumber
+            }
           },
-          message: reuseExisting ? 
+          message: reuseExisting ?
             `¡Suscripción creada reutilizando usuario existente: ${pppoeUsername}!` :
             `¡Suscripción creada exitosamente! Usuario PPPoE: ${pppoeUsername}`
         };
@@ -218,7 +239,15 @@ class ClientSubscriptionService {
             pppoeAction: reuseExisting ? 'reused' : 'created',
             pppoeData: pppoeResult.data,
             ipAssigned: ipAssignment,
-            billing: autoCreateBilling ? 'created' : 'skipped'
+            billing: autoCreateBilling ? 'created' : 'skipped',
+            clientPortalCredentials: credentialsGenerated.generated ? {
+              generated: true,
+              clientNumber: credentialsGenerated.clientNumber,
+              temporaryPassword: credentialsGenerated.password
+            } : {
+              generated: false,
+              clientNumber: client.clientNumber
+            }
           },
           message: `¡Suscripción creada exitosamente! Usuario PPPoE: ${pppoeUsername}`
         };
@@ -756,6 +785,62 @@ class ClientSubscriptionService {
       password += charset.charAt(Math.floor(Math.random() * charset.length));
     }
     
+    return password;
+  }
+
+  /**
+   * Genera credenciales del portal para un cliente (si no las tiene)
+   * clientNumber = ID del cliente con padding de 5 dígitos
+   * @private
+   */
+  async _generateClientPortalCredentials(client, transaction) {
+    // Verificar si el cliente ya tiene credenciales
+    if (client.clientNumber && client.password) {
+      logger.info(`Cliente ${client.id} ya tiene credenciales del portal`);
+      return {
+        generated: false,
+        clientNumber: client.clientNumber
+      };
+    }
+
+    // Generar clientNumber usando el ID con padding de 5 dígitos
+    const clientNumber = client.id.toString().padStart(5, '0');
+
+    // Generar contraseña aleatoria de 12 caracteres
+    const plainPassword = this._generateRandomPassword(12);
+
+    // Hashear contraseña
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
+    // Actualizar cliente con credenciales
+    await client.update({
+      clientNumber,
+      password: hashedPassword,
+      passwordChangedAt: new Date()
+    }, { transaction });
+
+    logger.info(`Credenciales del portal generadas para cliente ${client.id} - Usuario: ${clientNumber}`);
+
+    return {
+      generated: true,
+      clientNumber,
+      password: plainPassword // Solo se retorna en logs para que el admin lo guarde
+    };
+  }
+
+  /**
+   * Genera contraseña aleatoria para portal del cliente
+   * @private
+   */
+  _generateRandomPassword(length = 12) {
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+
+    for (let i = 0; i < length; i++) {
+      const randomIndex = crypto.randomInt(0, charset.length);
+      password += charset[randomIndex];
+    }
+
     return password;
   }
 
