@@ -11,6 +11,12 @@ class StoreApiClient {
     this.hardwareId = this.generateHardwareId();
     this.locationCache = null;
     this.locationCacheExpiry = null;
+
+    // Log de configuración para debugging
+    logger.info(`🔧 StoreApiClient inicializado:`);
+    logger.info(`   - STORE_API_URL env: ${process.env.STORE_API_URL}`);
+    logger.info(`   - storeUrl usado: ${this.storeUrl}`);
+    logger.info(`   - STORE_API_KEY configurado: ${this.apiKey ? 'Sí' : 'No'}`);
   }
 
   /**
