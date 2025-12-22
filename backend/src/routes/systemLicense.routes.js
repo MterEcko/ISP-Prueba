@@ -88,4 +88,38 @@ module.exports = function(app) {
     //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
     systemLicense.getLicenseUsage
   );
+
+  // === Rutas adicionales de licenseRegistration ===
+
+  // Get hardware info (sin autenticación para permitir registro inicial)
+  app.get(
+    "/api/system/hardware-info",
+    licenseRegistration.getHardwareInfo
+  );
+
+  // Validate license key (sin autenticación para permitir registro inicial)
+  app.post(
+    "/api/system-licenses/validate-key",
+    licenseRegistration.validateLicenseKey
+  );
+
+  // Register company (sin autenticación para permitir registro inicial)
+  app.post(
+    "/api/system-licenses/register-company",
+    licenseRegistration.registerCompanyAndLicense
+  );
+
+  // Force validation (requiere autenticación)
+  app.post(
+    "/api/licenses/force-validation",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
+    licenseRegistration.forceValidation
+  );
+
+  // Update hardware info (requiere autenticación)
+  app.post(
+    "/api/licenses/update-hardware",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
+    licenseRegistration.updateHardwareInfo
+  );
 };
