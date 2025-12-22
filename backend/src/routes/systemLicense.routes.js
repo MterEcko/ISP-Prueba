@@ -1,5 +1,6 @@
 const { authJwt } = require("../middleware");
 const systemLicense = require("../controllers/systemLicense.controller");
+const licenseRegistration = require("../controllers/licenseRegistration.controller");
 
 module.exports = function(app) {
   app.use(function(req, res, next) {
@@ -18,10 +19,11 @@ module.exports = function(app) {
   );
 
   // Get current active license (DEBE IR ANTES de /:id)
+  // USAR licenseRegistration que tiene integración con Store
   app.get(
     "/api/system-licenses/current",
     //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
-    systemLicense.getCurrentLicense
+    licenseRegistration.getCurrentLicense
   );
 
   // Get system license by ID
@@ -52,11 +54,11 @@ module.exports = function(app) {
     systemLicense.deleteLicense
   );
 
-  // Activate a system license
+  // Activate a system license - USAR licenseRegistration con Store
   app.post(
     "/api/system-licenses/activate",
     //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
-    systemLicense.activateLicense
+    licenseRegistration.registerCompanyAndLicense
   );
 
   // Deactivate a system license
@@ -66,11 +68,11 @@ module.exports = function(app) {
     systemLicense.deactivateLicense
   );
 
-  // Verify license status
+  // Verify license status - USAR licenseRegistration con Store
   app.post(
     "/api/system-licenses/verify",
     //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
-    systemLicense.verifyLicense
+    licenseRegistration.validateLicenseKey
   );
 
   // Renew a system license
