@@ -237,8 +237,21 @@ db.sequelize.authenticate()
 
     // Sincronizar modelos SIN borrar datos existentes
     // force: false = No borra tablas existentes
-    // alter: true = Modifica estructura para agregar columnas nuevas (servicePackageId)
-    return db.sequelize.sync({ force: false, alter: true });
+    // alter: true = Solo en PostgreSQL (SQLite no soporta ALTER TABLE con PRIMARY KEY)
+    const dialect = db.sequelize.getDialect();
+    const syncOptions = {
+      force: false,
+      alter: dialect === 'postgres' // Solo modificar estructura en PostgreSQL
+    };
+
+    logger.info(`📊 Base de datos: ${dialect.toUpperCase()}`);
+    if (syncOptions.alter) {
+      logger.info('⚙️  Modo sync: ALTER habilitado (actualizará estructura de tablas)');
+    } else {
+      logger.info('⚙️  Modo sync: ALTER deshabilitado (solo creará tablas nuevas)');
+    }
+
+    return db.sequelize.sync(syncOptions);
   })
   .then(() => {
     logger.info('✅ Modelos de base de datos sincronizados');
