@@ -110,6 +110,125 @@ exports.activateLicense = async (req, res) => {
   }
 };
 
+// Registrar licencia con información de instalación (llamado desde backend)
+exports.registerLicense = async (req, res) => {
+  try {
+    const {
+      licenseKey,
+      companyId,
+      companyName,
+      subdomain,
+      hardware,
+      location,
+      systemVersion,
+      installedAt
+    } = req.body;
+
+    if (!licenseKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'licenseKey es requerido'
+      });
+    }
+
+    // Buscar la licencia
+    const license = await License.findOne({ where: { licenseKey } });
+    if (!license) {
+      return res.status(404).json({
+        success: false,
+        message: 'Licencia no encontrada'
+      });
+    }
+
+    // Buscar o crear instalación
+    let installation;
+    if (hardware && hardware.hardwareId) {
+      [installation] = await Installation.findOrCreate({
+        where: { hardwareId: hardware.hardwareId },
+        defaults: {
+          installationKey: `INST-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`.toUpperCase(),
+          companyName: companyName || 'Unknown',
+          contactEmail: license.metadata?.email || 'unknown@example.com',
+          hardwareId: hardware.hardwareId,
+          systemInfo: hardware,
+          softwareVersion: systemVersion || '1.0.0',
+          currentLatitude: location?.latitude || null,
+          currentLongitude: location?.longitude || null,
+          currentCountry: location?.country || null,
+          currentCity: location?.city || null,
+          status: 'active',
+          metadata: {
+            subdomain,
+            installedAt,
+            registeredVia: 'backend-api'
+          }
+        }
+      });
+
+      // Actualizar información si ya existía
+      if (installation) {
+        await installation.update({
+          companyName: companyName || installation.companyName,
+          systemInfo: hardware,
+          softwareVersion: systemVersion || installation.softwareVersion,
+          currentLatitude: location?.latitude || installation.currentLatitude,
+          currentLongitude: location?.longitude || installation.currentLongitude,
+          currentCountry: location?.country || installation.currentCountry,
+          currentCity: location?.city || installation.currentCity,
+          lastHeartbeat: new Date(),
+          isOnline: true
+        });
+      }
+    }
+
+    // Activar licencia y vincular a instalación
+    await license.update({
+      status: 'active',
+      activatedAt: license.activatedAt || new Date(),
+      installationId: installation?.id || null,
+      boundToHardwareId: hardware?.hardwareId || null,
+      metadata: {
+        ...license.metadata,
+        companyName,
+        subdomain,
+        registeredAt: new Date().toISOString(),
+        location,
+        systemVersion
+      }
+    });
+
+    // Actualizar instalación con la licencia actual
+    if (installation) {
+      await installation.update({
+        currentLicenseId: license.id
+      });
+    }
+
+    logger.info(`✅ Licencia registrada: ${licenseKey} - Hardware: ${hardware?.hardwareId}`);
+
+    res.json({
+      success: true,
+      message: 'Licencia registrada exitosamente',
+      data: {
+        licenseId: license.id,
+        licenseKey: license.licenseKey,
+        installationId: installation?.id,
+        installationKey: installation?.installationKey,
+        status: license.status,
+        activatedAt: license.activatedAt
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error registrando licencia:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+
 // Verificar licencia
 exports.verifyLicense = async (req, res) => {
   try {
