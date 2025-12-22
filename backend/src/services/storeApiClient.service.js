@@ -6,7 +6,8 @@ const logger = require('../utils/logger');
 
 class StoreApiClient {
   constructor() {
-    this.storeUrl = process.env.STORE_API_URL || 'https://store.tudominio.com/api';
+    this.storeUrl = process.env.STORE_API_URL || 'https://store.serviciosqbit.net/api';
+    this.fallbackUrl = process.env.STORE_API_FALLBACK_URL || 'http://localhost:3001/api';
     this.apiKey = process.env.STORE_API_KEY;
     this.hardwareId = this.generateHardwareId();
     this.locationCache = null;
@@ -14,9 +15,9 @@ class StoreApiClient {
 
     // Log de configuración para debugging
     logger.info(`🔧 StoreApiClient inicializado:`);
-    logger.info(`   - STORE_API_URL env: ${process.env.STORE_API_URL}`);
-    logger.info(`   - storeUrl usado: ${this.storeUrl}`);
-    logger.info(`   - STORE_API_KEY configurado: ${this.apiKey ? 'Sí' : 'No'}`);
+    logger.info(`   - URL principal: ${this.storeUrl}`);
+    logger.info(`   - URL fallback: ${this.fallbackUrl}`);
+    logger.info(`   - STORE_API_KEY: ${this.apiKey ? 'Sí' : 'No'}`);
   }
 
   /**
@@ -139,119 +140,167 @@ class StoreApiClient {
   }
 
   /**
-   * Registrar licencia en el Store
+   * Registrar licencia en el Store (con fallback automático)
    */
   async registerLicense(licenseData) {
-    try {
-      const hardwareInfo = await this.getHardwareInfo();
-      const location = await this.getGPSLocation();
+    const hardwareInfo = await this.getHardwareInfo();
+    const location = await this.getGPSLocation();
 
-      const payload = {
-        licenseKey: licenseData.licenseKey,
-        companyId: licenseData.companyId,
-        companyName: licenseData.companyName,
-        subdomain: licenseData.subdomain || null,
+    const payload = {
+      licenseKey: licenseData.licenseKey,
+      companyId: licenseData.companyId,
+      companyName: licenseData.companyName,
+      subdomain: licenseData.subdomain || null,
+      hardware: hardwareInfo,
+      location: location,
+      systemVersion: process.env.SYSTEM_VERSION || '1.0.0',
+      installedAt: new Date().toISOString()
+    };
 
-        // Información del hardware
-        hardware: hardwareInfo,
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
+    };
 
-        // Ubicación GPS
-        location: location,
+    const urls = [this.storeUrl, this.fallbackUrl];
 
-        // Metadata
-        systemVersion: process.env.SYSTEM_VERSION || '1.0.0',
-        installedAt: new Date().toISOString()
-      };
+    for (let i = 0; i < urls.length; i++) {
+      const baseUrl = urls[i];
+      const fullUrl = `${baseUrl}/licenses/register`;
 
-      const response = await axios.post(
-        `${this.storeUrl}/licenses/register`,
-        payload,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 10000
+      try {
+        logger.info(`🌐 Registrando licencia en: ${baseUrl} (${i === 0 ? 'principal' : 'fallback'})`);
+
+        const response = await axios.post(fullUrl, payload, config);
+
+        if (i > 0) {
+          logger.warn(`⚠️  Usando Store fallback: ${baseUrl}`);
         }
-      );
 
-      logger.info(`✅ Licencia registrada en Store: ${licenseData.licenseKey}`);
+        logger.info(`✅ Licencia registrada en Store: ${licenseData.licenseKey}`);
 
-      return {
-        success: true,
-        data: response.data
-      };
+        return {
+          success: true,
+          data: response.data
+        };
 
-    } catch (error) {
-      logger.error('Error registrando licencia en Store:', error.message);
-      return {
-        success: false,
-        error: error.response?.data?.message || error.message
-      };
+      } catch (error) {
+        const isNetworkError = error.code === 'ECONNREFUSED' ||
+                               error.code === 'ETIMEDOUT' ||
+                               error.code === 'ENOTFOUND' ||
+                               error.response?.status === 502 ||
+                               error.response?.status === 503;
+
+        if (isNetworkError && i < urls.length - 1) {
+          logger.warn(`⚠️  Fallo en ${baseUrl}, intentando fallback...`);
+          continue;
+        }
+
+        logger.error('Error registrando licencia en Store:', error.message);
+        return {
+          success: false,
+          error: error.response?.data?.message || error.message
+        };
+      }
     }
   }
 
   /**
-   * Validar licencia con el Store
+   * Validar licencia con el Store (con fallback automático)
    */
   async validateLicense(licenseKey) {
-    try {
-      const hardwareInfo = await this.getHardwareInfo();
+    const hardwareInfo = await this.getHardwareInfo();
+    const payload = {
+      licenseKey: licenseKey,
+      hardwareId: this.hardwareId,
+      hardware: {
+        cpu: hardwareInfo.cpu,
+        memory: hardwareInfo.memory,
+        platform: hardwareInfo.platform
+      },
+      systemVersion: process.env.SYSTEM_VERSION || '1.0.0'
+    };
 
-      const response = await axios.post(
-        `${this.storeUrl}/licenses/validate`,
-        {
-          licenseKey: licenseKey,
-          hardwareId: this.hardwareId,
-          hardware: {
-            cpu: hardwareInfo.cpu,
-            memory: hardwareInfo.memory,
-            platform: hardwareInfo.platform
-          },
-          systemVersion: process.env.SYSTEM_VERSION || '1.0.0'
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 10000
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
+    };
+
+    const urls = [this.storeUrl, this.fallbackUrl];
+    let lastError;
+
+    for (let i = 0; i < urls.length; i++) {
+      const baseUrl = urls[i];
+      const fullUrl = `${baseUrl}/licenses/validate`;
+
+      try {
+        logger.info(`🌐 Validando licencia en: ${baseUrl} (${i === 0 ? 'principal' : 'fallback'})`);
+
+        const response = await axios.post(fullUrl, payload, config);
+
+        if (i > 0) {
+          logger.warn(`⚠️  Usando Store fallback: ${baseUrl}`);
         }
-      );
 
-      // Log de debug para ver exactamente qué recibe del Store
-      logger.info(`📦 Respuesta del Store: ${JSON.stringify(response.data, null, 2)}`);
-      logger.info(`🔍 Valid field value: ${response.data.valid} (type: ${typeof response.data.valid})`);
-      logger.info(`✅ Licencia validada con Store: ${response.data.valid ? 'VÁLIDA' : 'INVÁLIDA'}`);
+        // Log de debug para ver exactamente qué recibe del Store
+        logger.info(`📦 Respuesta del Store: ${JSON.stringify(response.data, null, 2)}`);
+        logger.info(`🔍 Valid field value: ${response.data.valid} (type: ${typeof response.data.valid})`);
+        logger.info(`✅ Licencia validada con Store: ${response.data.valid ? 'VÁLIDA' : 'INVÁLIDA'}`);
 
-      return {
-        valid: response.data.valid,
-        status: response.data.status, // active, suspended, expired
-        planType: response.data.planType,
-        expiresAt: response.data.expiresAt,
-        features: response.data.features,
-        limits: response.data.limits,
-        suspended: response.data.status === 'suspended',
-        suspensionReason: response.data.suspensionReason || null
-      };
-
-    } catch (error) {
-      logger.error('Error validando licencia con Store:', error.message);
-
-      // Si es error de red, permitir validación offline
-      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
         return {
-          valid: true,
-          offline: true,
-          warning: 'Validación offline - sin conexión con Store'
+          valid: response.data.valid,
+          status: response.data.status,
+          planType: response.data.planType,
+          expiresAt: response.data.expiresAt,
+          features: response.data.features,
+          limits: response.data.limits,
+          suspended: response.data.status === 'suspended',
+          suspensionReason: response.data.suspensionReason || null
+        };
+
+      } catch (error) {
+        lastError = error;
+        const isNetworkError = error.code === 'ECONNREFUSED' ||
+                               error.code === 'ETIMEDOUT' ||
+                               error.code === 'ENOTFOUND' ||
+                               error.response?.status === 502 ||
+                               error.response?.status === 503;
+
+        if (isNetworkError && i < urls.length - 1) {
+          logger.warn(`⚠️  Fallo en ${baseUrl} (${error.message}), intentando fallback...`);
+          continue;
+        }
+
+        // Si llegamos aquí y es el último intento, loguear error y retornar offline
+        logger.error('Error validando licencia con Store:', error.message);
+
+        // Si es error de red y ya probamos todos los URLs, permitir modo offline
+        if (isNetworkError) {
+          return {
+            valid: true,
+            offline: true,
+            warning: 'Validación offline - sin conexión con Store'
+          };
+        }
+
+        return {
+          valid: false,
+          error: error.response?.data?.message || error.message
         };
       }
-
-      return {
-        valid: false,
-        error: error.response?.data?.message || error.message
-      };
     }
+
+    // Fallback final si todo falla
+    return {
+      valid: false,
+      error: lastError?.message || 'Error desconocido'
+    };
   }
 
   /**
