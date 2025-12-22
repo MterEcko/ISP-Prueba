@@ -524,6 +524,11 @@ export default {
 
         if (response.data.success) {
           this.registrationResult = response.data.data;
+
+          // Actualizar el Vuex store con la licencia activada
+          await this.$store.dispatch('license/fetchCurrentLicense');
+          await this.$store.dispatch('license/checkLicenseStatus');
+
           this.successDialog = true;
         } else {
           this.showSnackbar(response.data.message || 'Error en el registro', 'error');
@@ -538,8 +543,17 @@ export default {
       }
     },
 
-    finishRegistration() {
+    async finishRegistration() {
       this.successDialog = false;
+
+      // Asegurar que el estado de licencia esté actualizado antes de redirigir
+      try {
+        await this.$store.dispatch('license/fetchCurrentLicense');
+        await this.$store.dispatch('license/checkLicenseStatus');
+      } catch (error) {
+        console.error('Error actualizando estado de licencia:', error);
+      }
+
       this.$router.push('/dashboard');
     },
 
