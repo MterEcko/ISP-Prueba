@@ -322,5 +322,3 @@ exports.updateProfile = async (req, res) => {
     });
   }
 };
-
-module.exports = exports;

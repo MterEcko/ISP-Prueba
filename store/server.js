@@ -163,7 +163,7 @@ app.get('/health', (req, res) => {
 app.use('/api/licenses', require('./src/routes/license.routes'));
 app.use('/api/installations', require('./src/routes/installation.routes'));
 app.use('/api/plugins', require('./src/routes/plugin.routes'));
-app.use('./api/marketplace', require('./src/routes/plugin.routes')); // Marketplace es un alias
+app.use('/api/marketplace', require('./src/routes/plugin.routes')); // Marketplace es un alias
 app.use('/api/telemetry', require('./src/routes/telemetry.routes'));
 app.use('/api/remote-control', require('./src/routes/remoteControl.routes'));
 app.use('/api/analytics', require('./src/routes/analytics.routes'));
