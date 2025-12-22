@@ -62,6 +62,16 @@ module.exports = (sequelize) => {
       type: DataTypes.DATE,
       allowNull: true,
       comment: 'Última validación con el servidor'
+    },
+    companyName: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      comment: 'Nombre de la empresa asociada a la licencia'
+    },
+    companyEmail: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      comment: 'Email de la empresa'
     }
   }, {
     tableName: 'SystemLicenses',
