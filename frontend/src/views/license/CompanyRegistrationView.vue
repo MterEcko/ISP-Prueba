@@ -475,7 +475,7 @@ export default {
     async validateLicenseKey() {
       this.validatingLicense = true;
       try {
-        const response = await api.post('/licenses/validate-key', {
+        const response = await api.post('/system-licenses/validate-key', {
           licenseKey: this.license.key
         });
 
@@ -520,7 +520,7 @@ export default {
           location: this.location
         };
 
-        const response = await api.post('/licenses/register-company', payload);
+        const response = await api.post('/system-licenses/register-company', payload);
 
         if (response.data.success) {
           this.registrationResult = response.data.data;

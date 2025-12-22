@@ -96,8 +96,8 @@ class LicenseService {
     return axios.post(
       `${API_URL}system-licenses/verify`,
       {
-        license_key: licenseKey,
-        hardware_id: hardwareId
+        licenseKey: licenseKey,  // Cambiado de license_key a licenseKey (camelCase)
+        hardwareId: hardwareId   // Cambiado de hardware_id a hardwareId (camelCase)
       },
       {
         headers: authHeader()
