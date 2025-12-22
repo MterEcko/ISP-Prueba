@@ -251,9 +251,21 @@ exports.verifyLicense = async (req, res) => {
     const isActive = license.status === 'active';
     const hardwareMatches = !license.boundToHardwareId || license.boundToHardwareId === hardwareId;
 
+    // Formato compatible con backend (response.data.planType, response.data.valid, etc.)
     res.json({
       success: true,
       valid: isActive && !isExpired && hardwareMatches,
+      status: license.status,  // active, suspended, expired, etc.
+      planType: license.planType,
+      expiresAt: license.expiresAt,
+      features: license.featuresEnabled || {},
+      limits: {
+        clients: license.clientLimit,
+        users: license.userLimit,
+        plugins: -1,
+        includedPlugins: []
+      },
+      // También incluir en formato anterior para compatibilidad
       license: {
         planType: license.planType,
         clientLimit: license.clientLimit,
