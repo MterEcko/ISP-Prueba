@@ -214,7 +214,8 @@ class StoreApiClient {
       );
 
       // Log de debug para ver exactamente qué recibe del Store
-      logger.info(`📦 Respuesta del Store:`, JSON.stringify(response.data, null, 2));
+      logger.info(`📦 Respuesta del Store: ${JSON.stringify(response.data, null, 2)}`);
+      logger.info(`🔍 Valid field value: ${response.data.valid} (type: ${typeof response.data.valid})`);
       logger.info(`✅ Licencia validada con Store: ${response.data.valid ? 'VÁLIDA' : 'INVÁLIDA'}`);
 
       return {
