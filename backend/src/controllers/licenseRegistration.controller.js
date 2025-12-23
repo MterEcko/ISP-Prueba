@@ -115,14 +115,20 @@ exports.registerCompanyAndLicense = async (req, res) => {
     // 1. Validar licencia con Store
     const validation = await storeApiClient.validateLicense(license.key);
 
-    if (!validation.valid) {
+    // Aceptar licencias en estado 'pending' (nuevas) o 'active' (renovación)
+    const validStatuses = ['pending', 'active'];
+    const isValidForRegistration = validStatuses.includes(validation.status);
+
+    if (!isValidForRegistration) {
+      logger.warn(`❌ Licencia rechazada - Estado: ${validation.status}`);
       return res.status(400).json({
         success: false,
-        message: 'Licencia inválida o expirada'
+        message: `Licencia en estado ${validation.status}. No se puede registrar.`,
+        status: validation.status
       });
     }
 
-    logger.info(`✅ Licencia validada: ${license.key}`);
+    logger.info(`✅ Licencia validada (${validation.status}): ${license.key}`);
 
     // 2. Registrar empresa en Store
     const companyRegistration = await storeApiClient.registerCompany({
