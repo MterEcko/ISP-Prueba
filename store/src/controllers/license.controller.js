@@ -117,6 +117,11 @@ exports.registerLicense = async (req, res) => {
       licenseKey,
       companyId,
       companyName,
+      companyRfc,
+      companyEmail,
+      companyPhone,
+      companyAddress,
+      contactName,
       subdomain,
       hardware,
       location,
@@ -148,7 +153,8 @@ exports.registerLicense = async (req, res) => {
         defaults: {
           installationKey: `INST-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`.toUpperCase(),
           companyName: companyName || 'Unknown',
-          contactEmail: license.metadata?.email || 'unknown@example.com',
+          contactEmail: companyEmail || license.metadata?.email || 'unknown@example.com',
+          contactPhone: companyPhone || null,
           hardwareId: hardware.hardwareId,
           systemInfo: hardware,
           softwareVersion: systemVersion || '1.0.0',
@@ -158,6 +164,9 @@ exports.registerLicense = async (req, res) => {
           currentCity: location?.city || null,
           status: 'active',
           metadata: {
+            rfc: companyRfc,
+            address: companyAddress,
+            contactName: contactName,
             subdomain,
             installedAt,
             registeredVia: 'backend-api'
@@ -169,6 +178,8 @@ exports.registerLicense = async (req, res) => {
       if (installation) {
         await installation.update({
           companyName: companyName || installation.companyName,
+          contactEmail: companyEmail || installation.contactEmail,
+          contactPhone: companyPhone || installation.contactPhone,
           systemInfo: hardware,
           softwareVersion: systemVersion || installation.softwareVersion,
           currentLatitude: location?.latitude || installation.currentLatitude,
@@ -176,7 +187,14 @@ exports.registerLicense = async (req, res) => {
           currentCountry: location?.country || installation.currentCountry,
           currentCity: location?.city || installation.currentCity,
           lastHeartbeat: new Date(),
-          isOnline: true
+          isOnline: true,
+          metadata: {
+            ...installation.metadata,
+            rfc: companyRfc || installation.metadata?.rfc,
+            address: companyAddress || installation.metadata?.address,
+            contactName: contactName || installation.metadata?.contactName,
+            subdomain: subdomain || installation.metadata?.subdomain
+          }
         });
       }
     }

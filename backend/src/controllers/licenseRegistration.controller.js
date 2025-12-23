@@ -130,39 +130,29 @@ exports.registerCompanyAndLicense = async (req, res) => {
 
     logger.info(`✅ Licencia validada (${validation.status}): ${license.key}`);
 
-    // 2. Registrar empresa en Store
-    const companyRegistration = await storeApiClient.registerCompany({
-      name: company.name,
-      rfc: company.rfc,
-      email: company.email,
-      phone: company.phone,
-      address: company.address,
-      contactName: company.contactName,
-      licenseKey: license.key,
-      subdomain: subdomain
-    });
-
-    if (!companyRegistration.success) {
-      return res.status(500).json({
-        success: false,
-        message: 'Error registrando empresa en Store',
-        error: companyRegistration.error
-      });
-    }
-
-    logger.info(`✅ Empresa registrada en Store: ${companyRegistration.companyId}`);
-
-    // 3. Registrar licencia con información completa
+    // 2. Registrar licencia con información completa (esto crea/actualiza instalación)
     const licenseRegistration = await storeApiClient.registerLicense({
       licenseKey: license.key,
-      companyId: companyRegistration.companyId,
+      companyId: null, // Se asignará en el Store
       companyName: company.name,
+      companyRfc: company.rfc,
+      companyEmail: company.email,
+      companyPhone: company.phone,
+      companyAddress: company.address,
+      contactName: company.contactName,
       subdomain: subdomain
     });
 
     if (!licenseRegistration.success) {
       logger.error('Error registrando licencia:', licenseRegistration.error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error registrando licencia en Store',
+        error: licenseRegistration.error
+      });
     }
+
+    logger.info(`✅ Licencia registrada en Store con datos de empresa`);
 
     // 4. Crear subdominio si es necesario
     let subdomainResult = null;
