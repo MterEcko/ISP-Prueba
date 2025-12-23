@@ -31,6 +31,9 @@ exports.getHardwareInfo = async (req, res) => {
 /**
  * Validar clave de licencia
  * POST /api/licenses/validate-key
+ *
+ * Este endpoint valida que la licencia EXISTA y esté disponible para registro.
+ * Acepta licencias en estado 'pending' o 'active' (no importa si ya está activada).
  */
 exports.validateLicenseKey = async (req, res) => {
   try {
@@ -46,10 +49,16 @@ exports.validateLicenseKey = async (req, res) => {
     // Validar con Store
     const validation = await storeApiClient.validateLicense(licenseKey);
 
-    if (validation.valid) {
+    // Determinar si la licencia es válida para el formulario de registro
+    // Aceptamos 'pending' (nueva licencia) y 'active' (renovación/migración)
+    const validStatuses = ['pending', 'active'];
+    const isValidForRegistration = validStatuses.includes(validation.status);
+
+    if (isValidForRegistration) {
       return res.status(200).json({
         success: true,
         valid: true,
+        status: validation.status,
         license: {
           planType: validation.planType,
           expiresAt: validation.expiresAt,
@@ -63,7 +72,8 @@ exports.validateLicenseKey = async (req, res) => {
       return res.status(200).json({
         success: true,
         valid: false,
-        message: validation.error || 'Licencia inválida'
+        status: validation.status,
+        message: validation.error || `Licencia en estado: ${validation.status}`
       });
     }
 
