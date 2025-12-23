@@ -162,7 +162,10 @@ exports.registerLicense = async (req, res) => {
           currentLongitude: location?.longitude || null,
           currentCountry: location?.country || null,
           currentCity: location?.city || null,
+          currentLicenseId: license.id,  // Vincular licencia desde la creación
           status: 'active',
+          lastHeartbeat: new Date(),
+          isOnline: true,
           metadata: {
             rfc: companyRfc,
             address: companyAddress,
@@ -186,6 +189,7 @@ exports.registerLicense = async (req, res) => {
           currentLongitude: location?.longitude || installation.currentLongitude,
           currentCountry: location?.country || installation.currentCountry,
           currentCity: location?.city || installation.currentCity,
+          currentLicenseId: license.id,  // Actualizar licencia vinculada
           lastHeartbeat: new Date(),
           isOnline: true,
           metadata: {

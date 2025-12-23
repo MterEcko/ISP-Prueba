@@ -214,20 +214,17 @@ exports.registerCompanyAndLicense = async (req, res) => {
 
     logger.info(`✅ Licencia guardada en BD local: ${localLicense.id}`);
 
-    // 6. Guardar información de la empresa en tabla local (opcional)
-    // Puedes crear un modelo Company si lo necesitas
-
     // Respuesta exitosa
     return res.status(200).json({
       success: true,
       message: 'Empresa y licencia registradas exitosamente',
       data: {
-        companyId: companyRegistration.companyId,
         licenseId: localLicense.id,
         planType: validation.planType,
         subdomain: subdomainResult?.fullDomain || null,
         hardwareId: hardware.hardwareId,
-        activatedAt: localLicense.activatedAt
+        activatedAt: localLicense.activatedAt,
+        companyName: company.name
       }
     });
 
