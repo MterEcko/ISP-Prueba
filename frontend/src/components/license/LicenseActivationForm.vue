@@ -210,7 +210,7 @@ export default {
       licenseKeyRules: [
         v => !!v || 'La clave de licencia es requerida',
         v => (v && v.length >= 16) || 'La clave debe tener al menos 16 caracteres',
-        v => (v && v.length <= 64) || 'La clave no puede tener más de 64 caracteres'
+        v => (v && v.length <= 100) || 'La clave no puede tener más de 100 caracteres'
       ]
     };
   },
