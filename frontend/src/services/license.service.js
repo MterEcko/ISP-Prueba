@@ -67,8 +67,8 @@ class LicenseService {
     return axios.post(
       `${API_URL}system-licenses/activate`,
       {
-        license_key: licenseKey,
-        hardware_id: hardwareId
+        licenseKey: licenseKey,  // camelCase como espera el backend
+        hardwareId: hardwareId   // camelCase como espera el backend
       },
       {
         headers: authHeader()

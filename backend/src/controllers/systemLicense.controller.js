@@ -7,6 +7,9 @@ const {
   getMasterLicenseInfo,
   validateAgainstMaster
 } = require('../config/master-license');
+const storeApiClient = require('../services/storeApiClient.service');
+const hardwareInfoService = require('../services/hardwareInfo.service');
+const locationInfoService = require('../services/locationInfo.service');
 
 // Get all system licenses
 exports.getAllLicenses = async (req, res) => {
@@ -254,54 +257,96 @@ exports.deleteLicense = async (req, res) => {
   }
 };
 
-// Activate a system license
+// Activate a system license (para usuarios ya registrados)
 exports.activateLicense = async (req, res) => {
   try {
     const { licenseKey, hardwareId } = req.body;
-    
+
     if (!licenseKey) {
       return res.status(400).json({
         success: false,
         message: 'License key is required'
       });
     }
-    
-    const license = await SystemLicense.findOne({
-      where: { licenseKey }
-    });
-    
-    if (!license) {
-      return res.status(404).json({
-        success: false,
-        message: 'Invalid license key'
-      });
-    }
-    
-    // Check if license is expired
-    if (new Date(license.expirationDate) < new Date()) {
+
+    logger.info(`🔑 Activando licencia: ${licenseKey}`);
+
+    // Validar contra el Store primero
+    const hwId = hardwareId || await hardwareInfoService.getHardwareId();
+    const validation = await storeApiClient.validateLicense(licenseKey, hwId);
+
+    if (!validation.success || !validation.valid) {
       return res.status(400).json({
         success: false,
-        message: 'License has expired'
+        message: validation.message || 'Licencia inválida o expirada'
       });
     }
-    
-    // Update hardware ID if provided
-    if (hardwareId) {
-      license.hardwareId = hardwareId;
+
+    logger.info(`✅ Licencia validada en Store: ${licenseKey}`);
+
+    // Obtener información del hardware y ubicación
+    const hardware = await hardwareInfoService.getHardwareInfo();
+    const location = await locationInfoService.getLocationInfo();
+
+    // Registrar en el Store (solo hardware + GPS, sin datos de empresa)
+    const storeRegistration = await storeApiClient.registerLicense({
+      licenseKey,
+      hardware,
+      location,
+      systemVersion: '1.0.0'
+      // NO enviamos datos de empresa porque ya están registrados
+    });
+
+    if (!storeRegistration.success) {
+      logger.warn(`⚠️ Error al registrar en Store: ${storeRegistration.message}`);
+    } else {
+      logger.info(`✅ Licencia registrada en Store: ${licenseKey}`);
     }
-    
-    // Set license as active
-    license.status = 'active';
-    license.activationDate = new Date();
-    await license.save();
-    
+
+    // Buscar o crear en BD local
+    let localLicense = await SystemLicense.findOne({ where: { licenseKey } });
+
+    if (!localLicense) {
+      // Crear nueva licencia local
+      localLicense = await SystemLicense.create({
+        licenseKey,
+        planType: validation.planType || 'basic',
+        clientLimit: validation.limits?.clients,
+        hardwareId: hwId,
+        status: 'active',
+        active: true,
+        activationDate: new Date(),
+        expirationDate: validation.expiresAt,
+        featuresEnabled: validation.features || {},
+        metadata: {
+          registeredAt: new Date().toISOString(),
+          source: 'store',
+          location
+        }
+      });
+      logger.info(`✅ Licencia creada en BD local: ${licenseKey}`);
+    } else {
+      // Actualizar licencia existente
+      await localLicense.update({
+        hardwareId: hwId,
+        status: 'active',
+        active: true,
+        activationDate: new Date(),
+        expirationDate: validation.expiresAt,
+        planType: validation.planType || localLicense.planType,
+        clientLimit: validation.limits?.clients || localLicense.clientLimit,
+        featuresEnabled: validation.features || localLicense.featuresEnabled
+      });
+      logger.info(`✅ Licencia actualizada en BD local: ${licenseKey}`);
+    }
+
     return res.status(200).json({
       success: true,
-      data: license,
-      message: 'License activated successfully'
+      data: localLicense,
+      message: 'Licencia activada exitosamente'
     });
   } catch (error) {
-    logger.error(`Error activating license: ${error.message}`);
+    logger.error(`❌ Error activando licencia: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: error.message || 'Error activating license'
