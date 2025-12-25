@@ -16,6 +16,128 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
 
+// ==================== SEEDER FUNCTIONS ====================
+
+/**
+ * Crea los paquetes de servicio por default si no existen
+ */
+async function createDefaultPackages() {
+  const { ServicePackage } = db;
+
+  const defaultPackages = [
+    {
+      name: 'Basic',
+      slug: 'basic',
+      description: 'Plan básico para pequeños ISPs',
+      longDescription: 'Ideal para ISPs que están comenzando. Incluye funcionalidades esenciales para gestionar clientes y servicios.',
+      price: 29.99,
+      currency: 'USD',
+      clientLimit: 100,
+      userLimit: 3,
+      branchLimit: 1,
+      features: [
+        'Gestión de clientes',
+        'Control de pagos',
+        'Reportes básicos',
+        'Soporte por email'
+      ],
+      featuresEnabled: {
+        clientManagement: true,
+        billing: true,
+        reports: true,
+        support: 'email'
+      },
+      billingCycle: 'monthly',
+      status: 'active',
+      displayOrder: 1
+    },
+    {
+      name: 'Premium',
+      slug: 'premium',
+      description: 'Plan avanzado para ISPs en crecimiento',
+      longDescription: 'Para ISPs en expansión. Incluye todas las características del plan básico más herramientas avanzadas de gestión y soporte prioritario.',
+      price: 79.99,
+      currency: 'USD',
+      clientLimit: 500,
+      userLimit: 10,
+      branchLimit: 3,
+      features: [
+        'Todo lo del plan Basic',
+        'Gestión multi-sucursal',
+        'Reportes avanzados',
+        'Integración con MikroTik',
+        'Soporte prioritario 24/7',
+        'API completa'
+      ],
+      featuresEnabled: {
+        clientManagement: true,
+        billing: true,
+        reports: true,
+        multiBranch: true,
+        mikrotikIntegration: true,
+        api: true,
+        support: 'priority'
+      },
+      billingCycle: 'monthly',
+      status: 'active',
+      displayOrder: 2
+    },
+    {
+      name: 'Enterprise',
+      slug: 'enterprise',
+      description: 'Plan empresarial sin límites',
+      longDescription: 'Para grandes ISPs y empresas. Clientes, usuarios y sucursales ilimitados. Soporte dedicado y personalización completa.',
+      price: 199.99,
+      currency: 'USD',
+      clientLimit: null, // ilimitado
+      userLimit: null, // ilimitado
+      branchLimit: null, // ilimitado
+      features: [
+        'Todo lo del plan Premium',
+        'Clientes ilimitados',
+        'Usuarios ilimitados',
+        'Sucursales ilimitadas',
+        'Personalización completa',
+        'Soporte dedicado',
+        'Implementación asistida',
+        'Capacitación incluida'
+      ],
+      featuresEnabled: {
+        clientManagement: true,
+        billing: true,
+        reports: true,
+        multiBranch: true,
+        mikrotikIntegration: true,
+        api: true,
+        customization: true,
+        dedicatedSupport: true,
+        training: true,
+        support: 'dedicated'
+      },
+      billingCycle: 'monthly',
+      status: 'active',
+      displayOrder: 3
+    }
+  ];
+
+  try {
+    for (const packageData of defaultPackages) {
+      const [pkg, created] = await ServicePackage.findOrCreate({
+        where: { slug: packageData.slug },
+        defaults: packageData
+      });
+
+      if (created) {
+        logger.info(`📦 Paquete creado: ${packageData.name} (${packageData.slug})`);
+      }
+    }
+
+    logger.info('✅ Paquetes de servicio verificados/creados');
+  } catch (error) {
+    logger.error('❌ Error creando paquetes por default:', error);
+  }
+}
+
 // ==================== MIDDLEWARE ====================
 
 // Security headers: Configuración personalizada para permitir 'scripts' en línea
@@ -253,8 +375,11 @@ db.sequelize.authenticate()
 
     return db.sequelize.sync(syncOptions);
   })
-  .then(() => {
+  .then(async () => {
     logger.info('✅ Modelos de base de datos sincronizados');
+
+    // Crear paquetes por default si no existen
+    await createDefaultPackages();
 
     // Iniciar servidor
     app.listen(PORT, HOST, () => {

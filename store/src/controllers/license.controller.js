@@ -13,11 +13,13 @@ exports.generateLicense = async (req, res) => {
   try {
     const {
       planType = 'basic',
+      servicePackageId,
       clientLimit,
       userLimit,
       branchLimit = 1,
       featuresEnabled = {},
       expiresAt,
+      expiresInDays,
       isRecurring = false,
       recurringInterval,
       price = 0
@@ -25,21 +27,29 @@ exports.generateLicense = async (req, res) => {
 
     const licenseKey = generateLicenseKey();
 
+    // Calcular fecha de expiración si se proporcionó expiresInDays
+    let calculatedExpiresAt = expiresAt;
+    if (expiresInDays && expiresInDays > 0) {
+      const now = new Date();
+      calculatedExpiresAt = new Date(now.getTime() + (expiresInDays * 24 * 60 * 60 * 1000));
+    }
+
     const license = await License.create({
       licenseKey,
       planType,
+      servicePackageId, // Vincular con el paquete
       clientLimit,
       userLimit,
       branchLimit,
       featuresEnabled,
-      expiresAt,
+      expiresAt: calculatedExpiresAt,
       isRecurring,
       recurringInterval,
       price,
       status: 'pending'
     });
 
-    logger.info(`Licencia generada: ${licenseKey}`);
+    logger.info(`📝 Licencia generada: ${licenseKey} - Paquete: ${planType} - Package ID: ${servicePackageId}`);
 
     res.status(201).json({
       success: true,
@@ -128,6 +138,20 @@ exports.registerLicense = async (req, res) => {
       systemVersion,
       installedAt
     } = req.body;
+
+    // 📋 Log detallado de datos recibidos
+    logger.info(`📋 REGISTRO DE LICENCIA - Datos recibidos:`);
+    logger.info(`  🔑 License Key: ${licenseKey}`);
+    logger.info(`  🏢 Empresa: ${companyName}`);
+    logger.info(`  📄 RFC: ${companyRfc || 'NO RECIBIDO'}`);
+    logger.info(`  📧 Email: ${companyEmail || 'NO RECIBIDO'}`);
+    logger.info(`  📱 Teléfono: ${companyPhone || 'NO RECIBIDO'}`);
+    logger.info(`  📍 Dirección: ${companyAddress || 'NO RECIBIDO'}`);
+    logger.info(`  👤 Contacto: ${contactName || 'NO RECIBIDO'}`);
+    logger.info(`  🌐 Subdominio: ${subdomain || 'NO RECIBIDO'}`);
+    logger.info(`  💻 Hardware ID: ${hardware?.hardwareId || 'NO RECIBIDO'}`);
+    logger.info(`  📍 Ubicación: ${location?.city}, ${location?.country} (${location?.latitude}, ${location?.longitude})`);
+    logger.info(`  📦 Versión: ${systemVersion || 'NO RECIBIDO'}`);
 
     if (!licenseKey) {
       return res.status(400).json({
@@ -224,6 +248,18 @@ exports.registerLicense = async (req, res) => {
       await installation.update({
         currentLicenseId: license.id
       });
+
+      // 📊 Log de instalación guardada
+      logger.info(`📊 INSTALACIÓN GUARDADA:`);
+      logger.info(`  🆔 ID: ${installation.id}`);
+      logger.info(`  🔑 Installation Key: ${installation.installationKey}`);
+      logger.info(`  🏢 Empresa: ${installation.companyName}`);
+      logger.info(`  📧 Email: ${installation.contactEmail}`);
+      logger.info(`  📱 Teléfono: ${installation.contactPhone}`);
+      logger.info(`  💻 Hardware ID: ${installation.hardwareId}`);
+      logger.info(`  🎫 Current License ID: ${installation.currentLicenseId}`);
+      logger.info(`  📍 GPS: ${installation.currentCity}, ${installation.currentCountry}`);
+      logger.info(`  📦 Metadata: ${JSON.stringify(installation.metadata)}`);
     }
 
     logger.info(`✅ Licencia registrada: ${licenseKey} - Hardware: ${hardware?.hardwareId}`);
@@ -271,12 +307,19 @@ exports.verifyLicense = async (req, res) => {
 
     const isExpired = license.isExpired();
     const isActive = license.status === 'active';
+    const isPending = license.status === 'pending';
     const hardwareMatches = !license.boundToHardwareId || license.boundToHardwareId === hardwareId;
+
+    // Licencias 'pending' son válidas para registro inicial
+    // Licencias 'active' son válidas si coincide hardware y no ha expirado
+    const isValidForRegistration = (isPending && !isExpired) || (isActive && !isExpired && hardwareMatches);
+
+    logger.info(`🔍 Verificando licencia ${licenseKey}: status=${license.status}, expired=${isExpired}, hardwareMatches=${hardwareMatches}, valid=${isValidForRegistration}`);
 
     // Formato compatible con backend (response.data.planType, response.data.valid, etc.)
     res.json({
       success: true,
-      valid: isActive && !isExpired && hardwareMatches,
+      valid: isValidForRegistration,
       status: license.status,  // active, suspended, expired, etc.
       planType: license.planType,
       expiresAt: license.expiresAt,
@@ -297,6 +340,7 @@ exports.verifyLicense = async (req, res) => {
       },
       verification: {
         isActive,
+        isPending,
         isExpired,
         hardwareMatches
       }

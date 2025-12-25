@@ -76,11 +76,9 @@
       <h3 style="margin-bottom: 20px;">Generar Nueva Licencia</h3>
 
       <div style="margin-bottom: 15px;">
-        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Tipo de Plan</label>
-        <select id="planType" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-          <option value="basic">Basic (50 clientes)</option>
-          <option value="premium">Premium (200 clientes)</option>
-          <option value="enterprise">Enterprise (Ilimitado)</option>
+        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Paquete de Servicio</label>
+        <select id="packageSelect" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+          <option value="">Cargando paquetes...</option>
         </select>
       </div>
 
@@ -105,6 +103,27 @@
   <script>
     const API_URL = window.location.origin + '/api';
     let allLicenses = [];
+    let allPackages = [];
+
+    async function loadPackages() {
+      try {
+        const response = await fetch(`${API_URL}/service-packages`);
+        const data = await response.json();
+
+        if (data.success && data.data) {
+          allPackages = data.data;
+          const select = document.getElementById('packageSelect');
+          select.innerHTML = allPackages.map(pkg => `
+            <option value="${pkg.id}" data-slug="${pkg.slug}">
+              ${pkg.name} - ${pkg.clientLimit ? pkg.clientLimit + ' clientes' : 'Ilimitado'} - $${pkg.price}/${pkg.billingCycle === 'monthly' ? 'mes' : 'año'}
+            </option>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('Error loading packages:', error);
+        document.getElementById('packageSelect').innerHTML = '<option value="">Error al cargar paquetes</option>';
+      }
+    }
 
     async function loadLicenses() {
       try {
@@ -188,8 +207,12 @@
       `;
     }
 
-    function showCreateLicenseDialog() {
+    async function showCreateLicenseDialog() {
       document.getElementById('createLicenseDialog').style.display = 'flex';
+      // Cargar paquetes si aún no se han cargado
+      if (allPackages.length === 0) {
+        await loadPackages();
+      }
     }
 
     function hideCreateLicenseDialog() {
@@ -197,12 +220,30 @@
     }
 
     async function createLicense() {
-      const planType = document.getElementById('planType').value;
+      const packageSelect = document.getElementById('packageSelect');
+      const servicePackageId = packageSelect.value;
+      const selectedOption = packageSelect.options[packageSelect.selectedIndex];
+      const planType = selectedOption.getAttribute('data-slug'); // basic, premium, enterprise
+
       const durationDays = parseInt(document.getElementById('durationDays').value);
       const neverExpires = document.getElementById('neverExpires').checked;
 
+      if (!servicePackageId) {
+        alert('❌ Por favor selecciona un paquete de servicio');
+        return;
+      }
+
+      // Obtener los límites del paquete seleccionado
+      const selectedPackage = allPackages.find(pkg => pkg.id === servicePackageId);
+
       const licenseData = {
-        planType,
+        planType, // basic, premium, enterprise (para compatibilidad)
+        servicePackageId, // ID del paquete
+        clientLimit: selectedPackage?.clientLimit,
+        userLimit: selectedPackage?.userLimit,
+        branchLimit: selectedPackage?.branchLimit,
+        featuresEnabled: selectedPackage?.featuresEnabled || {},
+        price: selectedPackage?.price || 0,
         expiresInDays: neverExpires ? null : durationDays
       };
 

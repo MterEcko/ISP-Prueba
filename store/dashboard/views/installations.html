@@ -123,9 +123,9 @@
                   ${inst.isOnline ? '<span class="badge badge-success" style="margin-top: 5px;">🟢 En línea</span>' : '<span class="badge badge-danger" style="margin-top: 5px;">🔴 Offline</span>'}
                 </td>
                 <td>
-                  ${inst.License ? `
-                    <span class="badge badge-info">${inst.License.planType}</span><br>
-                    <small>${inst.License.licenseKey.substring(0, 16)}...</small>
+                  ${inst.currentLicense ? `
+                    <span class="badge badge-info">${inst.currentLicense.planType}</span><br>
+                    <small>${inst.currentLicense.licenseKey.substring(0, 16)}...</small>
                   ` : '<span class="badge badge-warning">Sin licencia</span>'}
                 </td>
                 <td>
