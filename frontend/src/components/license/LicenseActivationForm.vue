@@ -240,7 +240,12 @@ export default {
           hardwareId: this.autoDetectHardware ? this.hardwareId : null
         });
 
-        if (!verifyResponse.verification.isValid) {
+        // Manejar respuesta del backend local vs Store
+        // Backend local: verification.isValid
+        // Store: valid directamente
+        const isValid = verifyResponse.verification?.isValid || verifyResponse.valid;
+
+        if (!isValid) {
           throw new Error('La licencia no es válida o ha expirado');
         }
 
