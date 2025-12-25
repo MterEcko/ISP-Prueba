@@ -121,12 +121,13 @@
 
     async function loadInstallationsMap() {
       try {
-        const response = await fetch(`${API_URL}/analytics/map`);
+        const response = await fetch(`${API_URL}/installations`);
         const data = await response.json();
 
         if (data.success) {
-          renderMap(data.data.installations);
-          updateMapStats(data.data);
+          const installations = data.data;
+          renderMap(installations);
+          updateMapStats({ installations });
         }
       } catch (error) {
         console.error('Error loading map data:', error);
@@ -195,8 +196,8 @@
           <p>${statusBadge} ${onlineBadge}</p>
           <p>📍 ${inst.currentCity || 'Ciudad desconocida'}, ${inst.currentCountry || 'N/A'}</p>
           <p>👥 Clientes: <strong>${inst.totalClients || 0}</strong></p>
-          <p>🔑 Licencia: ${inst.License ?
-            `<span class="badge badge-info">${inst.License.planType}</span>` :
+          <p>🔑 Licencia: ${inst.currentLicense ?
+            `<span class="badge badge-info">${inst.currentLicense.planType}</span>` :
             '<span class="badge badge-warning">Sin licencia</span>'
           }</p>
           <p>⏰ Último heartbeat: ${formatDate(inst.lastHeartbeat)}</p>

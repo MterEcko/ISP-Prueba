@@ -210,17 +210,27 @@ const actions = {
 
     try {
       const response = await licenseService.getCurrentLicense();
-      const license = response.data.data;
+      // Manejar respuesta con o sin wrapper data
+      const license = response.data.data || response.data;
       commit('SET_CURRENT_LICENSE', license);
       return license;
     } catch (error) {
-      // Si no hay licencia activa, intentar cargar desde localStorage
+      // Si no hay licencia activa en el servidor (404), intentar cargar desde localStorage
+      if (error.response?.status === 404) {
+        const localLicense = licenseService.getActiveLicense();
+        if (localLicense) {
+          commit('SET_CURRENT_LICENSE', localLicense);
+          return localLicense;
+        }
+      }
+      // Si hay una licencia local pero hubo otro error, usarla
       const localLicense = licenseService.getActiveLicense();
       if (localLicense) {
         commit('SET_CURRENT_LICENSE', localLicense);
-      } else {
-        commit('SET_ERROR', error.response?.data?.message || error.message);
+        return localLicense;
       }
+
+      commit('SET_ERROR', error.response?.data?.message || error.message);
       throw error;
     } finally {
       commit('SET_LOADING', { operation: 'current', value: false });
@@ -280,14 +290,28 @@ const actions = {
 
     try {
       const response = await licenseService.verifyLicense(licenseKey, hardwareId);
-      const verification = response.data.data;
 
-      // Si es válida, actualizar licencia actual
-      if (verification.verification.isValid) {
-        commit('SET_CURRENT_LICENSE', verification.license);
+      // Manejar respuesta del backend local vs Store
+      // Backend local: response.data.data con verification.isValid
+      // Store: response.data con valid (sin wrapper data)
+      const responseData = response.data.data || response.data;
+
+      // Determinar si es válida
+      let isValid = false;
+      if (responseData.verification && typeof responseData.verification.isValid !== 'undefined') {
+        // Formato del backend local
+        isValid = responseData.verification.isValid;
+      } else if (typeof responseData.valid !== 'undefined') {
+        // Formato del Store
+        isValid = responseData.valid;
       }
 
-      return verification;
+      // Si es válida, actualizar licencia actual
+      if (isValid && responseData.license) {
+        commit('SET_CURRENT_LICENSE', responseData.license);
+      }
+
+      return responseData;
     } catch (error) {
       commit('SET_ERROR', error.response?.data?.message || error.message);
       throw error;

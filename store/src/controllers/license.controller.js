@@ -1,7 +1,7 @@
 const db = require('../models');
 const crypto = require('crypto');
 const logger = require('../config/logger');
-const { License, Installation, ServicePackage } = db;
+const { License, Installation, ServicePackage, Customer } = db;
 
 // Generar clave de licencia
 function generateLicenseKey() {
@@ -260,6 +260,60 @@ exports.registerLicense = async (req, res) => {
       logger.info(`  🎫 Current License ID: ${installation.currentLicenseId}`);
       logger.info(`  📍 GPS: ${installation.currentCity}, ${installation.currentCountry}`);
       logger.info(`  📦 Metadata: ${JSON.stringify(installation.metadata)}`);
+
+      // 👤 Crear o actualizar Cliente en Customers
+      if (companyEmail) {
+        try {
+          const [customer, customerCreated] = await Customer.findOrCreate({
+            where: { email: companyEmail },
+            defaults: {
+              name: contactName || companyName || 'Cliente',
+              email: companyEmail,
+              phone: companyPhone,
+              companyName: companyName,
+              servicePackageId: license.servicePackageId,
+              licenseKey: license.licenseKey,
+              licenseId: license.id,
+              status: 'active',
+              registeredAt: new Date(),
+              metadata: {
+                rfc: companyRfc,
+                address: companyAddress,
+                subdomain,
+                installedAt,
+                installationId: installation.id,
+                registeredVia: 'backend-api'
+              }
+            }
+          });
+
+          if (!customerCreated) {
+            // Si ya existía, actualizar datos
+            await customer.update({
+              name: contactName || companyName || customer.name,
+              phone: companyPhone || customer.phone,
+              companyName: companyName || customer.companyName,
+              servicePackageId: license.servicePackageId || customer.servicePackageId,
+              licenseKey: license.licenseKey,
+              licenseId: license.id,
+              status: 'active',
+              metadata: {
+                ...customer.metadata,
+                rfc: companyRfc || customer.metadata?.rfc,
+                address: companyAddress || customer.metadata?.address,
+                subdomain: subdomain || customer.metadata?.subdomain,
+                installationId: installation.id
+              }
+            });
+            logger.info(`👤 Cliente actualizado: ${customer.name} (${customer.email})`);
+          } else {
+            logger.info(`👤 Cliente creado: ${customer.name} (${customer.email})`);
+          }
+        } catch (customerError) {
+          // Si hay error al crear el customer (ej: email duplicado), solo loguear pero no fallar el registro
+          logger.warn(`⚠️  Error al crear/actualizar cliente: ${customerError.message}`);
+        }
+      }
     }
 
     logger.info(`✅ Licencia registrada: ${licenseKey} - Hardware: ${hardware?.hardwareId}`);
