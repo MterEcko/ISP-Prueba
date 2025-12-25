@@ -26,7 +26,21 @@ module.exports = function(app) {
     licenseRegistration.getCurrentLicense
   );
 
-  // Get system license by ID
+  // Verify license status - DEBE IR ANTES de /:id
+  app.post(
+    "/api/system-licenses/verify",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
+    licenseRegistration.validateLicenseKey
+  );
+
+  // Activate a system license - DEBE IR ANTES de /:id
+  app.post(
+    "/api/system-licenses/activate",
+    //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
+    systemLicense.activateLicense
+  );
+
+  // Get system license by ID (DEBE IR DESPUÉS de rutas específicas)
   app.get(
     "/api/system-licenses/:id",
     //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
@@ -54,25 +68,11 @@ module.exports = function(app) {
     systemLicense.deleteLicense
   );
 
-  // Activate a system license - USAR licenseRegistration con Store
-  app.post(
-    "/api/system-licenses/activate",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
-    licenseRegistration.registerCompanyAndLicense
-  );
-
   // Deactivate a system license
   app.put(
     "/api/system-licenses/:id/deactivate",
     //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
     systemLicense.deactivateLicense
-  );
-
-  // Verify license status - USAR licenseRegistration con Store
-  app.post(
-    "/api/system-licenses/verify",
-    //[authJwt.verifyToken, authJwt.checkPermission("manage_system")],
-    licenseRegistration.validateLicenseKey
   );
 
   // Renew a system license
