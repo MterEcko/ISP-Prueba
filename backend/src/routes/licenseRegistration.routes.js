@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const licenseController = require('../controllers/licenseRegistration.controller');
-const { authenticate } = require('../middleware/auth.middleware');
+const { verifyToken } = require('../middleware/auth.middleware');
 
 // Rutas públicas (sin autenticación para permitir registro inicial)
 router.get('/system/hardware-info', licenseController.getHardwareInfo);
@@ -15,7 +15,7 @@ router.get('/system/hardware-info', licenseController.getHardwareInfo);
 // - POST /api/system-licenses/activate (usa registerCompanyAndLicense)
 
 // Rutas protegidas adicionales (no duplicadas)
-router.post('/licenses/force-validation', authenticate, licenseController.forceValidation);
-router.post('/licenses/update-hardware', authenticate, licenseController.updateHardwareInfo);
+router.post('/licenses/force-validation', verifyToken, licenseController.forceValidation);
+router.post('/licenses/update-hardware', verifyToken, licenseController.updateHardwareInfo);
 
 module.exports = router;
