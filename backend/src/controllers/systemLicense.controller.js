@@ -8,8 +8,6 @@ const {
   validateAgainstMaster
 } = require('../config/master-license');
 const storeApiClient = require('../services/storeApiClient.service');
-const hardwareInfoService = require('../services/hardwareInfo.service');
-const locationInfoService = require('../services/locationInfo.service');
 
 // Get all system licenses
 exports.getAllLicenses = async (req, res) => {
@@ -271,8 +269,12 @@ exports.activateLicense = async (req, res) => {
 
     logger.info(`🔑 Activando licencia: ${licenseKey}`);
 
+    // Obtener información del hardware y ubicación
+    const hardware = await storeApiClient.getHardwareInfo();
+    const location = await storeApiClient.getGPSLocation();
+    const hwId = hardwareId || hardware.hardwareId;
+
     // Validar contra el Store primero
-    const hwId = hardwareId || await hardwareInfoService.getHardwareId();
     const validation = await storeApiClient.validateLicense(licenseKey, hwId);
 
     if (!validation.success || !validation.valid) {
@@ -283,10 +285,6 @@ exports.activateLicense = async (req, res) => {
     }
 
     logger.info(`✅ Licencia validada en Store: ${licenseKey}`);
-
-    // Obtener información del hardware y ubicación
-    const hardware = await hardwareInfoService.getHardwareInfo();
-    const location = await locationInfoService.getLocationInfo();
 
     // Registrar en el Store (solo hardware + GPS, sin datos de empresa)
     const storeRegistration = await storeApiClient.registerLicense({
