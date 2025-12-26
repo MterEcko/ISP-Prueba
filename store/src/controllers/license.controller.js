@@ -203,27 +203,41 @@ exports.registerLicense = async (req, res) => {
 
       // Actualizar información si ya existía
       if (installation) {
-        await installation.update({
-          companyName: companyName || installation.companyName,
-          contactEmail: companyEmail || installation.contactEmail,
-          contactPhone: companyPhone || installation.contactPhone,
+        // Construir objeto de actualización solo con campos que tienen valor
+        const updateData = {
           systemInfo: hardware,
-          softwareVersion: systemVersion || installation.softwareVersion,
-          currentLatitude: location?.latitude || installation.currentLatitude,
-          currentLongitude: location?.longitude || installation.currentLongitude,
-          currentCountry: location?.country || installation.currentCountry,
-          currentCity: location?.city || installation.currentCity,
-          currentLicenseId: license.id,  // Actualizar licencia vinculada
+          currentLicenseId: license.id,
           lastHeartbeat: new Date(),
-          isOnline: true,
-          metadata: {
-            ...installation.metadata,
-            rfc: companyRfc || installation.metadata?.rfc,
-            address: companyAddress || installation.metadata?.address,
-            contactName: contactName || installation.metadata?.contactName,
-            subdomain: subdomain || installation.metadata?.subdomain
-          }
-        });
+          isOnline: true
+        };
+
+        // Solo actualizar datos de empresa si vienen
+        if (companyName) updateData.companyName = companyName;
+        if (companyEmail) updateData.contactEmail = companyEmail;
+        if (companyPhone) updateData.contactPhone = companyPhone;
+        if (systemVersion) updateData.softwareVersion = systemVersion;
+
+        // Solo actualizar ubicación si viene
+        if (location?.latitude) updateData.currentLatitude = location.latitude;
+        if (location?.longitude) updateData.currentLongitude = location.longitude;
+        if (location?.country) updateData.currentCountry = location.country;
+        if (location?.city) updateData.currentCity = location.city;
+
+        // Metadata: preservar existente y solo agregar nuevos valores
+        const preservedMetadata = installation.metadata || {};
+        const newMetadata = {};
+        if (companyRfc) newMetadata.rfc = companyRfc;
+        if (companyAddress) newMetadata.address = companyAddress;
+        if (contactName) newMetadata.contactName = contactName;
+        if (subdomain) newMetadata.subdomain = subdomain;
+
+        updateData.metadata = {
+          ...preservedMetadata,
+          ...newMetadata
+        };
+
+        await installation.update(updateData);
+        logger.info(`🔄 Instalación actualizada (datos de empresa preservados): ${installation.companyName}`);
       }
     }
 
