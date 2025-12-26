@@ -277,10 +277,12 @@ exports.activateLicense = async (req, res) => {
     // Validar contra el Store primero
     const validation = await storeApiClient.validateLicense(licenseKey, hwId);
 
-    if (!validation.success || !validation.valid) {
+    // validateLicense devuelve { valid, status, planType, ... }
+    // NO devuelve un campo 'success'
+    if (!validation.valid) {
       return res.status(400).json({
         success: false,
-        message: validation.message || 'Licencia inválida o expirada'
+        message: 'Licencia inválida o expirada'
       });
     }
 
