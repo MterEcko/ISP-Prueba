@@ -21,6 +21,9 @@ router.post('/:licenseKey/trigger-heartbeat', licenseController.triggerHeartbeat
 router.get('/commands/pending', licenseController.getPendingCommands);
 router.post('/commands/:commandId/report', licenseController.reportCommandExecution);
 
+// Email reports
+router.post('/reports/send', licenseController.sendOnDemandReport);
+
 router.get('/:licenseKey', licenseController.getLicense);
 router.put('/:licenseKey/revoke', licenseController.revokeLicense);
 router.get('/', licenseController.getAllLicenses);

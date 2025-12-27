@@ -1320,3 +1320,43 @@ exports.reportCommandExecution = async (req, res) => {
     });
   }
 };
+
+/**
+ * Generar y enviar reporte on-demand
+ */
+exports.sendOnDemandReport = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    const emailReportService = require('../services/emailReport.service');
+    const result = await emailReportService.sendOnDemandReport(email);
+
+    if (result.success) {
+      logger.info(`📧 Reporte on-demand enviado a ${email}`);
+      res.json({
+        success: true,
+        message: 'Report sent successfully',
+        email: email
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: result.error || result.reason || 'Failed to send report'
+      });
+    }
+
+  } catch (error) {
+    logger.error('Error sending on-demand report:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};

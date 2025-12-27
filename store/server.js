@@ -385,6 +385,10 @@ db.sequelize.authenticate()
     const emailAlertService = require('./src/services/emailAlert.service');
     await emailAlertService.initialize();
 
+    // Inicializar servicio de email reports (semanales)
+    const emailReportService = require('./src/services/emailReport.service');
+    emailReportService.start();
+
     // Iniciar servidor
     app.listen(PORT, HOST, () => {
       logger.info('='.repeat(60));
