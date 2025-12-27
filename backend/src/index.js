@@ -525,6 +525,16 @@ synchronizeDatabase().then(() => {
       console.error('❌ Error inicializando heartbeat service:', error.message);
     }
     // ==================== FIN HEARTBEAT SERVICE ====================
+
+    // ==================== INICIALIZAR REMOTE COMMAND SERVICE ====================
+    try {
+      const remoteCommandService = require('./services/remoteCommand.service');
+      remoteCommandService.start();
+      console.log('🎮 Remote command service inicializado (cada 5 minutos)');
+    } catch (error) {
+      console.error('❌ Error inicializando remote command service:', error.message);
+    }
+    // ==================== FIN REMOTE COMMAND SERVICE ====================
   });
 });
 

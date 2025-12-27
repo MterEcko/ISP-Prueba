@@ -14,6 +14,13 @@ router.post('/:licenseKey/suspend', licenseController.suspendLicense);
 router.post('/:licenseKey/reactivate', licenseController.reactivateLicense);
 router.get('/:licenseKey/suspension-history', licenseController.getSuspensionHistory);
 
+// Manual heartbeat trigger (dashboard)
+router.post('/:licenseKey/trigger-heartbeat', licenseController.triggerHeartbeat);
+
+// Remote commands (for backend clients to poll)
+router.get('/commands/pending', licenseController.getPendingCommands);
+router.post('/commands/:commandId/report', licenseController.reportCommandExecution);
+
 router.get('/:licenseKey', licenseController.getLicense);
 router.put('/:licenseKey/revoke', licenseController.revokeLicense);
 router.get('/', licenseController.getAllLicenses);

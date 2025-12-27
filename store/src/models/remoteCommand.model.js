@@ -13,7 +13,7 @@ module.exports = (sequelize) => {
       references: { model: 'Installations', key: 'id' }
     },
     command: {
-      type: DataTypes.ENUM('block', 'unblock', 'restart', 'update', 'message', 'collect_logs'),
+      type: DataTypes.ENUM('block', 'unblock', 'restart', 'update', 'message', 'collect_logs', 'heartbeat'),
       allowNull: false
     },
     parameters: {

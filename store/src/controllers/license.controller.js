@@ -1116,3 +1116,207 @@ exports.getSuspensionHistory = async (req, res) => {
     });
   }
 };
+
+/**
+ * Forzar heartbeat manual desde el dashboard
+ * Crea un comando remoto para que el cliente envíe un heartbeat inmediatamente
+ */
+exports.triggerHeartbeat = async (req, res) => {
+  try {
+    const { licenseKey } = req.params;
+
+    // Buscar licencia con instalación
+    const license = await License.findOne({
+      where: { licenseKey },
+      include: [
+        { model: Installation, as: 'installation' }
+      ]
+    });
+
+    if (!license) {
+      return res.status(404).json({
+        success: false,
+        message: 'License not found'
+      });
+    }
+
+    if (!license.installation) {
+      return res.status(400).json({
+        success: false,
+        message: 'License has no active installation'
+      });
+    }
+
+    // Verificar si la instalación está online
+    const installation = license.installation;
+    const lastHeartbeatDate = installation.lastHeartbeat ? new Date(installation.lastHeartbeat) : null;
+    const isRecentlyOnline = lastHeartbeatDate && (Date.now() - lastHeartbeatDate.getTime()) < 2 * 60 * 60 * 1000; // 2 horas
+
+    if (!isRecentlyOnline) {
+      logger.warn(`⚠️ Instalación ${installation.id} no ha enviado heartbeat en más de 2 horas`);
+    }
+
+    // Crear comando remoto para forzar heartbeat
+    const { RemoteCommand } = db;
+    const remoteCommand = await RemoteCommand.create({
+      installationId: installation.id,
+      command: 'heartbeat',
+      parameters: {
+        forced: true,
+        requestedBy: 'admin', // TODO: Agregar autenticación
+        requestedAt: new Date().toISOString()
+      },
+      status: 'pending',
+      issuedBy: 'admin' // TODO: Agregar autenticación
+    });
+
+    logger.info(`💓 Comando de heartbeat manual creado para licencia ${licenseKey}`);
+    logger.info(`   - Installation ID: ${installation.id}`);
+    logger.info(`   - Command ID: ${remoteCommand.id}`);
+
+    res.json({
+      success: true,
+      message: 'Heartbeat command issued successfully',
+      command: {
+        id: remoteCommand.id,
+        status: remoteCommand.status,
+        createdAt: remoteCommand.createdAt
+      },
+      installation: {
+        id: installation.id,
+        companyName: installation.companyName,
+        lastHeartbeat: installation.lastHeartbeat,
+        isOnline: installation.isOnline,
+        recentlyOnline: isRecentlyOnline
+      },
+      note: isRecentlyOnline
+        ? 'Installation will execute heartbeat on next check'
+        : 'Installation appears offline, command may not execute immediately'
+    });
+
+  } catch (error) {
+    logger.error('Error triggering heartbeat:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Obtener comandos remotos pendientes para una instalación
+ * Esta ruta será consultada por el cliente backend periódicamente
+ */
+exports.getPendingCommands = async (req, res) => {
+  try {
+    const { licenseKey } = req.query;
+
+    if (!licenseKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'License key is required'
+      });
+    }
+
+    // Buscar licencia con instalación
+    const license = await License.findOne({
+      where: { licenseKey },
+      include: [
+        { model: Installation, as: 'installation' }
+      ]
+    });
+
+    if (!license || !license.installation) {
+      return res.json({
+        success: true,
+        commands: []
+      });
+    }
+
+    // Obtener comandos pendientes
+    const { RemoteCommand } = db;
+    const pendingCommands = await RemoteCommand.findAll({
+      where: {
+        installationId: license.installation.id,
+        status: 'pending'
+      },
+      order: [['createdAt', 'ASC']]
+    });
+
+    // Marcar comandos como "sent"
+    if (pendingCommands.length > 0) {
+      await RemoteCommand.update(
+        {
+          status: 'sent',
+          sentAt: new Date()
+        },
+        {
+          where: {
+            id: pendingCommands.map(cmd => cmd.id)
+          }
+        }
+      );
+
+      logger.info(`📤 Enviados ${pendingCommands.length} comando(s) remoto(s) a licencia ${licenseKey}`);
+    }
+
+    res.json({
+      success: true,
+      commands: pendingCommands.map(cmd => ({
+        id: cmd.id,
+        command: cmd.command,
+        parameters: cmd.parameters,
+        createdAt: cmd.createdAt
+      }))
+    });
+
+  } catch (error) {
+    logger.error('Error getting pending commands:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Reportar resultado de ejecución de comando remoto
+ */
+exports.reportCommandExecution = async (req, res) => {
+  try {
+    const { commandId } = req.params;
+    const { success, response, error } = req.body;
+
+    const { RemoteCommand } = db;
+    const command = await RemoteCommand.findByPk(commandId);
+
+    if (!command) {
+      return res.status(404).json({
+        success: false,
+        message: 'Command not found'
+      });
+    }
+
+    // Actualizar estado del comando
+    await command.update({
+      status: success ? 'executed' : 'failed',
+      executedAt: new Date(),
+      response: response || null,
+      error: error || null
+    });
+
+    logger.info(`${success ? '✅' : '❌'} Comando ${commandId} ${success ? 'ejecutado' : 'falló'}`);
+
+    res.json({
+      success: true,
+      message: 'Command execution reported successfully'
+    });
+
+  } catch (error) {
+    logger.error('Error reporting command execution:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};

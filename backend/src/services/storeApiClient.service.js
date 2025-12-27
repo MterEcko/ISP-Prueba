@@ -635,6 +635,123 @@ class StoreApiClient {
       error: lastError?.message || 'Error desconocido'
     };
   }
+
+  /**
+   * Obtener comandos remotos pendientes del Store
+   */
+  async getPendingCommands(licenseKey) {
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
+    };
+
+    const urls = this.getStoreUrls();
+
+    for (let i = 0; i < urls.length; i++) {
+      const baseUrl = urls[i];
+      const fullUrl = `${baseUrl}/licenses/commands/pending?licenseKey=${licenseKey}`;
+
+      try {
+        logger.debug(`🎮 Consultando comandos remotos en: ${baseUrl}`);
+
+        const response = await axios.get(fullUrl, config);
+
+        if (response.data.commands && response.data.commands.length > 0) {
+          logger.info(`📥 Recibidos ${response.data.commands.length} comando(s) remoto(s)`);
+        }
+
+        return {
+          success: true,
+          commands: response.data.commands || []
+        };
+
+      } catch (error) {
+        const isNetworkError = error.code === 'ECONNREFUSED' ||
+                               error.code === 'ETIMEDOUT' ||
+                               error.code === 'ENOTFOUND';
+
+        if (isNetworkError && i < urls.length - 1) {
+          logger.warn(`⚠️  Fallo en ${baseUrl}, intentando fallback...`);
+          continue;
+        }
+
+        logger.error('Error obteniendo comandos remotos:', error.message);
+        return {
+          success: false,
+          error: error.message,
+          commands: []
+        };
+      }
+    }
+
+    return {
+      success: false,
+      error: 'No se pudo conectar con ningún Store',
+      commands: []
+    };
+  }
+
+  /**
+   * Reportar ejecución de comando remoto al Store
+   */
+  async reportCommandExecution(commandId, result) {
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
+    };
+
+    const urls = this.getStoreUrls();
+    const payload = {
+      success: result.success,
+      response: result.response,
+      error: result.error
+    };
+
+    for (let i = 0; i < urls.length; i++) {
+      const baseUrl = urls[i];
+      const fullUrl = `${baseUrl}/licenses/commands/${commandId}/report`;
+
+      try {
+        logger.debug(`📤 Reportando resultado de comando ${commandId} a: ${baseUrl}`);
+
+        const response = await axios.post(fullUrl, payload, config);
+
+        logger.info(`✅ Resultado de comando ${commandId} reportado exitosamente`);
+
+        return {
+          success: true,
+          data: response.data
+        };
+
+      } catch (error) {
+        const isNetworkError = error.code === 'ECONNREFUSED' ||
+                               error.code === 'ETIMEDOUT' ||
+                               error.code === 'ENOTFOUND';
+
+        if (isNetworkError && i < urls.length - 1) {
+          logger.warn(`⚠️  Fallo en ${baseUrl}, intentando fallback...`);
+          continue;
+        }
+
+        logger.error('Error reportando comando remoto:', error.message);
+        return {
+          success: false,
+          error: error.message
+        };
+      }
+    }
+
+    return {
+      success: false,
+      error: 'No se pudo conectar con ningún Store'
+    };
+  }
 }
 
 module.exports = new StoreApiClient();
