@@ -302,13 +302,20 @@ exports.activateLicense = async (req, res) => {
       logger.info(`   - Servicios: ${validation.limits.services || '∞'}`);
     }
 
-    // Registrar en el Store (solo hardware + GPS, sin datos de empresa)
+    // Registrar en el Store (con todos los datos)
     const storeRegistration = await storeApiClient.registerLicense({
       licenseKey,
       hardware,
       location,
-      systemVersion: '1.0.0'
-      // NO enviamos datos de empresa porque ya están registrados
+      systemVersion: '1.0.0',
+      // Enviar datos del cliente si los tenemos
+      companyName: clientData?.companyName,
+      contactName: clientData?.contactName,
+      email: clientData?.email,
+      phone: clientData?.phone,
+      rfc: clientData?.rfc,
+      address: clientData?.address,
+      subdomain: clientData?.subdomain
     });
 
     if (!storeRegistration.success) {

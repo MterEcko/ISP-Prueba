@@ -724,14 +724,18 @@ exports.receiveHeartbeat = async (req, res) => {
       const otherInstallation = await Installation.findOne({
         where: {
           databaseId: databaseId,
-          licenseKey: { [Op.ne]: licenseKey } // Diferente licencia
-        }
+          currentLicenseId: { [Op.ne]: license.id } // Diferente licencia (por ID)
+        },
+        include: [
+          { model: db.License, as: 'currentLicense' }
+        ]
       });
 
       if (otherInstallation) {
+        const otherLicenseKey = otherInstallation.currentLicense?.licenseKey || 'Unknown';
         logger.error(`🚨 CLONACIÓN DETECTADA: Database ID ${databaseId} usado en múltiples licencias`);
         logger.error(`   - Licencia actual: ${licenseKey}`);
-        logger.error(`   - Otra licencia: ${otherInstallation.licenseKey}`);
+        logger.error(`   - Otra licencia: ${otherLicenseKey}`);
 
         // Suspender la licencia automáticamente
         await license.update({
@@ -741,7 +745,7 @@ exports.receiveHeartbeat = async (req, res) => {
             suspensionReason: 'Database cloning detected - same Database ID used in multiple licenses',
             suspendedAt: new Date().toISOString(),
             clonedDatabaseId: databaseId,
-            otherLicenseKey: otherInstallation.licenseKey
+            otherLicenseKey: otherLicenseKey
           }
         });
 
