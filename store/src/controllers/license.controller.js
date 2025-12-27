@@ -906,3 +906,213 @@ exports.receiveHeartbeat = async (req, res) => {
     });
   }
 };
+
+/**
+ * Suspender licencia manualmente desde el dashboard
+ */
+exports.suspendLicense = async (req, res) => {
+  try {
+    const { licenseKey } = req.params;
+    const { reason, notes } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Suspension reason is required'
+      });
+    }
+
+    // Buscar licencia
+    const license = await License.findOne({
+      where: { licenseKey },
+      include: [
+        { model: Installation, as: 'installation' }
+      ]
+    });
+
+    if (!license) {
+      return res.status(404).json({
+        success: false,
+        message: 'License not found'
+      });
+    }
+
+    // Verificar si ya está suspendida
+    if (license.status === 'suspended') {
+      return res.status(400).json({
+        success: false,
+        message: 'License is already suspended'
+      });
+    }
+
+    // Suspender la licencia
+    await license.update({
+      status: 'suspended',
+      metadata: {
+        ...license.metadata,
+        suspensionReason: reason,
+        suspensionNotes: notes || '',
+        suspendedAt: new Date().toISOString(),
+        suspendedBy: 'admin', // TODO: Agregar autenticación y guardar usuario real
+        manualSuspension: true
+      }
+    });
+
+    logger.info(`🚫 Licencia ${licenseKey} suspendida manualmente. Razón: ${reason}`);
+
+    // Enviar alerta por email
+    emailAlertService.alertLicenseSuspended({
+      license,
+      installation: license.installation,
+      reason: `${reason}${notes ? ` - ${notes}` : ''}`
+    }).catch(err => {
+      logger.error('Error sending suspension alert:', err.message);
+    });
+
+    res.json({
+      success: true,
+      message: 'License suspended successfully',
+      license: {
+        licenseKey: license.licenseKey,
+        status: license.status,
+        suspendedAt: license.metadata.suspendedAt,
+        reason: reason
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error suspending license:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Reactivar licencia manualmente desde el dashboard
+ */
+exports.reactivateLicense = async (req, res) => {
+  try {
+    const { licenseKey } = req.params;
+    const { notes } = req.body;
+
+    // Buscar licencia
+    const license = await License.findOne({
+      where: { licenseKey },
+      include: [
+        { model: Installation, as: 'installation' }
+      ]
+    });
+
+    if (!license) {
+      return res.status(404).json({
+        success: false,
+        message: 'License not found'
+      });
+    }
+
+    // Verificar si está suspendida
+    if (license.status !== 'suspended') {
+      return res.status(400).json({
+        success: false,
+        message: 'License is not suspended'
+      });
+    }
+
+    // Determinar nuevo estado (active o pending según si tiene instalación)
+    const newStatus = license.installation ? 'active' : 'pending';
+
+    // Reactivar la licencia
+    await license.update({
+      status: newStatus,
+      metadata: {
+        ...license.metadata,
+        reactivatedAt: new Date().toISOString(),
+        reactivatedBy: 'admin', // TODO: Agregar autenticación y guardar usuario real
+        reactivationNotes: notes || '',
+        previousSuspensionReason: license.metadata?.suspensionReason
+      }
+    });
+
+    logger.info(`✅ Licencia ${licenseKey} reactivada manualmente`);
+
+    res.json({
+      success: true,
+      message: 'License reactivated successfully',
+      license: {
+        licenseKey: license.licenseKey,
+        status: license.status,
+        reactivatedAt: license.metadata.reactivatedAt
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error reactivating license:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Obtener historial de suspensiones de una licencia
+ */
+exports.getSuspensionHistory = async (req, res) => {
+  try {
+    const { licenseKey } = req.params;
+
+    // Buscar licencia
+    const license = await License.findOne({
+      where: { licenseKey }
+    });
+
+    if (!license) {
+      return res.status(404).json({
+        success: false,
+        message: 'License not found'
+      });
+    }
+
+    // Extraer historial de suspensiones del metadata
+    const history = [];
+
+    if (license.metadata?.suspendedAt) {
+      history.push({
+        type: 'suspension',
+        timestamp: license.metadata.suspendedAt,
+        reason: license.metadata.suspensionReason,
+        notes: license.metadata.suspensionNotes,
+        by: license.metadata.suspendedBy || 'system',
+        manual: license.metadata.manualSuspension || false
+      });
+    }
+
+    if (license.metadata?.reactivatedAt) {
+      history.push({
+        type: 'reactivation',
+        timestamp: license.metadata.reactivatedAt,
+        notes: license.metadata.reactivationNotes,
+        by: license.metadata.reactivatedBy || 'system'
+      });
+    }
+
+    // Ordenar por fecha descendente
+    history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    res.json({
+      success: true,
+      licenseKey: license.licenseKey,
+      currentStatus: license.status,
+      history: history
+    });
+
+  } catch (error) {
+    logger.error('Error getting suspension history:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
