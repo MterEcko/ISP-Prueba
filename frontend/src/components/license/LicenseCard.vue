@@ -43,6 +43,22 @@
           </div>
         </v-col>
 
+        <!-- Progress bar de tiempo restante -->
+        <v-col cols="12" v-if="license.expiresAt && !license.isMasterLicense">
+          <div class="mt-2">
+            <div class="text-caption mb-1 d-flex justify-space-between">
+              <span>Tiempo restante</span>
+              <span :class="daysRemainingColor">{{ daysRemainingText }}</span>
+            </div>
+            <v-progress-linear
+              :model-value="timeRemainingPercentage"
+              :color="timeRemainingColor"
+              height="8"
+              rounded
+            ></v-progress-linear>
+          </div>
+        </v-col>
+
         <!-- Características habilitadas -->
         <v-col cols="12" v-if="enabledFeatures.length > 0">
           <div class="mt-2">
@@ -76,6 +92,98 @@
             <v-icon start>mdi-shield-crown</v-icon>
             Licencia Maestra - Acceso Completo
           </v-alert>
+        </v-col>
+
+        <!-- Información de Hardware -->
+        <v-col cols="12" v-if="hasHardwareInfo">
+          <v-divider class="my-3"></v-divider>
+          <v-btn
+            variant="text"
+            size="small"
+            @click="showHardwareInfo = !showHardwareInfo"
+            block
+          >
+            <v-icon start>{{ showHardwareInfo ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+            Información del Sistema
+          </v-btn>
+
+          <v-expand-transition>
+            <div v-show="showHardwareInfo" class="mt-3">
+              <v-row dense>
+                <!-- Sistema Operativo -->
+                <v-col cols="12" md="6" v-if="hardwareInfo.os">
+                  <div class="hardware-item">
+                    <v-icon size="small" color="primary" class="mr-2">mdi-desktop-tower</v-icon>
+                    <div>
+                      <div class="text-caption text-medium-emphasis">Sistema Operativo</div>
+                      <div class="text-body-2">{{ hardwareInfo.os.distro }}</div>
+                      <div class="text-caption">{{ hardwareInfo.os.release }}</div>
+                    </div>
+                  </div>
+                </v-col>
+
+                <!-- CPU -->
+                <v-col cols="12" md="6" v-if="hardwareInfo.cpu">
+                  <div class="hardware-item">
+                    <v-icon size="small" color="primary" class="mr-2">mdi-cpu-64-bit</v-icon>
+                    <div>
+                      <div class="text-caption text-medium-emphasis">Procesador</div>
+                      <div class="text-body-2">{{ hardwareInfo.cpu.model }}</div>
+                      <div class="text-caption">{{ hardwareInfo.cpu.cores }} cores @ {{ hardwareInfo.cpu.speed }} MHz</div>
+                    </div>
+                  </div>
+                </v-col>
+
+                <!-- Placa Madre -->
+                <v-col cols="12" md="6" v-if="hardwareInfo.motherboard">
+                  <div class="hardware-item">
+                    <v-icon size="small" color="primary" class="mr-2">mdi-expansion-card</v-icon>
+                    <div>
+                      <div class="text-caption text-medium-emphasis">Placa Madre</div>
+                      <div class="text-body-2">{{ hardwareInfo.motherboard.manufacturer }}</div>
+                      <div class="text-caption">{{ hardwareInfo.motherboard.model }}</div>
+                    </div>
+                  </div>
+                </v-col>
+
+                <!-- Memoria RAM -->
+                <v-col cols="12" md="6" v-if="hardwareInfo.memory">
+                  <div class="hardware-item">
+                    <v-icon size="small" color="primary" class="mr-2">mdi-memory</v-icon>
+                    <div>
+                      <div class="text-caption text-medium-emphasis">Memoria RAM</div>
+                      <div class="text-body-2">{{ hardwareInfo.memory.totalGB }} GB Total</div>
+                      <div class="text-caption">{{ hardwareInfo.memory.freeGB }} GB libres</div>
+                    </div>
+                  </div>
+                </v-col>
+
+                <!-- Disco -->
+                <v-col cols="12" md="6" v-if="hardwareInfo.disk">
+                  <div class="hardware-item">
+                    <v-icon size="small" color="primary" class="mr-2">mdi-harddisk</v-icon>
+                    <div>
+                      <div class="text-caption text-medium-emphasis">Almacenamiento</div>
+                      <div class="text-body-2">{{ hardwareInfo.disk.totalGB }} GB Total</div>
+                      <div class="text-caption">{{ hardwareInfo.disk.freeGB }} GB libres</div>
+                    </div>
+                  </div>
+                </v-col>
+
+                <!-- Red -->
+                <v-col cols="12" md="6" v-if="hardwareInfo.network">
+                  <div class="hardware-item">
+                    <v-icon size="small" color="primary" class="mr-2">mdi-network</v-icon>
+                    <div>
+                      <div class="text-caption text-medium-emphasis">Red</div>
+                      <div class="text-body-2">{{ hardwareInfo.network.ip }}</div>
+                      <div class="text-caption">{{ hardwareInfo.network.mac }}</div>
+                    </div>
+                  </div>
+                </v-col>
+              </v-row>
+            </div>
+          </v-expand-transition>
         </v-col>
       </v-row>
     </v-card-text>
@@ -139,7 +247,8 @@ export default {
   emits: ['activate', 'deactivate', 'view-details', 'renew', 'delete'],
   data() {
     return {
-      showAllFeatures: false
+      showAllFeatures: false,
+      showHardwareInfo: false
     };
   },
   computed: {
@@ -239,6 +348,69 @@ export default {
           label: featureLabels[key]?.label || key,
           icon: featureLabels[key]?.icon || 'mdi-check'
         }));
+    },
+    // Progress bar de tiempo restante
+    daysRemaining() {
+      if (!this.license.expiresAt || this.license.isMasterLicense) return null;
+      const expirationDate = new Date(this.license.expiresAt);
+      const today = new Date();
+      const diffTime = expirationDate - today;
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    },
+    daysRemainingText() {
+      if (this.daysRemaining === null) return '';
+      if (this.daysRemaining < 0) return 'Expirada';
+      if (this.daysRemaining === 0) return 'Expira hoy';
+      if (this.daysRemaining === 1) return '1 día';
+      return `${this.daysRemaining} días`;
+    },
+    daysRemainingColor() {
+      if (this.daysRemaining === null) return '';
+      if (this.daysRemaining < 0) return 'text-error';
+      if (this.daysRemaining <= 7) return 'text-error font-weight-bold';
+      if (this.daysRemaining <= 30) return 'text-warning font-weight-bold';
+      return 'text-success';
+    },
+    timeRemainingPercentage() {
+      if (!this.license.expiresAt || !this.license.activationDate) return 0;
+
+      const activationDate = new Date(this.license.activationDate);
+      const expirationDate = new Date(this.license.expiresAt);
+      const today = new Date();
+
+      const totalDays = Math.ceil((expirationDate - activationDate) / (1000 * 60 * 60 * 24));
+      const daysUsed = Math.ceil((today - activationDate) / (1000 * 60 * 60 * 24));
+
+      const percentage = Math.max(0, Math.min(100, ((totalDays - daysUsed) / totalDays) * 100));
+      return percentage;
+    },
+    timeRemainingColor() {
+      const percentage = this.timeRemainingPercentage;
+      if (percentage <= 10) return 'error';
+      if (percentage <= 25) return 'warning';
+      return 'success';
+    },
+    // Hardware info
+    hasHardwareInfo() {
+      return this.license.metadata && (
+        this.license.metadata.lastHardware ||
+        this.license.metadata.systemInfo
+      );
+    },
+    hardwareInfo() {
+      if (!this.hasHardwareInfo) return {};
+
+      // Buscar en metadata.lastHardware (del heartbeat) o metadata.systemInfo
+      const hw = this.license.metadata?.lastHardware || this.license.metadata?.systemInfo || {};
+
+      return {
+        os: hw.os || null,
+        cpu: hw.cpu || null,
+        motherboard: hw.motherboard || null,
+        memory: hw.memory || null,
+        disk: hw.disk || null,
+        network: hw.network || null
+      };
     }
   }
 };
@@ -280,5 +452,14 @@ export default {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.hardware-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  gap: 8px;
 }
 </style>
