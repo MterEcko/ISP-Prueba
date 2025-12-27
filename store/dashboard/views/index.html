@@ -42,8 +42,13 @@
     <!-- Main Content -->
     <main class="main-content">
       <div class="page-header">
-        <h2>Dashboard General</h2>
-        <p>Resumen del sistema de licencias y marketplace</p>
+        <div>
+          <h2>Dashboard General</h2>
+          <p>Resumen del sistema de licencias y marketplace</p>
+        </div>
+        <button class="btn btn-primary" onclick="sendOnDemandReport()" style="white-space: nowrap;">
+          📧 Enviar Reporte
+        </button>
       </div>
 
       <!-- Stats Grid -->
@@ -214,6 +219,37 @@
       if (minutes < 60) return `Hace ${minutes} min`;
       if (hours < 24) return `Hace ${hours} hrs`;
       return `Hace ${days} días`;
+    }
+
+    async function sendOnDemandReport() {
+      const email = prompt('Enviar reporte a:', process.env.ADMIN_EMAIL || 'admin@example.com');
+      if (!email) return;
+
+      // Validate email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        alert('❌ Email inválido');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/licenses/reports/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert(`✅ Reporte enviado exitosamente a ${email}`);
+        } else {
+          alert(`❌ Error: ${data.message}`);
+        }
+      } catch (error) {
+        console.error('Error sending report:', error);
+        alert('❌ Error al enviar el reporte');
+      }
     }
 
     // Load dashboard on page load

@@ -112,11 +112,18 @@
     function initMap() {
       map = L.map('map').setView([20, 0], 2); // Center of the world
 
-      // Add tile layer
+      // Add tile layer (OpenStreetMap)
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 18
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 18,
+        minZoom: 1,
+        crossOrigin: true
       }).addTo(map);
+
+      // Fix map rendering issues
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
     }
 
     async function loadInstallationsMap() {
@@ -246,9 +253,14 @@
       return `Hace ${days} días`;
     }
 
-    // Initialize map and load data
-    initMap();
-    loadInstallationsMap();
+    // Initialize map and load data when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+      // Wait a bit for Leaflet to fully load
+      setTimeout(() => {
+        initMap();
+        loadInstallationsMap();
+      }, 200);
+    });
 
     // Auto-refresh every 60 seconds
     setInterval(loadInstallationsMap, 60000);

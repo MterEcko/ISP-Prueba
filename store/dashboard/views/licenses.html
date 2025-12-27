@@ -195,10 +195,24 @@
                   ` : '♾️ Nunca'}
                 </td>
                 <td>
-                  ${lic.status === 'active' && !lic.isMasterLicense ?
-                    `<button class="btn btn-danger btn-sm" onclick="revokeLicense('${lic.id}', '${lic.licenseKey}')">❌ Revocar</button>` :
-                    ''
-                  }
+                  <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                    ${!lic.isMasterLicense && lic.status !== 'suspended' && lic.status !== 'revoked' ?
+                      `<button class="btn btn-sm" style="background:#f39c12;color:white;padding:4px 8px;font-size:11px;" onclick="suspendLicense('${lic.licenseKey}')">🚫 Suspender</button>` :
+                      ''
+                    }
+                    ${lic.status === 'suspended' ?
+                      `<button class="btn btn-sm" style="background:#27ae60;color:white;padding:4px 8px;font-size:11px;" onclick="reactivateLicense('${lic.licenseKey}')">✅ Reactivar</button>` :
+                      ''
+                    }
+                    ${lic.installation && (lic.status === 'active' || lic.status === 'suspended') ?
+                      `<button class="btn btn-sm" style="background:#3498db;color:white;padding:4px 8px;font-size:11px;" onclick="triggerHeartbeat('${lic.licenseKey}')">💓 Heartbeat</button>` :
+                      ''
+                    }
+                    ${lic.status === 'active' && !lic.isMasterLicense ?
+                      `<button class="btn btn-danger btn-sm" style="padding:4px 8px;font-size:11px;" onclick="revokeLicense('${lic.licenseKey}')">❌ Revocar</button>` :
+                      ''
+                    }
+                  </div>
                 </td>
               </tr>
             `).join('')}
@@ -269,12 +283,12 @@
       }
     }
 
-    async function revokeLicense(id, licenseKey) {
+    async function revokeLicense(licenseKey) {
       if (!confirm(`¿Estás seguro de revocar la licencia ${licenseKey.substring(0, 16)}...?`)) return;
 
       try {
-        const response = await fetch(`${API_URL}/licenses/${id}/revoke`, {
-          method: 'POST',
+        const response = await fetch(`${API_URL}/licenses/${licenseKey}/revoke`, {
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json' }
         });
 
@@ -289,6 +303,82 @@
       } catch (error) {
         console.error('Error revoking license:', error);
         alert('❌ Error al revocar la licencia');
+      }
+    }
+
+    async function suspendLicense(licenseKey) {
+      const reason = prompt('Razón de la suspensión:', 'Suspensión manual por administrador');
+      if (!reason) return;
+
+      const notes = prompt('Notas adicionales (opcional):', '');
+
+      try {
+        const response = await fetch(`${API_URL}/licenses/${licenseKey}/suspend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason, notes })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert(`✅ Licencia suspendida correctamente\n\nRazón: ${reason}`);
+          loadLicenses();
+        } else {
+          alert(`❌ Error: ${data.message}`);
+        }
+      } catch (error) {
+        console.error('Error suspending license:', error);
+        alert('❌ Error al suspender la licencia');
+      }
+    }
+
+    async function reactivateLicense(licenseKey) {
+      if (!confirm(`¿Reactivar la licencia ${licenseKey.substring(0, 16)}...?`)) return;
+
+      const notes = prompt('Notas de reactivación (opcional):', '');
+
+      try {
+        const response = await fetch(`${API_URL}/licenses/${licenseKey}/reactivate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert(`✅ Licencia reactivada correctamente\n\nNuevo estado: ${data.license.status}`);
+          loadLicenses();
+        } else {
+          alert(`❌ Error: ${data.message}`);
+        }
+      } catch (error) {
+        console.error('Error reactivating license:', error);
+        alert('❌ Error al reactivar la licencia');
+      }
+    }
+
+    async function triggerHeartbeat(licenseKey) {
+      if (!confirm(`¿Forzar heartbeat inmediato para ${licenseKey.substring(0, 16)}...?`)) return;
+
+      try {
+        const response = await fetch(`${API_URL}/licenses/${licenseKey}/trigger-heartbeat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          const msg = data.note || 'Comando enviado correctamente';
+          alert(`✅ ${msg}\n\nComando ID: ${data.command.id}\nEstado: ${data.command.status}`);
+        } else {
+          alert(`❌ Error: ${data.message}`);
+        }
+      } catch (error) {
+        console.error('Error triggering heartbeat:', error);
+        alert('❌ Error al forzar heartbeat');
       }
     }
 
