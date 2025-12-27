@@ -486,7 +486,7 @@ synchronizeDatabase().then(() => {
   // Escuchar en todas las interfaces (0.0.0.0) para permitir acceso desde red local
   const HOST = process.env.HOST || '0.0.0.0';
 
-  server.listen(PORT, HOST, () => {
+  server.listen(PORT, HOST, async () => {
     console.log(`🚀 Servidor ISP corriendo en http://${HOST}:${PORT}`);
     console.log(`📍 Accesible desde:`);
     console.log(`   - Local: http://localhost:${PORT}`);
