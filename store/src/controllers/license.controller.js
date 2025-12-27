@@ -363,7 +363,10 @@ exports.verifyLicense = async (req, res) => {
 
     const license = await License.findOne({
       where: { licenseKey },
-      include: [{ model: Installation, as: 'installation' }]
+      include: [
+        { model: Installation, as: 'installation' },
+        { model: ServicePackage, as: 'servicePackage' }
+      ]
     });
 
     if (!license) {
@@ -417,6 +420,30 @@ exports.verifyLicense = async (req, res) => {
       logger.info(`📋 Datos de instalación: ${license.installation.companyName}`);
     }
 
+    // Obtener límites del ServicePackage asociado (dinámico)
+    let limits = {
+      clients: license.clientLimit,
+      users: license.userLimit || null,
+      services: null,
+      plugins: -1,
+      includedPlugins: []
+    };
+
+    // Si hay ServicePackage asociado, obtener límites de ahí
+    if (license.servicePackage) {
+      limits = {
+        clients: license.servicePackage.clientLimit || license.clientLimit,
+        users: license.servicePackage.userLimit || null,
+        services: license.servicePackage.serviceLimit || null,
+        branches: license.servicePackage.branchLimit || 1,
+        plugins: -1,
+        includedPlugins: []
+      };
+      logger.info(`📦 Límites desde ServicePackage: clients=${limits.clients}, users=${limits.users}, services=${limits.services}`);
+    } else {
+      logger.warn(`⚠️ Licencia sin ServicePackage asociado, usando límites de la licencia`);
+    }
+
     // Formato compatible con backend (response.data.planType, response.data.valid, etc.)
     res.json({
       success: true,
@@ -425,12 +452,7 @@ exports.verifyLicense = async (req, res) => {
       planType: license.planType,
       expiresAt: license.expiresAt,
       features: license.featuresEnabled || {},
-      limits: {
-        clients: license.clientLimit,
-        users: license.userLimit,
-        plugins: -1,
-        includedPlugins: []
-      },
+      limits: limits,
       // NUEVO: Datos del cliente asociado
       clientData: clientData,
       // También incluir en formato anterior para compatibilidad

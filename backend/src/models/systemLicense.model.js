@@ -31,6 +31,11 @@ module.exports = (sequelize) => {
       defaultValue: 5,
       comment: 'Límite de usuarios del sistema'
     },
+    serviceLimit: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: 'Límite de servicios activos (-1 o null para ilimitado)'
+    },
     pluginLimit: {
       type: DataTypes.INTEGER,
       defaultValue: 3,

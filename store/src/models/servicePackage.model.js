@@ -62,6 +62,11 @@ module.exports = (sequelize) => {
       comment: 'Límite de usuarios (null = ilimitado)'
     },
 
+    serviceLimit: {
+      type: DataTypes.INTEGER,
+      comment: 'Límite de servicios activos (null = ilimitado)'
+    },
+
     branchLimit: {
       type: DataTypes.INTEGER,
       defaultValue: 1,

@@ -294,6 +294,14 @@ exports.activateLicense = async (req, res) => {
       logger.info(`📋 Datos del cliente recibidos: ${clientData.companyName} (${clientData.email})`);
     }
 
+    // Mostrar límites dinámicos recibidos
+    if (validation.limits) {
+      logger.info(`📊 Límites dinámicos desde Store:`);
+      logger.info(`   - Clientes: ${validation.limits.clients || '∞'}`);
+      logger.info(`   - Usuarios: ${validation.limits.users || '∞'}`);
+      logger.info(`   - Servicios: ${validation.limits.services || '∞'}`);
+    }
+
     // Registrar en el Store (solo hardware + GPS, sin datos de empresa)
     const storeRegistration = await storeApiClient.registerLicense({
       licenseKey,
@@ -324,7 +332,9 @@ exports.activateLicense = async (req, res) => {
       localLicense = await SystemLicense.create({
         licenseKey,
         planType: validation.planType || 'basic',
-        clientLimit: validation.limits?.clients,
+        clientLimit: validation.limits?.clients || null,
+        userLimit: validation.limits?.users || null,
+        serviceLimit: validation.limits?.services || null,
         hardwareId: hwId,
         status: 'active',
         active: true,
@@ -373,6 +383,8 @@ exports.activateLicense = async (req, res) => {
         expirationDate: validation.expiresAt,
         planType: validation.planType || localLicense.planType,
         clientLimit: validation.limits?.clients || localLicense.clientLimit,
+        userLimit: validation.limits?.users || localLicense.userLimit,
+        serviceLimit: validation.limits?.services || localLicense.serviceLimit,
         featuresEnabled: validation.features || localLicense.featuresEnabled,
         metadata: updatedMetadata
       });
