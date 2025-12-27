@@ -170,6 +170,73 @@ exports.registerLicense = async (req, res) => {
       });
     }
 
+    // ============================================
+    // VERIFICAR SI LA LICENCIA YA ESTÁ EN USO
+    // ============================================
+    if (hardware && hardware.hardwareId) {
+      // Buscar si la licencia ya está vinculada a otro hardware
+      const existingInstallation = await Installation.findOne({
+        where: {
+          currentLicenseId: license.id,
+          hardwareId: { [Op.ne]: hardware.hardwareId } // Hardware diferente
+        }
+      });
+
+      if (existingInstallation) {
+        logger.error(`🚨 LICENCIA EN USO: Intento de activar licencia ${licenseKey} en hardware ${hardware.hardwareId}`);
+        logger.error(`   - Ya está activa en hardware: ${existingInstallation.hardwareId}`);
+        logger.error(`   - Empresa actual: ${existingInstallation.companyName}`);
+
+        // Registrar el intento en metadata de la licencia
+        await license.update({
+          metadata: {
+            ...license.metadata,
+            duplicateActivationAttempts: [
+              ...(license.metadata?.duplicateActivationAttempts || []),
+              {
+                attemptedHardwareId: hardware.hardwareId,
+                attemptedBy: companyName || 'Unknown',
+                attemptedAt: new Date().toISOString(),
+                blockedReason: 'License already in use on different hardware'
+              }
+            ]
+          }
+        });
+
+        return res.status(409).json({
+          success: false,
+          error: 'LICENSE_IN_USE',
+          message: 'Esta licencia ya está en uso en otra instalación',
+          details: {
+            message: 'La licencia está actualmente activa en otro sistema. Si deseas transferirla a este equipo, primero debes desactivarla en la instalación anterior.',
+            currentlyUsedBy: existingInstallation.companyName,
+            contactSupport: 'Si necesitas ayuda para transferir tu licencia, contacta con soporte.'
+          }
+        });
+      }
+
+      // Verificar si el hardware ya tiene otra licencia activa
+      const hardwareWithOtherLicense = await Installation.findOne({
+        where: {
+          hardwareId: hardware.hardwareId,
+          currentLicenseId: { [Op.ne]: license.id },
+          status: 'active'
+        }
+      });
+
+      if (hardwareWithOtherLicense) {
+        logger.warn(`⚠️ Hardware ${hardware.hardwareId} ya tiene otra licencia activa`);
+        logger.warn(`   - Licencia anterior: ${hardwareWithOtherLicense.licenseKey || 'Unknown'}`);
+        logger.warn(`   - Se va a reemplazar con nueva licencia: ${licenseKey}`);
+
+        // Desactivar la licencia anterior en este hardware
+        await hardwareWithOtherLicense.update({
+          currentLicenseId: license.id,
+          status: 'active'
+        });
+      }
+    }
+
     // Buscar o crear instalación
     let installation;
     if (hardware && hardware.hardwareId) {
@@ -382,11 +449,34 @@ exports.verifyLicense = async (req, res) => {
     const isPending = license.status === 'pending';
     const hardwareMatches = !license.boundToHardwareId || license.boundToHardwareId === hardwareId;
 
+    // ============================================
+    // VERIFICAR SI LA LICENCIA YA ESTÁ EN USO (solo si se proporciona hardwareId)
+    // ============================================
+    let licenseInUse = false;
+    if (hardwareId) {
+      const activeInstallation = await Installation.findOne({
+        where: {
+          currentLicenseId: license.id,
+          hardwareId: { [Op.ne]: hardwareId }, // Hardware diferente
+          status: 'active',
+          isOnline: true
+        }
+      });
+
+      if (activeInstallation) {
+        licenseInUse = true;
+        logger.warn(`⚠️ Licencia ${licenseKey} ya está en uso en otro hardware:`);
+        logger.warn(`   - Hardware actual: ${activeInstallation.hardwareId}`);
+        logger.warn(`   - Hardware solicitante: ${hardwareId}`);
+      }
+    }
+
     // Licencias 'pending' son válidas para registro inicial
     // Licencias 'active' son válidas si coincide hardware y no ha expirado
-    const isValidForRegistration = (isPending && !isExpired) || (isActive && !isExpired && hardwareMatches);
+    // NUEVO: No permitir si la licencia ya está en uso en otro hardware
+    const isValidForRegistration = !licenseInUse && ((isPending && !isExpired) || (isActive && !isExpired && hardwareMatches));
 
-    logger.info(`🔍 Verificando licencia ${licenseKey}: status=${license.status}, expired=${isExpired}, hardwareMatches=${hardwareMatches}, valid=${isValidForRegistration}`);
+    logger.info(`🔍 Verificando licencia ${licenseKey}: status=${license.status}, expired=${isExpired}, hardwareMatches=${hardwareMatches}, inUse=${licenseInUse}, valid=${isValidForRegistration}`);
 
     // Buscar datos del cliente asociado a esta licencia
     let clientData = null;
