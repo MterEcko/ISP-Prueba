@@ -288,6 +288,12 @@ exports.activateLicense = async (req, res) => {
 
     logger.info(`✅ Licencia validada en Store: ${licenseKey}`);
 
+    // Extraer datos del cliente que vienen desde el Store
+    const clientData = validation.clientData || null;
+    if (clientData) {
+      logger.info(`📋 Datos del cliente recibidos: ${clientData.companyName} (${clientData.email})`);
+    }
+
     // Registrar en el Store (solo hardware + GPS, sin datos de empresa)
     const storeRegistration = await storeApiClient.registerLicense({
       licenseKey,
@@ -302,6 +308,13 @@ exports.activateLicense = async (req, res) => {
     } else {
       logger.info(`✅ Licencia registrada en Store: ${licenseKey}`);
     }
+
+    // Desactivar cualquier licencia activa previa (solo debe haber 1 licencia activa)
+    await SystemLicense.update(
+      { active: false, status: 'inactive' },
+      { where: { active: true } }
+    );
+    logger.info(`🔄 Licencias previas desactivadas`);
 
     // Buscar o crear en BD local
     let localLicense = await SystemLicense.findOne({ where: { licenseKey } });
@@ -321,12 +334,37 @@ exports.activateLicense = async (req, res) => {
         metadata: {
           registeredAt: new Date().toISOString(),
           source: 'store',
-          location
+          location,
+          // Datos del cliente desde el Store
+          companyName: clientData?.companyName || null,
+          contactName: clientData?.contactName || null,
+          email: clientData?.email || null,
+          phone: clientData?.phone || null,
+          rfc: clientData?.rfc || null,
+          address: clientData?.address || null,
+          subdomain: clientData?.subdomain || null
         }
       });
       logger.info(`✅ Licencia creada en BD local: ${licenseKey}`);
     } else {
       // Actualizar licencia existente
+      const updatedMetadata = {
+        ...(localLicense.metadata || {}),
+        lastUpdated: new Date().toISOString(),
+        location
+      };
+
+      // Si vienen datos del cliente, actualizarlos (preservar existentes si no vienen)
+      if (clientData) {
+        updatedMetadata.companyName = clientData.companyName || updatedMetadata.companyName;
+        updatedMetadata.contactName = clientData.contactName || updatedMetadata.contactName;
+        updatedMetadata.email = clientData.email || updatedMetadata.email;
+        updatedMetadata.phone = clientData.phone || updatedMetadata.phone;
+        updatedMetadata.rfc = clientData.rfc || updatedMetadata.rfc;
+        updatedMetadata.address = clientData.address || updatedMetadata.address;
+        updatedMetadata.subdomain = clientData.subdomain || updatedMetadata.subdomain;
+      }
+
       await localLicense.update({
         hardwareId: hwId,
         status: 'active',
@@ -335,7 +373,8 @@ exports.activateLicense = async (req, res) => {
         expirationDate: validation.expiresAt,
         planType: validation.planType || localLicense.planType,
         clientLimit: validation.limits?.clients || localLicense.clientLimit,
-        featuresEnabled: validation.features || localLicense.featuresEnabled
+        featuresEnabled: validation.features || localLicense.featuresEnabled,
+        metadata: updatedMetadata
       });
       logger.info(`✅ Licencia actualizada en BD local: ${licenseKey}`);
     }
