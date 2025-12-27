@@ -55,6 +55,7 @@
     "speakeasy": "^2.0.0",
     "sqlite3": "^5.1.7",
     "stripe": "^19.3.1",
+    "systeminformation": "^5.28.1",
     "telegraf": "^4.16.3",
     "twilio": "^5.10.5",
     "winston": "^3.17.0",

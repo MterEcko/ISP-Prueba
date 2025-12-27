@@ -3,6 +3,7 @@ const axios = require('axios');
 const os = require('os');
 const crypto = require('crypto');
 const logger = require('../utils/logger');
+const si = require('systeminformation');
 
 class StoreApiClient {
   constructor() {
@@ -55,6 +56,58 @@ class StoreApiClient {
     const totalMemory = os.totalmem();
     const freeMemory = os.freemem();
 
+    // Información detallada de hardware usando systeminformation
+    let motherboard = { manufacturer: 'Unknown', model: 'Unknown', serial: 'Unknown' };
+    let diskInfo = { total: 0, used: 0, free: 0, totalGB: 0, freeGB: 0, filesystems: [] };
+    let osInfo = { distro: 'Unknown', release: 'Unknown', arch: os.arch(), platform: os.platform() };
+
+    try {
+      // Información de placa madre
+      const baseboard = await si.baseboard();
+      motherboard = {
+        manufacturer: baseboard.manufacturer || 'Unknown',
+        model: baseboard.model || 'Unknown',
+        serial: baseboard.serial || 'Unknown'
+      };
+
+      // Información de discos (todos los filesystems)
+      const fsSize = await si.fsSize();
+      const totalDiskSpace = fsSize.reduce((acc, fs) => acc + fs.size, 0);
+      const usedDiskSpace = fsSize.reduce((acc, fs) => acc + fs.used, 0);
+      const freeDiskSpace = fsSize.reduce((acc, fs) => acc + fs.available, 0);
+
+      diskInfo = {
+        total: totalDiskSpace,
+        used: usedDiskSpace,
+        free: freeDiskSpace,
+        totalGB: (totalDiskSpace / (1024 ** 3)).toFixed(2),
+        freeGB: (freeDiskSpace / (1024 ** 3)).toFixed(2),
+        usedGB: (usedDiskSpace / (1024 ** 3)).toFixed(2),
+        filesystems: fsSize.map(fs => ({
+          mount: fs.mount,
+          type: fs.type,
+          totalGB: (fs.size / (1024 ** 3)).toFixed(2),
+          freeGB: (fs.available / (1024 ** 3)).toFixed(2),
+          usedPercent: fs.use
+        }))
+      };
+
+      // Información detallada del SO
+      const osData = await si.osInfo();
+      osInfo = {
+        distro: osData.distro || 'Unknown',
+        release: osData.release || os.release(),
+        codename: osData.codename || '',
+        kernel: osData.kernel || '',
+        arch: osData.arch || os.arch(),
+        platform: osData.platform || os.platform(),
+        hostname: osData.hostname || os.hostname()
+      };
+
+    } catch (error) {
+      logger.warn('No se pudo obtener información detallada del hardware:', error.message);
+    }
+
     return {
       hardwareId: this.hardwareId,
       hostname: os.hostname(),
@@ -64,6 +117,9 @@ class StoreApiClient {
       osRelease: os.release(),
       osVersion: os.version(),
 
+      // Sistema Operativo detallado
+      os: osInfo,
+
       // CPU
       cpu: {
         model: cpus[0]?.model || 'Unknown',
@@ -71,14 +127,21 @@ class StoreApiClient {
         speed: cpus[0]?.speed || 0
       },
 
+      // Placa Madre
+      motherboard: motherboard,
+
       // Memoria
       memory: {
         total: totalMemory,
         free: freeMemory,
         used: totalMemory - freeMemory,
         totalGB: (totalMemory / (1024 ** 3)).toFixed(2),
+        freeGB: (freeMemory / (1024 ** 3)).toFixed(2),
         usedGB: ((totalMemory - freeMemory) / (1024 ** 3)).toFixed(2)
       },
+
+      // Discos
+      disk: diskInfo,
 
       // Red
       network: {
@@ -266,7 +329,8 @@ class StoreApiClient {
           features: response.data.features,
           limits: response.data.limits,
           suspended: response.data.status === 'suspended',
-          suspensionReason: response.data.suspensionReason || null
+          suspensionReason: response.data.suspensionReason || null,
+          clientData: response.data.clientData || null
         };
 
       } catch (error) {
