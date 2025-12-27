@@ -1,6 +1,7 @@
 // backend/src/middleware/licenseSuspension.middleware.js
 const storeApiClient = require('../services/storeApiClient.service');
 const licenseLimitsService = require('../services/licenseLimits.service');
+const licenseExpirationService = require('../services/licenseExpiration.service');
 const logger = require('../utils/logger');
 
 /**
@@ -24,7 +25,7 @@ class LicenseSuspensionMiddleware {
   };
 
   /**
-   * Verificar si licencia está suspendida
+   * Verificar si licencia está suspendida o expirada
    */
   static async checkLicenseSuspension() {
     // Si hay cache válido, usar cache
@@ -43,23 +44,71 @@ class LicenseSuspensionMiddleware {
         return false; // Sin licencia = no suspendido (modo trial?)
       }
 
-      // Validar con Store
-      const validation = await storeApiClient.validateLicense(license.licenseKey);
+      // ============================================
+      // VERIFICAR EXPIRACIÓN CON ANTI-MANIPULACIÓN
+      // ============================================
+      const expirationCheck = await licenseExpirationService.checkExpiration(license);
 
-      const isSuspended = validation.suspended === true;
+      if (expirationCheck.expired) {
+        logger.warn(`⚠️ Licencia expirada o bloqueada: ${expirationCheck.reason}`);
+        logger.warn(`   Mensaje: ${expirationCheck.message}`);
 
-      // Actualizar cache
-      this.validationCache = {
-        suspended: isSuspended,
-        lastCheck: now,
-        cacheExpiry: 60 * 60 * 1000
-      };
+        // Si es por manipulación de fecha, suspender la licencia
+        if (expirationCheck.reason === 'date_manipulation') {
+          await license.update({
+            status: 'suspended',
+            active: false,
+            metadata: {
+              ...license.metadata,
+              suspensionReason: 'Date manipulation detected',
+              suspendedAt: new Date().toISOString(),
+              dateManipulation: expirationCheck.details
+            }
+          });
+        }
 
-      if (isSuspended) {
-        logger.warn(`🚫 Licencia ${license.licenseKey} está SUSPENDIDA`);
+        // Actualizar cache
+        this.validationCache = {
+          suspended: true,
+          lastCheck: now,
+          cacheExpiry: 60 * 60 * 1000,
+          reason: expirationCheck.reason
+        };
+
+        return true;
       }
 
-      return isSuspended;
+      // Validar con Store (si hay conexión)
+      try {
+        const validation = await storeApiClient.validateLicense(license.licenseKey);
+        const isSuspended = validation.suspended === true;
+
+        // Actualizar cache
+        this.validationCache = {
+          suspended: isSuspended,
+          lastCheck: now,
+          cacheExpiry: 60 * 60 * 1000
+        };
+
+        if (isSuspended) {
+          logger.warn(`🚫 Licencia ${license.licenseKey} está SUSPENDIDA por el Store`);
+        }
+
+        return isSuspended;
+      } catch (error) {
+        // Si falla la conexión con Store, continuar con verificación local
+        logger.warn('No se pudo validar con Store, usando verificación local');
+
+        // Actualizar cache (no suspendido si no hay conexión)
+        this.validationCache = {
+          suspended: false,
+          lastCheck: now,
+          cacheExpiry: 60 * 60 * 1000,
+          offline: true
+        };
+
+        return false;
+      }
 
     } catch (error) {
       logger.error('Error verificando suspensión de licencia:', error);
