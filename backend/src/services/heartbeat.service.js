@@ -84,10 +84,15 @@ class HeartbeatService {
       // Validar límites del plan
       const limitsValidation = await this.validateLimits(license, metrics);
 
+      // Obtener Database ID para anti-piratería
+      const databaseIdService = require('./databaseId.service');
+      const databaseId = databaseIdService.getDatabaseId();
+
       // Preparar payload del heartbeat
       const payload = {
         licenseKey: license.licenseKey,
         hardwareId: hardware.hardwareId,
+        databaseId: databaseId,
         hardware: hardware,
         location: location,
         metrics: metrics,

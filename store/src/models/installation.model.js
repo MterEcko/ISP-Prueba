@@ -37,6 +37,13 @@ module.exports = (sequelize) => {
       comment: 'ID único del hardware donde está instalado'
     },
 
+    // Database ID (anti-piratería)
+    databaseId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'ID único de la base de datos para detectar clonación'
+    },
+
     // Información del sistema
     systemInfo: {
       type: DataTypes.JSON,

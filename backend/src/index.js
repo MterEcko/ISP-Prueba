@@ -506,6 +506,16 @@ synchronizeDatabase().then(() => {
     }
     // ==================== FIN JOBS DE LICENCIAS ====================
 
+    // ==================== INICIALIZAR DATABASE ID ====================
+    try {
+      const databaseIdService = require('./services/databaseId.service');
+      await databaseIdService.initialize();
+      console.log('🔑 Database ID inicializado (anti-piratería)');
+    } catch (error) {
+      console.error('❌ Error inicializando Database ID:', error.message);
+    }
+    // ==================== FIN DATABASE ID ====================
+
     // ==================== INICIALIZAR HEARTBEAT SERVICE ====================
     try {
       const heartbeatService = require('./services/heartbeat.service');

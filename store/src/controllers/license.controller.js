@@ -1,6 +1,7 @@
 const db = require('../models');
 const crypto = require('crypto');
 const logger = require('../config/logger');
+const { Op } = require('sequelize');
 const { License, Installation, ServicePackage, Customer } = db;
 
 // Generar clave de licencia
@@ -555,6 +556,7 @@ exports.receiveHeartbeat = async (req, res) => {
     const {
       licenseKey,
       hardwareId,
+      databaseId,
       hardware,
       location,
       metrics,
@@ -571,7 +573,7 @@ exports.receiveHeartbeat = async (req, res) => {
       });
     }
 
-    logger.info(`💓 Heartbeat recibido de licencia: ${licenseKey} (${forced ? 'FORZADO' : 'AUTOMÁTICO'})`);
+    logger.info(`💓 Heartbeat recibido de licencia: ${licenseKey} (${forced ? 'FORZADO' : 'AUTOMÁTICO'}) DB: ${databaseId}`);
 
     // Buscar licencia
     const license = await License.findOne({
@@ -589,6 +591,56 @@ exports.receiveHeartbeat = async (req, res) => {
       });
     }
 
+    // ============================================
+    // DETECCIÓN DE CLONACIÓN DE BASE DE DATOS
+    // ============================================
+    if (databaseId) {
+      // Buscar si este Database ID ya está registrado con otra licencia
+      const otherInstallation = await Installation.findOne({
+        where: {
+          databaseId: databaseId,
+          licenseKey: { [Op.ne]: licenseKey } // Diferente licencia
+        }
+      });
+
+      if (otherInstallation) {
+        logger.error(`🚨 CLONACIÓN DETECTADA: Database ID ${databaseId} usado en múltiples licencias`);
+        logger.error(`   - Licencia actual: ${licenseKey}`);
+        logger.error(`   - Otra licencia: ${otherInstallation.licenseKey}`);
+
+        // Suspender la licencia automáticamente
+        await license.update({
+          status: 'suspended',
+          metadata: {
+            ...license.metadata,
+            suspensionReason: 'Database cloning detected - same Database ID used in multiple licenses',
+            suspendedAt: new Date().toISOString(),
+            clonedDatabaseId: databaseId,
+            otherLicenseKey: otherInstallation.licenseKey
+          }
+        });
+
+        // TODO: Enviar alerta por email al administrador
+
+        return res.json({
+          success: true,
+          suspended: true,
+          suspensionReason: 'Database cloning detected. This license has been suspended.',
+          message: 'CRITICAL: Database cloning detected. Please contact support.'
+        });
+      }
+
+      // Buscar si el Database ID cambió para esta instalación (posible manipulación)
+      const existingInstallation = license.installation;
+      if (existingInstallation && existingInstallation.databaseId && existingInstallation.databaseId !== databaseId) {
+        logger.warn(`⚠️ Database ID cambió para licencia ${licenseKey}`);
+        logger.warn(`   - Antiguo: ${existingInstallation.databaseId}`);
+        logger.warn(`   - Nuevo: ${databaseId}`);
+        // Esto podría ser normal (reinstalación) o sospechoso (clonación)
+        // Por ahora solo lo registramos, no suspendemos automáticamente
+      }
+    }
+
     // Buscar o crear instalación
     let installation = license.installation;
 
@@ -597,6 +649,7 @@ exports.receiveHeartbeat = async (req, res) => {
         licenseId: license.id,
         licenseKey: licenseKey,
         hardwareId: hardwareId,
+        databaseId: databaseId,
         systemInfo: hardware,
         currentLicenseId: license.id,
         isOnline: true,
@@ -607,6 +660,7 @@ exports.receiveHeartbeat = async (req, res) => {
       // Actualizar instalación existente
       await installation.update({
         hardwareId: hardwareId,
+        databaseId: databaseId,
         systemInfo: hardware,
         isOnline: true,
         lastHeartbeat: new Date(),
