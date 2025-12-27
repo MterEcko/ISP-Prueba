@@ -88,6 +88,10 @@ class HeartbeatService {
       const databaseIdService = require('./databaseId.service');
       const databaseId = databaseIdService.getDatabaseId();
 
+      // Verificar manipulación de fecha
+      const licenseExpirationService = require('./licenseExpiration.service');
+      const dateManipulationCheck = await licenseExpirationService.detectDateManipulation(license);
+
       // Preparar payload del heartbeat
       const payload = {
         licenseKey: license.licenseKey,
@@ -97,6 +101,7 @@ class HeartbeatService {
         location: location,
         metrics: metrics,
         limitsValidation: limitsValidation,
+        dateManipulation: dateManipulationCheck.manipulated ? dateManipulationCheck : null,
         systemVersion: process.env.SYSTEM_VERSION || '1.0.0',
         timestamp: new Date().toISOString(),
         forced: forced

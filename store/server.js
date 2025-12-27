@@ -381,6 +381,10 @@ db.sequelize.authenticate()
     // Crear paquetes por default si no existen
     await createDefaultPackages();
 
+    // Inicializar servicio de email alerts
+    const emailAlertService = require('./src/services/emailAlert.service');
+    await emailAlertService.initialize();
+
     // Iniciar servidor
     app.listen(PORT, HOST, () => {
       logger.info('='.repeat(60));

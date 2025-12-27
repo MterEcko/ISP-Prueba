@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const logger = require('../config/logger');
 const { Op } = require('sequelize');
 const { License, Installation, ServicePackage, Customer } = db;
+const emailAlertService = require('../services/emailAlert.service');
 
 // Generar clave de licencia
 function generateLicenseKey() {
@@ -188,19 +189,30 @@ exports.registerLicense = async (req, res) => {
         logger.error(`   - Empresa actual: ${existingInstallation.companyName}`);
 
         // Registrar el intento en metadata de la licencia
+        const attemptDetails = {
+          attemptedHardwareId: hardware.hardwareId,
+          attemptedBy: companyName || 'Unknown',
+          attemptedAt: new Date().toISOString(),
+          blockedReason: 'License already in use on different hardware'
+        };
+
         await license.update({
           metadata: {
             ...license.metadata,
             duplicateActivationAttempts: [
               ...(license.metadata?.duplicateActivationAttempts || []),
-              {
-                attemptedHardwareId: hardware.hardwareId,
-                attemptedBy: companyName || 'Unknown',
-                attemptedAt: new Date().toISOString(),
-                blockedReason: 'License already in use on different hardware'
-              }
+              attemptDetails
             ]
           }
+        });
+
+        // Enviar alerta por email al administrador
+        emailAlertService.alertDuplicateActivation({
+          license,
+          existingInstallation,
+          attemptDetails
+        }).catch(err => {
+          logger.error('Error sending duplicate activation alert:', err.message);
         });
 
         return res.status(409).json({
@@ -673,6 +685,7 @@ exports.receiveHeartbeat = async (req, res) => {
       location,
       metrics,
       limitsValidation,
+      dateManipulation,
       systemVersion,
       timestamp,
       forced
@@ -732,7 +745,19 @@ exports.receiveHeartbeat = async (req, res) => {
           }
         });
 
-        // TODO: Enviar alerta por email al administrador
+        // Obtener todas las instalaciones con el mismo Database ID para el email
+        const allInstallationsWithSameDB = await Installation.findAll({
+          where: { databaseId: databaseId }
+        });
+
+        // Enviar alerta por email al administrador
+        emailAlertService.alertMultipleInstallations({
+          license,
+          installations: allInstallationsWithSameDB,
+          databaseId
+        }).catch(err => {
+          logger.error('Error sending multiple installations alert:', err.message);
+        });
 
         return res.json({
           success: true,
@@ -751,6 +776,50 @@ exports.receiveHeartbeat = async (req, res) => {
         // Esto podría ser normal (reinstalación) o sospechoso (clonación)
         // Por ahora solo lo registramos, no suspendemos automáticamente
       }
+    }
+
+    // ============================================
+    // DETECCIÓN DE MANIPULACIÓN DE FECHA
+    // ============================================
+    if (dateManipulation && dateManipulation.manipulated) {
+      logger.error(`⚠️ MANIPULACIÓN DE FECHA DETECTADA: Licencia ${licenseKey}`);
+      logger.error(`   - Última fecha conocida: ${new Date(dateManipulation.lastKnownDate).toLocaleString()}`);
+      logger.error(`   - Fecha actual del sistema: ${new Date(dateManipulation.currentDate).toLocaleString()}`);
+      logger.error(`   - Diferencia: ${dateManipulation.daysDifference} días hacia atrás`);
+
+      // Suspender la licencia automáticamente
+      await license.update({
+        status: 'suspended',
+        metadata: {
+          ...license.metadata,
+          suspensionReason: 'Date manipulation detected - system date was set backwards',
+          suspendedAt: new Date().toISOString(),
+          dateManipulation: dateManipulation
+        }
+      });
+
+      // Enviar alerta por email al administrador
+      // Necesitamos obtener la instalación primero
+      const installation = license.installation || await Installation.findOne({
+        where: { licenseKey: licenseKey }
+      });
+
+      if (installation) {
+        emailAlertService.alertDateManipulation({
+          license,
+          installation,
+          details: dateManipulation
+        }).catch(err => {
+          logger.error('Error sending date manipulation alert:', err.message);
+        });
+      }
+
+      return res.json({
+        success: true,
+        suspended: true,
+        suspensionReason: 'Date manipulation detected. This license has been suspended.',
+        message: 'CRITICAL: Date manipulation detected. Please contact support.'
+      });
     }
 
     // Buscar o crear instalación
