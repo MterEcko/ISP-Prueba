@@ -573,6 +573,68 @@ class StoreApiClient {
       return false;
     }
   }
+
+  /**
+   * Enviar heartbeat al Store
+   */
+  async sendHeartbeat(payload) {
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
+    };
+
+    const urls = [this.storeUrl, this.fallbackUrl];
+    let lastError;
+
+    for (let i = 0; i < urls.length; i++) {
+      const baseUrl = urls[i];
+      const fullUrl = `${baseUrl}/licenses/heartbeat`;
+
+      try {
+        logger.info(`💓 Enviando heartbeat a: ${baseUrl} (${i === 0 ? 'principal' : 'fallback'})`);
+
+        const response = await axios.post(fullUrl, payload, config);
+
+        if (i > 0) {
+          logger.warn(`⚠️  Usando Store fallback: ${baseUrl}`);
+        }
+
+        logger.info(`✅ Heartbeat recibido por Store: ${response.data.message || 'OK'}`);
+
+        return {
+          success: true,
+          data: response.data
+        };
+
+      } catch (error) {
+        lastError = error;
+        const isNetworkError = error.code === 'ECONNREFUSED' ||
+                               error.code === 'ETIMEDOUT' ||
+                               error.code === 'ENOTFOUND' ||
+                               error.response?.status === 502 ||
+                               error.response?.status === 503;
+
+        if (isNetworkError && i < urls.length - 1) {
+          logger.warn(`⚠️  Fallo en ${baseUrl} (${error.message}), intentando fallback...`);
+          continue;
+        }
+
+        logger.error('Error enviando heartbeat al Store:', error.message);
+        return {
+          success: false,
+          error: error.response?.data?.message || error.message
+        };
+      }
+    }
+
+    return {
+      success: false,
+      error: lastError?.message || 'Error desconocido'
+    };
+  }
 }
 
 module.exports = new StoreApiClient();

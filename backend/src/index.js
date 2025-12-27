@@ -505,6 +505,16 @@ synchronizeDatabase().then(() => {
       console.error('❌ Error inicializando jobs de licencias:', error.message);
     }
     // ==================== FIN JOBS DE LICENCIAS ====================
+
+    // ==================== INICIALIZAR HEARTBEAT SERVICE ====================
+    try {
+      const heartbeatService = require('./services/heartbeat.service');
+      heartbeatService.start();
+      console.log('💓 Heartbeat service inicializado (cada hora)');
+    } catch (error) {
+      console.error('❌ Error inicializando heartbeat service:', error.message);
+    }
+    // ==================== FIN HEARTBEAT SERVICE ====================
   });
 });
 

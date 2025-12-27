@@ -384,6 +384,38 @@ exports.verifyLicense = async (req, res) => {
 
     logger.info(`🔍 Verificando licencia ${licenseKey}: status=${license.status}, expired=${isExpired}, hardwareMatches=${hardwareMatches}, valid=${isValidForRegistration}`);
 
+    // Buscar datos del cliente asociado a esta licencia
+    let clientData = null;
+    const customer = await Customer.findOne({
+      where: { licenseId: license.id }
+    });
+
+    if (customer) {
+      // Cliente encontrado en tabla Customers
+      clientData = {
+        companyName: customer.companyName || customer.name,
+        contactName: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        rfc: customer.metadata?.rfc || null,
+        address: customer.metadata?.address || null,
+        subdomain: customer.metadata?.subdomain || null
+      };
+      logger.info(`📋 Cliente encontrado: ${customer.companyName} (${customer.email})`);
+    } else if (license.installation) {
+      // Si no hay customer pero hay installation, usar esos datos
+      clientData = {
+        companyName: license.installation.companyName,
+        contactName: license.installation.metadata?.contactName || null,
+        email: license.installation.contactEmail,
+        phone: license.installation.contactPhone,
+        rfc: license.installation.metadata?.rfc || null,
+        address: license.installation.metadata?.address || null,
+        subdomain: license.installation.metadata?.subdomain || null
+      };
+      logger.info(`📋 Datos de instalación: ${license.installation.companyName}`);
+    }
+
     // Formato compatible con backend (response.data.planType, response.data.valid, etc.)
     res.json({
       success: true,
@@ -398,6 +430,8 @@ exports.verifyLicense = async (req, res) => {
         plugins: -1,
         includedPlugins: []
       },
+      // NUEVO: Datos del cliente asociado
+      clientData: clientData,
       // También incluir en formato anterior para compatibilidad
       license: {
         planType: license.planType,
@@ -506,6 +540,131 @@ exports.getAllLicenses = async (req, res) => {
       data: licenses
     });
   } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Recibir heartbeat desde el backend
+ */
+exports.receiveHeartbeat = async (req, res) => {
+  try {
+    const {
+      licenseKey,
+      hardwareId,
+      hardware,
+      location,
+      metrics,
+      limitsValidation,
+      systemVersion,
+      timestamp,
+      forced
+    } = req.body;
+
+    if (!licenseKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'License key is required'
+      });
+    }
+
+    logger.info(`💓 Heartbeat recibido de licencia: ${licenseKey} (${forced ? 'FORZADO' : 'AUTOMÁTICO'})`);
+
+    // Buscar licencia
+    const license = await License.findOne({
+      where: { licenseKey },
+      include: [
+        { model: Installation, as: 'installation' },
+        { model: ServicePackage, as: 'servicePackage' }
+      ]
+    });
+
+    if (!license) {
+      return res.status(404).json({
+        success: false,
+        message: 'License not found'
+      });
+    }
+
+    // Buscar o crear instalación
+    let installation = license.installation;
+
+    if (!installation) {
+      installation = await Installation.create({
+        licenseId: license.id,
+        licenseKey: licenseKey,
+        hardwareId: hardwareId,
+        systemInfo: hardware,
+        currentLicenseId: license.id,
+        isOnline: true,
+        lastHeartbeat: new Date()
+      });
+      logger.info(`📦 Nueva instalación creada para licencia: ${licenseKey}`);
+    } else {
+      // Actualizar instalación existente
+      await installation.update({
+        hardwareId: hardwareId,
+        systemInfo: hardware,
+        isOnline: true,
+        lastHeartbeat: new Date(),
+        location: location || installation.location
+      });
+    }
+
+    // Actualizar licencia con la info más reciente
+    await license.update({
+      lastHeartbeat: new Date(),
+      metadata: {
+        ...license.metadata,
+        lastHardware: hardware,
+        lastLocation: location,
+        lastMetrics: metrics,
+        lastLimitsValidation: limitsValidation,
+        systemVersion: systemVersion
+      }
+    });
+
+    // Verificar si la licencia está suspendida
+    if (license.status === 'suspended') {
+      logger.warn(`⚠️ Licencia suspendida detectada en heartbeat: ${licenseKey}`);
+      return res.json({
+        success: true,
+        suspended: true,
+        suspensionReason: license.metadata?.suspensionReason || 'License suspended by administrator',
+        message: 'License is suspended'
+      });
+    }
+
+    // Verificar límites si vienen en el payload
+    let limitsExceeded = false;
+    if (limitsValidation && limitsValidation.limitsExceeded && limitsValidation.limitsExceeded.length > 0) {
+      logger.warn(`⚠️ Límites excedidos en licencia ${licenseKey}:`, limitsValidation.limitsExceeded);
+      limitsExceeded = true;
+
+      // Enviar alerta por email (opcional, implementar después)
+      // TODO: Implementar envío de email de alerta
+    }
+
+    logger.info(`✅ Heartbeat procesado exitosamente: ${licenseKey}`);
+
+    res.json({
+      success: true,
+      message: 'Heartbeat received successfully',
+      suspended: false,
+      limitsExceeded: limitsExceeded,
+      limitsValidation: limitsValidation,
+      license: {
+        status: license.status,
+        planType: license.planType,
+        expiresAt: license.expiresAt
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error procesando heartbeat:', error);
     res.status(500).json({
       success: false,
       message: error.message
